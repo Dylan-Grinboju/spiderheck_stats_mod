@@ -9,6 +9,22 @@ namespace StatsMod
     /// </summary>
     public class StatsTracker
     {
+        // Singleton instance
+        private static StatsTracker _instance;
+        public static StatsTracker Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = new StatsTracker();
+                    Logger.LogInfo("Stats tracker created via singleton access");
+                }
+                return _instance;
+            }
+            private set => _instance = value;
+        }
+
         public int EnemiesKilled { get; private set; }
         public int DeathCount { get; private set; }
 
@@ -17,6 +33,8 @@ namespace StatsMod
             EnemiesKilled = 0;
             DeathCount = 0;
 
+            // Register as singleton instance
+            Instance = this;
             Logger.LogInfo("Stats tracker initialized");
         }
 

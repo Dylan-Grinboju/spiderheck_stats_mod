@@ -16,6 +16,22 @@ namespace StatsMod
         // Stats tracking system
         public StatsTracker Stats { get; private set; }
 
+        // Static utility methods for safe stats access
+        public static void SafeIncrementEnemiesKilled()
+        {
+            StatsTracker.Instance.IncrementEnemiesKilled();
+        }
+
+        public static void SafeIncrementDeathCount()
+        {
+            StatsTracker.Instance.IncrementDeathCount();
+        }
+
+        public static string SafeGetStatsReport()
+        {
+            return StatsTracker.Instance.GetStatsReport();
+        }
+
         // Called by Silk when Unity loads this mod
         public override void Initialize()
         {
@@ -58,21 +74,16 @@ namespace StatsMod
     {
         static void Postfix(EnemyHealthSystem __instance)
         {
-            // First check if instance exists before doing anything
-            if (StatsMod.Instance == null)
+            try
             {
-                Logger.LogWarning("StatsMod instance is null - enemy kill not recorded. This might happen during game initialization or shutdown.");
-                return; // Exit early if instance is null
+                // Use the safe method instead of accessing through the instance
+                StatsMod.SafeIncrementEnemiesKilled();
+                Logger.LogInfo("Enemy killed via Explode method.");
             }
-
-            if (StatsMod.Instance.Stats == null)
+            catch (System.Exception ex)
             {
-                Logger.LogWarning("StatsMod.Stats instance is null - enemy kill not recorded");
-                return; // Exit early if stats is null
+                Logger.LogError($"Error recording enemy kill: {ex.Message}");
             }
-
-            Logger.LogInfo("Enemy killed via Explode method.");
-            StatsMod.Instance.Stats.IncrementEnemiesKilled();
         }
     }
 }
