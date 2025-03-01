@@ -50,6 +50,12 @@ namespace StatsMod
             Logger.LogInfo($"Player died! Total deaths: {DeathCount}");
         }
 
+        public void DecreaseDeathCount()
+        {
+            DeathCount--;
+            Logger.LogInfo($"Player didn't die! Total deaths: {DeathCount}");
+        }
+
         public string GetStatsReport()
         {
             return $"Stats Report:\nEnemies Killed: {EnemiesKilled}\nDeath Count: {DeathCount}";

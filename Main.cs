@@ -27,6 +27,11 @@ namespace StatsMod
             StatsTracker.Instance.IncrementDeathCount();
         }
 
+        public static void SafeDecreaseDeathCount()
+        {
+            StatsTracker.Instance.DecreaseDeathCount();
+        }
+
         public static string SafeGetStatsReport()
         {
             return StatsTracker.Instance.GetStatsReport();
@@ -68,7 +73,6 @@ namespace StatsMod
         }
     }
 
-    // Add patch for the correct Explode method
     [HarmonyPatch(typeof(EnemyHealthSystem), "Explode")]
     class ExplodeEnemyPatch
     {
@@ -76,7 +80,6 @@ namespace StatsMod
         {
             try
             {
-                // Use the safe method instead of accessing through the instance
                 StatsMod.SafeIncrementEnemiesKilled();
                 Logger.LogInfo("Enemy killed via Explode method.");
             }
@@ -86,4 +89,24 @@ namespace StatsMod
             }
         }
     }
+
+    [HarmonyPatch(typeof(SpiderHealthSystem), "ExplodeInDirection")]
+    class PlayerDeathCountPatch
+    {
+        static void Postfix(SpiderHealthSystem __instance)
+        {
+            try
+            {
+                // We'll use Postfix instead of Prefix and assume this is a death
+                // since we can't directly check if it's shielded
+                StatsMod.SafeIncrementDeathCount();
+                Logger.LogInfo("Player death recorded via SpiderHealthSystem.Disintegrate method");
+            }
+            catch (System.Exception ex)
+            {
+                Logger.LogError($"Error recording player death: {ex.Message}");
+            }
+        }
+    }
+
 }
