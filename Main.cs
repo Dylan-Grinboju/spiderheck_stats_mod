@@ -3,6 +3,7 @@ using Logger = Silk.Logger;
 using HarmonyLib;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections.Generic;
 
 namespace StatsMod
 {
@@ -22,14 +23,9 @@ namespace StatsMod
             StatsTracker.Instance.IncrementEnemiesKilled();
         }
 
-        public static void SafeIncrementDeathCount()
+        public static void SafeIncrementDeathCount(ulong playerId)
         {
-            StatsTracker.Instance.IncrementDeathCount();
-        }
-
-        public static void SafeDecreaseDeathCount()
-        {
-            StatsTracker.Instance.DecreaseDeathCount();
+            StatsTracker.Instance.IncrementDeathCount(playerId);
         }
 
         public static string SafeGetStatsReport()
@@ -74,7 +70,7 @@ namespace StatsMod
     }
 
     [HarmonyPatch(typeof(EnemyHealthSystem), "Explode")]
-    class ExplodeEnemyPatch
+    class EnemyDeathCountPatch
     {
         static void Postfix(EnemyHealthSystem __instance)
         {
@@ -97,10 +93,23 @@ namespace StatsMod
         {
             try
             {
-                // We'll use Postfix instead of Prefix and assume this is a death
-                // since we can't directly check if it's shielded
-                StatsMod.SafeIncrementDeathCount();
-                Logger.LogInfo("Player death recorded via SpiderHealthSystem.Disintegrate method");
+                // Get the player ID from the NetworkObject owner
+                ulong playerId = 0;
+
+
+                if (__instance.NetworkManager != null && __instance.NetworkObject != null)
+                {
+                    playerId = __instance.NetworkObject.OwnerClientId;
+                    Logger.LogInfo($"Player with ID: {playerId} died via ExplodeInDirection");
+                }
+                else
+                {
+                    // Fallback to a unique identifier based on GameObject instance ID
+                    playerId = (ulong)__instance.rootObject.GetInstanceID();
+                    Logger.LogInfo($"Non-networked player with instance ID: {playerId} died");
+                }
+
+                StatsMod.SafeIncrementDeathCount(playerId);
             }
             catch (System.Exception ex)
             {

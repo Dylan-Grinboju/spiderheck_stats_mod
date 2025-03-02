@@ -1,11 +1,12 @@
 using UnityEngine;
 using Silk;
 using Logger = Silk.Logger;
+using System.Collections.Generic;
 
 namespace StatsMod
 {
     /// <summary>
-    /// Handles all game statistics tracking for the mod
+    /// Handles global game statistics tracking for the mod (non-player specific)
     /// </summary>
     public class StatsTracker
     {
@@ -26,7 +27,7 @@ namespace StatsMod
         }
 
         public int EnemiesKilled { get; private set; }
-        public int DeathCount { get; private set; }
+        public int DeathCount { get; private set; } // Keep total death count across all players
 
         public StatsTracker()
         {
@@ -44,21 +45,39 @@ namespace StatsMod
             Logger.LogInfo($"Enemy killed! Total: {EnemiesKilled}");
         }
 
-        public void IncrementDeathCount()
+        public void IncrementDeathCount(ulong playerId)
         {
             DeathCount++;
-            Logger.LogInfo($"Player died! Total deaths: {DeathCount}");
-        }
 
-        public void DecreaseDeathCount()
-        {
-            DeathCount--;
-            Logger.LogInfo($"Player didn't die! Total deaths: {DeathCount}");
+            // If PlayerTracker is initialized, let it handle the player-specific stats
+            if (PlayerTracker.Instance != null)
+            {
+                // Try to record in the player tracker first (for known players)
+                if (!PlayerTracker.Instance.TryRecordPlayerDeathById(playerId))
+                {
+                    // Log that this death wasn't associated with a tracked player
+                    Logger.LogInfo($"Death recorded for unknown player ID: {playerId}, Overall deaths: {DeathCount}");
+                }
+            }
+            else
+            {
+                Logger.LogInfo($"Player {playerId} died! Overall deaths: {DeathCount}");
+            }
         }
 
         public string GetStatsReport()
         {
-            return $"Stats Report:\nEnemies Killed: {EnemiesKilled}\nDeath Count: {DeathCount}";
+            string report = $"Global Stats Report:\n";
+            report += $"Enemies Killed: {EnemiesKilled}\n";
+            report += $"Total Death Count: {DeathCount}\n";
+
+            // Get player death reports from PlayerTracker if available
+            if (PlayerTracker.Instance != null)
+            {
+                report += "\n" + PlayerTracker.Instance.GetDetailedStatsReport();
+            }
+
+            return report;
         }
     }
 }
