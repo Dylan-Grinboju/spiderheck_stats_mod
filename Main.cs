@@ -23,11 +23,6 @@ namespace StatsMod
             StatsTracker.Instance.IncrementEnemiesKilled();
         }
 
-        public static void SafeIncrementDeathCount(ulong playerId)
-        {
-            StatsTracker.Instance.IncrementDeathCount(playerId);
-        }
-
         public static string SafeGetStatsReport()
         {
             return StatsTracker.Instance.GetStatsReport();
@@ -85,37 +80,4 @@ namespace StatsMod
             }
         }
     }
-
-    [HarmonyPatch(typeof(SpiderHealthSystem), "ExplodeInDirection")]
-    class PlayerDeathCountPatch
-    {
-        static void Postfix(SpiderHealthSystem __instance)
-        {
-            try
-            {
-                // Get the player ID from the NetworkObject owner
-                ulong playerId = 0;
-
-
-                if (__instance.NetworkManager != null && __instance.NetworkObject != null)
-                {
-                    playerId = __instance.NetworkObject.OwnerClientId;
-                    Logger.LogInfo($"Player with ID: {playerId} died via ExplodeInDirection");
-                }
-                else
-                {
-                    // Fallback to a unique identifier based on GameObject instance ID
-                    playerId = (ulong)__instance.rootObject.GetInstanceID();
-                    Logger.LogInfo($"Non-networked player with instance ID: {playerId} died");
-                }
-
-                StatsMod.SafeIncrementDeathCount(playerId);
-            }
-            catch (System.Exception ex)
-            {
-                Logger.LogError($"Error recording player death: {ex.Message}");
-            }
-        }
-    }
-
 }

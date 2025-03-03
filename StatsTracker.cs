@@ -45,26 +45,6 @@ namespace StatsMod
             Logger.LogInfo($"Enemy killed! Total: {EnemiesKilled}");
         }
 
-        public void IncrementDeathCount(ulong playerId)
-        {
-            DeathCount++;
-
-            // If PlayerTracker is initialized, let it handle the player-specific stats
-            if (PlayerTracker.Instance != null)
-            {
-                // Try to record in the player tracker first (for known players)
-                if (!PlayerTracker.Instance.TryRecordPlayerDeathById(playerId))
-                {
-                    // Log that this death wasn't associated with a tracked player
-                    Logger.LogInfo($"Death recorded for unknown player ID: {playerId}, Overall deaths: {DeathCount}");
-                }
-            }
-            else
-            {
-                Logger.LogInfo($"Player {playerId} died! Overall deaths: {DeathCount}");
-            }
-        }
-
         public string GetStatsReport()
         {
             string report = $"Global Stats Report:\n";

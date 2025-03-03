@@ -34,9 +34,6 @@ namespace StatsMod
         // Dictionary to track players by their unique ID
         private Dictionary<ulong, PlayerInput> playerIds = new Dictionary<ulong, PlayerInput>();
 
-        // Dictionary to track deaths for players who are no longer active (historical data)
-        private Dictionary<ulong, int> pastPlayerDeaths = new Dictionary<ulong, int>();
-
         // Counter for generating unique IDs for local players
         private ulong nextLocalPlayerId = 1000;
 
@@ -62,9 +59,7 @@ namespace StatsMod
             Logger.LogInfo("Player tracker initialized");
         }
 
-        /// <summary>
-        /// Register a player when they join the game
-        /// </summary>
+
         public void RegisterPlayer(PlayerInput player)
         {
             if (player == null) return;
@@ -88,14 +83,9 @@ namespace StatsMod
             playerIds[playerId] = player;
 
             Logger.LogInfo($"Registered player ID: {playerId}, Name: {playerName}, Index: {player.playerIndex}");
-
-            // Update stats display
-            UpdateTrackerDisplay();
         }
 
-        /// <summary>
-        /// Unregister a player when they leave the game
-        /// </summary>
+
         public void UnregisterPlayer(PlayerInput player)
         {
             if (player == null) return;
@@ -104,64 +94,12 @@ namespace StatsMod
             {
                 Logger.LogInfo($"Unregistering player ID: {playerData.PlayerId}, Deaths: {playerData.Deaths}");
 
-                // Store player's death count for historical records
-                pastPlayerDeaths[playerData.PlayerId] = playerData.Deaths;
-
                 // Remove from tracking dictionaries
                 playerIds.Remove(playerData.PlayerId);
                 activePlayers.Remove(player);
-
-                // Update stats display
-                UpdateTrackerDisplay();
             }
         }
 
-        /// <summary>
-        /// Try to record a death for a player by ID, returns true if the player was found
-        /// </summary>
-        public bool TryRecordPlayerDeathById(ulong playerId)
-        {
-            // Try to find the player by ID
-            if (playerIds.TryGetValue(playerId, out PlayerInput player) && activePlayers.TryGetValue(player, out PlayerData data))
-            {
-                data.Deaths++;
-                Logger.LogInfo($"Recorded death for player ID: {playerId}, Total deaths: {data.Deaths}");
-
-                // Update stats display
-                UpdateTrackerDisplay();
-                return true;
-            }
-
-            // If not an active player, still track it in historical data
-            if (pastPlayerDeaths.ContainsKey(playerId))
-            {
-                pastPlayerDeaths[playerId]++;
-                Logger.LogInfo($"Recorded death for inactive player ID: {playerId}, Total deaths: {pastPlayerDeaths[playerId]}");
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Record a death for a specific player by ID (creates historical record if player not found)
-        /// </summary>
-        public void RecordPlayerDeath(ulong playerId)
-        {
-            if (!TryRecordPlayerDeathById(playerId))
-            {
-                // Create a new historical entry
-                pastPlayerDeaths[playerId] = 1;
-                Logger.LogWarning($"Created new death record for unknown player ID: {playerId}");
-            }
-
-            // Update the global death counter
-            StatsTracker.Instance.IncrementDeathCount(playerId);
-        }
-
-        /// <summary>
-        /// Record a death for a player based on their SpiderHealthSystem
-        /// </summary>
         public void RecordPlayerDeath(SpiderHealthSystem spiderHealth)
         {
             if (spiderHealth == null) return;
@@ -170,7 +108,7 @@ namespace StatsMod
             {
                 // Try to find the PlayerInput component attached to the spider
                 PlayerInput playerInput = null;
-
+                //TODO: check obsidian
                 // Use GetComponentInParent if rootObject is available
                 if (spiderHealth.rootObject != null)
                 {
@@ -188,27 +126,7 @@ namespace StatsMod
                     data.Deaths++;
                     Logger.LogInfo($"Recorded death for player ID: {data.PlayerId}, Total deaths: {data.Deaths}");
 
-                    // Update StatsTracker as well for compatibility
-                    StatsTracker.Instance.IncrementDeathCount(data.PlayerId);
-
-                    // Update stats display
-                    UpdateTrackerDisplay();
-                    return;
                 }
-
-                // Fallback to instance ID if all else fails
-                ulong fallbackId;
-                if (spiderHealth.rootObject != null)
-                {
-                    fallbackId = (ulong)spiderHealth.rootObject.GetInstanceID();
-                }
-                else
-                {
-                    fallbackId = (ulong)spiderHealth.gameObject.GetInstanceID();
-                }
-
-                Logger.LogWarning($"Using fallback ID for player death: {fallbackId}");
-                StatsTracker.Instance.IncrementDeathCount(fallbackId);
             }
             catch (Exception ex)
             {
@@ -216,51 +134,6 @@ namespace StatsMod
             }
         }
 
-        /// <summary>
-        /// Get the total number of deaths for a specific player ID (active or historical)
-        /// </summary>
-        public int GetPlayerDeathCount(ulong playerId)
-        {
-            // Check active players first
-            if (playerIds.TryGetValue(playerId, out PlayerInput player) &&
-                activePlayers.TryGetValue(player, out PlayerData data))
-            {
-                return data.Deaths;
-            }
-
-            // Check historical records
-            if (pastPlayerDeaths.TryGetValue(playerId, out int deaths))
-            {
-                return deaths;
-            }
-
-            return 0;
-        }
-
-        /// <summary>
-        /// Get the number of active players
-        /// </summary>
-        public int GetPlayerCount()
-        {
-            return activePlayers.Count;
-        }
-
-        /// <summary>
-        /// Get a player's data by their ID
-        /// </summary>
-        public PlayerData GetPlayerData(ulong playerId)
-        {
-            if (playerIds.TryGetValue(playerId, out PlayerInput player) &&
-                activePlayers.TryGetValue(player, out PlayerData data))
-            {
-                return data;
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// Get a detailed stats report for all players
-        /// </summary>
         public string GetDetailedStatsReport()
         {
             string report = $"Player Stats Report (Active Players: {activePlayers.Count})\n";
@@ -276,26 +149,9 @@ namespace StatsMod
                 report += "----------------------------------------\n";
             }
 
-            if (pastPlayerDeaths.Count > 0)
-            {
-                report += "\nPreviously Active Players:\n";
-                report += "----------------------------------------\n";
-                foreach (var entry in pastPlayerDeaths)
-                {
-                    report += $"Player ID {entry.Key}: {entry.Value} deaths\n";
-                }
-                report += "----------------------------------------\n";
-            }
-
             return report;
         }
 
-        // Display stats in the game UI - placeholder for future implementation
-        private void UpdateTrackerDisplay()
-        {
-            // This would update a UI display with the latest player stats
-            // Will be implemented in the future
-        }
     }
 
     // Harmony patches to hook into PlayerInput lifecycle events
@@ -331,7 +187,6 @@ namespace StatsMod
         }
     }
 
-    // Update the existing player death patch to use the PlayerTracker
     [HarmonyPatch(typeof(SpiderHealthSystem), "ExplodeInDirection")]
     public class UpdatedPlayerDeathPatch
     {
