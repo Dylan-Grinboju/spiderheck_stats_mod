@@ -134,6 +134,26 @@ namespace StatsMod
             }
         }
 
+        // New method to get player stats directly as a list
+        public List<(string playerName, int deaths, ulong playerId)> GetPlayerStatsList()
+        {
+            List<(string playerName, int deaths, ulong playerId)> result = new List<(string playerName, int deaths, ulong playerId)>();
+
+            foreach (var entry in activePlayers)
+            {
+                PlayerData player = entry.Value;
+                result.Add((player.PlayerName, player.Deaths, player.PlayerId));
+            }
+
+            return result;
+        }
+
+        // New method to get active player count
+        public int GetActivePlayerCount()
+        {
+            return activePlayers.Count;
+        }
+
         public string GetDetailedStatsReport()
         {
             string report = $"Player Stats Report (Active Players: {activePlayers.Count})\n";

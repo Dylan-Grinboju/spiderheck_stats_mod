@@ -41,6 +41,14 @@ namespace StatsMod
             // Log mod started
             Logger.LogInfo("Initializing Stats Mod...");
 
+            // Ensure PlayerTracker is initialized before UI
+            var tracker = PlayerTracker.Instance;
+            Logger.LogInfo("Player tracker initialized");
+
+            // Initialize the player stats display
+            DisplayPlayerStats.Initialize();
+            Logger.LogInfo("Player stats display initialized");
+
             // Create and apply Harmony patches
             Harmony harmony = new Harmony("com.thmrgnd.StatsMod");
             harmony.PatchAll();
