@@ -43,4 +43,16 @@ namespace StatsMod
             Instance = null;
         }
     }
+
+
+    // [HarmonyPatch(typeof(ModifierManager), "GetModLevel")]
+    // public class GetEveryMod
+    // {
+    //     [HarmonyPostfix]
+    //     public static void Postfix(ref int __result)
+    //     {
+    //         // Override the return value to always be 1
+    //         __result = 1;
+    //     }
+    // }
 }

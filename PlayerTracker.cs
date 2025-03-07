@@ -64,7 +64,7 @@ namespace StatsMod
 
             ulong playerId = nextLocalPlayerId++;
 
-            string playerName = $"Player_{player.playerIndex}";
+            string playerName = $"Player_{player.playerIndex + 1}";
             PlayerData playerData = new PlayerData(playerId, playerName);
 
             activePlayers[player] = playerData;
@@ -104,7 +104,6 @@ namespace StatsMod
                 {
                     data.Deaths++;
                     Logger.LogInfo($"Recorded death for player ID: {data.PlayerId}, Total deaths: {data.Deaths}");
-
                 }
             }
             catch (Exception ex)
@@ -138,8 +137,6 @@ namespace StatsMod
                 entry.Value.Deaths = 0;
             }
         }
-
-
     }
 
     [HarmonyPatch(typeof(PlayerInput), "OnEnable")]
@@ -174,10 +171,10 @@ namespace StatsMod
         }
     }
 
-    [HarmonyPatch(typeof(SpiderHealthSystem), "ExplodeInDirection")]
-    public class UpdatedPlayerDeathPatch
+    [HarmonyPatch(typeof(SpiderHealthSystem), "DisintegrateLegsAndDestroy")]
+    public class SpiderHealthSystemDisintegrateLegsAndDestroyPatch
     {
-        static void Postfix(SpiderHealthSystem __instance)
+        static void Prefix(SpiderHealthSystem __instance)
         {
             try
             {
@@ -185,7 +182,7 @@ namespace StatsMod
             }
             catch (Exception ex)
             {
-                Logger.LogError($"Error in updated player death patch: {ex.Message}");
+                Logger.LogError($"Error in SpiderHealthSystem.DisintegrateLegsAndDestroy patch: {ex.Message}");
             }
         }
     }
