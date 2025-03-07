@@ -1,6 +1,6 @@
 # Stats Mod for Spider Heck
 
-A comprehensive statistics tracking mod for Spider Heck that monitors player performance and game events.
+A simple statistics tracking mod for Spider Heck that monitors player performance and game events.
 
 ## Features
 
@@ -12,16 +12,17 @@ A comprehensive statistics tracking mod for Spider Heck that monitors player per
 
 ## Installation
 
-1. Install Silk Mod Loader
-2. Place the mod files in your Spider Heck mods folder
+1. Install Silk Mod Loader: https://github.com/SilkModding/Silk
+2. Place the mod file in your Silk mods folder
 3. Launch the game
 
 ## Usage
 
 - Press F1 to show/hide the statistics window
-- All stats are tracked automatically during gameplay
+- All stats are tracked automatically during gameplay (no need to show the UI for them to be tracked)
 - Stats reset when starting a new survival mode session
 
-## Technical Details
+## Contributing
+I hope to continue expanding this, and I welcome any help or feedback! 
 
-This mod uses Harmony to patch various game methods including `EnemyHealthSystem.Explode`, `SurvivalMode.StartGame`, and `SpiderHealthSystem.ExplodeInDirection` to collect gameplay statistics.
+
