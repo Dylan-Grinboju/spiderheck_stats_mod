@@ -1,12 +1,14 @@
 # Stats Mod for Spider Heck
 
-A simple mod that tracks and displays how many enemies you've killed during your gameplay.
+A comprehensive statistics tracking mod for Spider Heck that monitors player performance and game events.
 
 ## Features
 
-- Counts every enemy that is killed via the Disintegrate method
-- Displays kill counter in the top-left corner of the screen
-- Logs kill count to the console
+- **Enemy Tracking**: Counts enemies killed during gameplay
+- **Player Statistics**: Monitors player deaths and active player counts
+- **Survival Mode Timer**: Tracks session duration in survival mode
+- **In-Game Display**: Press F1 to toggle stats display window
+- **Session History**: Records your last survival session time
 
 ## Installation
 
@@ -14,6 +16,12 @@ A simple mod that tracks and displays how many enemies you've killed during your
 2. Place the mod files in your Spider Heck mods folder
 3. Launch the game
 
-## How it Works
+## Usage
 
-This mod uses Harmony to patch the `Disintegrate` method of the `EnemyHealthSystem` class to count each enemy death.
+- Press F1 to show/hide the statistics window
+- All stats are tracked automatically during gameplay
+- Stats reset when starting a new survival mode session
+
+## Technical Details
+
+This mod uses Harmony to patch various game methods including `EnemyHealthSystem.Explode`, `SurvivalMode.StartGame`, and `SpiderHealthSystem.ExplodeInDirection` to collect gameplay statistics.

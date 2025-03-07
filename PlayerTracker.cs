@@ -8,12 +8,8 @@ using Logger = Silk.Logger;
 
 namespace StatsMod
 {
-    /// <summary>
-    /// Tracks all active players in the game and manages player-specific stats
-    /// </summary>
     public class PlayerTracker
     {
-        // Singleton instance
         private static PlayerTracker _instance;
         public static PlayerTracker Instance
         {
@@ -28,16 +24,12 @@ namespace StatsMod
             }
         }
 
-        // Dictionary to track active players by their PlayerInput component
         private Dictionary<PlayerInput, PlayerData> activePlayers = new Dictionary<PlayerInput, PlayerData>();
 
-        // Dictionary to track players by their unique ID
         private Dictionary<ulong, PlayerInput> playerIds = new Dictionary<ulong, PlayerInput>();
 
-        // Counter for generating unique IDs for local players
         private ulong nextLocalPlayerId = 1000;
 
-        // Class to store player-specific data
         public class PlayerData
         {
             public ulong PlayerId { get; set; }
@@ -64,21 +56,17 @@ namespace StatsMod
         {
             if (player == null) return;
 
-            // Check if this player is already registered
             if (activePlayers.ContainsKey(player))
             {
                 Logger.LogInfo($"Player already registered: {player.playerIndex}");
                 return;
             }
 
-            // Generate a local ID
             ulong playerId = nextLocalPlayerId++;
 
-            // Create player data with a name based on player index
             string playerName = $"Player_{player.playerIndex}";
             PlayerData playerData = new PlayerData(playerId, playerName);
 
-            // Register player
             activePlayers[player] = playerData;
             playerIds[playerId] = player;
 
@@ -94,7 +82,6 @@ namespace StatsMod
             {
                 Logger.LogInfo($"Unregistering player ID: {playerData.PlayerId}, Deaths: {playerData.Deaths}");
 
-                // Remove from tracking dictionaries
                 playerIds.Remove(playerData.PlayerId);
                 activePlayers.Remove(player);
             }
@@ -106,23 +93,15 @@ namespace StatsMod
 
             try
             {
-                // Try to find the PlayerInput component attached to the spider
                 PlayerInput playerInput = null;
-                //TODO: check obsidian
-                // Use GetComponentInParent if rootObject is available
                 if (spiderHealth.rootObject != null)
                 {
                     playerInput = spiderHealth.rootObject.GetComponentInParent<PlayerInput>();
-                }
-                // Fallback to using the gameObject directly
-                else if (spiderHealth.gameObject != null)
-                {
-                    playerInput = spiderHealth.gameObject.GetComponentInParent<PlayerInput>();
+                    Logger.LogInfo($"Player input found: {playerInput.playerIndex}");
                 }
 
                 if (playerInput != null && activePlayers.TryGetValue(playerInput, out PlayerData data))
                 {
-                    // Found the player, record death
                     data.Deaths++;
                     Logger.LogInfo($"Recorded death for player ID: {data.PlayerId}, Total deaths: {data.Deaths}");
 
@@ -134,7 +113,6 @@ namespace StatsMod
             }
         }
 
-        // New method to get player stats directly as a list
         public List<(string playerName, int deaths, ulong playerId)> GetPlayerStatsList()
         {
             List<(string playerName, int deaths, ulong playerId)> result = new List<(string playerName, int deaths, ulong playerId)>();
@@ -148,33 +126,22 @@ namespace StatsMod
             return result;
         }
 
-        // New method to get active player count
         public int GetActivePlayerCount()
         {
             return activePlayers.Count;
         }
 
-        public string GetDetailedStatsReport()
+        public void ResetPlayerStats()
         {
-            string report = $"Player Stats Report (Active Players: {activePlayers.Count})\n";
-            report += "----------------------------------------\n";
-
             foreach (var entry in activePlayers)
             {
-                PlayerData player = entry.Value;
-                TimeSpan playTime = DateTime.Now - player.JoinTime;
-                report += $"{player.PlayerName} (ID: {player.PlayerId}):\n";
-                report += $"  Deaths: {player.Deaths}\n";
-                report += $"  Play time: {playTime.Hours:00}:{playTime.Minutes:00}:{playTime.Seconds:00}\n";
-                report += "----------------------------------------\n";
+                entry.Value.Deaths = 0;
             }
-
-            return report;
         }
+
 
     }
 
-    // Harmony patches to hook into PlayerInput lifecycle events
     [HarmonyPatch(typeof(PlayerInput), "OnEnable")]
     public class PlayerInputEnablePatch
     {
