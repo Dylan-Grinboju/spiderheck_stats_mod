@@ -1,8 +1,11 @@
 # Stats Mod for Spider Heck
 
 A simple statistics tracking mod for Spider Heck that monitors player performance and game events.
-![image](https://github.com/user-attachments/assets/627e3bb6-56ee-41e0-a0c5-0e169fed588a)
-![image](https://github.com/user-attachments/assets/dbd646cf-e1c5-4157-9efe-88bf059487c8)
+
+
+![image](https://github.com/user-attachments/assets/ac494d56-d92b-497b-8c3c-66dbb85a7e53)
+![image](https://github.com/user-attachments/assets/5095d370-6abd-4fe7-b5f2-ab6bd36b069c)
+
 
 ## Features
 
@@ -20,7 +23,7 @@ A simple statistics tracking mod for Spider Heck that monitors player performanc
 
 ## Usage
 
-- Press F1 to show/hide the statistics window
+- **Press F1** to show/hide the statistics window
 - All stats are tracked automatically during gameplay (no need to show the UI for them to be tracked)
 - Stats reset when starting a new survival mode session
 
