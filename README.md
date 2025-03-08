@@ -9,10 +9,10 @@ A simple statistics tracking mod for Spider Heck that monitors player performanc
 
 ## Features
 
+- **In-Game Display**: Press F1 to toggle stats display window
 - **Enemy Tracking**: Counts enemies killed during gameplay
 - **Player Statistics**: Monitors player deaths and active player counts
 - **Survival Mode Timer**: Tracks session duration in survival mode
-- **In-Game Display**: Press F1 to toggle stats display window
 - **Session History**: Records your last survival session time
 
 ## Installation
