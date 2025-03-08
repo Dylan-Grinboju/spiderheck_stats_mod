@@ -14,7 +14,7 @@ namespace StatsMod
 
         // UI properties
         private bool isDisplayVisible = false;
-        private Rect windowRect = new Rect(20, 20, 300, 400);
+        private Rect windowRect;
         private Vector2 scrollPosition;
 
         // Custom GUI Styles
@@ -38,6 +38,10 @@ namespace StatsMod
                 _instance = statsDisplayObj.AddComponent<DisplayStats>();
                 DontDestroyOnLoad(statsDisplayObj);
                 Instance = _instance;
+
+                // Set the window position to top right
+                Instance.windowRect = new Rect(Screen.width - 320, 20, 300, 350);
+
                 Logger.LogInfo("Stats Display initialized");
             }
         }
@@ -63,7 +67,7 @@ namespace StatsMod
 
             titleStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = 16,
+                fontSize = 17,
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.UpperCenter
             };
@@ -92,7 +96,6 @@ namespace StatsMod
 
         private void OnDestroy()
         {
-            // Clean up the texture when the component is destroyed
             if (solidColorTexture != null)
             {
                 Destroy(solidColorTexture);
@@ -151,9 +154,6 @@ namespace StatsMod
             {
                 if (PlayerTracker.Instance != null)
                 {
-                    GUILayout.Label($"Active Players: {PlayerTracker.Instance.GetActivePlayerCount()}", labelStyle);
-                    GUILayout.Space(5);
-
                     var playerStats = PlayerTracker.Instance.GetPlayerStatsList();
                     if (playerStats != null && playerStats.Count > 0)
                     {

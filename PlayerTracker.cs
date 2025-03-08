@@ -112,6 +112,31 @@ namespace StatsMod
             }
         }
 
+        public void UndoPlayerDeath(SpiderHealthSystem spiderHealth)
+        {
+            if (spiderHealth == null) return;
+
+            try
+            {
+                PlayerInput playerInput = null;
+                if (spiderHealth.rootObject != null)
+                {
+                    playerInput = spiderHealth.rootObject.GetComponentInParent<PlayerInput>();
+                    Logger.LogInfo($"Player input found: {playerInput.playerIndex}");
+                }
+
+                if (playerInput != null && activePlayers.TryGetValue(playerInput, out PlayerData data))
+                {
+                    data.Deaths--;
+                    Logger.LogInfo($"Undo Recorded death for player ID: {data.PlayerId}, Total deaths: {data.Deaths}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error recording player death: {ex.Message}");
+            }
+        }
+
         public List<(string playerName, int deaths, ulong playerId)> GetPlayerStatsList()
         {
             List<(string playerName, int deaths, ulong playerId)> result = new List<(string playerName, int deaths, ulong playerId)>();
@@ -170,7 +195,7 @@ namespace StatsMod
             }
         }
     }
-
+    //I found that this is the function that is called when a spider dies, even if in astral
     [HarmonyPatch(typeof(SpiderHealthSystem), "DisintegrateLegsAndDestroy")]
     public class SpiderHealthSystemDisintegrateLegsAndDestroyPatch
     {
@@ -179,6 +204,24 @@ namespace StatsMod
             try
             {
                 PlayerTracker.Instance.RecordPlayerDeath(__instance);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error in SpiderHealthSystem.DisintegrateLegsAndDestroy patch: {ex.Message}");
+            }
+        }
+    }
+
+    //If the Astral player passed the round, the spider gets revived, and then we uncount the death. 
+    //Didn't find a simpler approach to this
+    [HarmonyPatch(typeof(SpiderHealthSystem), "DisableDeathEffect")]
+    public class SpiderHealthSystemDisableDeathEffect
+    {
+        static void Prefix(SpiderHealthSystem __instance)
+        {
+            try
+            {
+                PlayerTracker.Instance.UndoPlayerDeath(__instance);
             }
             catch (Exception ex)
             {

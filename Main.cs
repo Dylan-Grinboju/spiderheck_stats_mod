@@ -55,4 +55,36 @@ namespace StatsMod
     //         __result = 1;
     //     }
     // }
+
+    // [HarmonyPatch(typeof(PlayerController), "Update")]
+    // public class F2KeyPressHandler
+    // {
+    //     private static bool wasF2Pressed = false;
+
+    //     [HarmonyPostfix]
+    //     public static void Postfix()
+    //     {
+    //         // Check if F2 key was just pressed this frame
+    //         bool isF2Pressed = Keyboard.current != null && Keyboard.current.f2Key.isPressed;
+
+    //         if (isF2Pressed && !wasF2Pressed)
+    //         {
+    //             Logger.LogInfo("F2 key pressed - Disabling death effect");
+
+    //             // Find all SpiderHealthSystem instances and call DisableDeathEffect
+    //             SpiderHealthSystem[] healthSystems = GameObject.FindObjectsOfType<SpiderHealthSystem>();
+
+    //             foreach (var healthSystem in healthSystems)
+    //             {
+    //                 if (healthSystem != null)
+    //                 {
+    //                     healthSystem.DisableDeathEffect();
+    //                     Logger.LogInfo("Death effect disabled for a spider");
+    //                 }
+    //             }
+    //         }
+
+    //         wasF2Pressed = isF2Pressed;
+    //     }
+    // }
 }
