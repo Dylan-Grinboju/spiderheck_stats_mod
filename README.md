@@ -18,8 +18,9 @@ A simple statistics tracking mod for Spider Heck that monitors player performanc
 ## Installation
 
 1. Install Silk Mod Loader: https://github.com/SilkModding/Silk
-2. Place the mod file in your Silk mods folder
-3. Launch the game
+2. Download the mod dll file from [here](https://github.com/Dylan-Grinboju/spiderheck_stats_mod/releases/tag/v0.1.0) or from the sidebar in the Github page, or build the project yourself from this repo. 
+3. Place the mod file in your Silk mods folder
+4. Launch the game
 
 ## Usage
 
