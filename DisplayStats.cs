@@ -21,6 +21,7 @@ namespace StatsMod
         private Rect originalWindowRect;
         private Rect enlargedWindowRect;
         private bool isAutoPulled = false;
+        private int AutoPulledFontScaleFactor = 2;
 
         // Custom GUI Styles
         private GUIStyle titleStyle;
@@ -43,12 +44,11 @@ namespace StatsMod
                 _instance = statsDisplayObj.AddComponent<DisplayStats>();
                 DontDestroyOnLoad(statsDisplayObj);
                 Instance = _instance;
-                AutoPulledFontScaleFactor = 2;
 
                 // Set the window position to top right - original size
                 Instance.originalWindowRect = new Rect(Screen.width - 320, 20, 300, 350);
                 // Set enlarged size
-                Instance.enlargedWindowRect = new Rect(Screen.width - (int)(320 * AutoPulledFontScaleFactor), 20, 300 * AutoPulledFontScaleFactor, 350 * AutoPulledFontScaleFactor);
+                Instance.enlargedWindowRect = new Rect(Screen.width - (int)(320 * Instance.AutoPulledFontScaleFactor), 20, 300 * Instance.AutoPulledFontScaleFactor, 350 * Instance.AutoPulledFontScaleFactor);
                 // Start with original size
                 Instance.windowRect = Instance.originalWindowRect;
 
