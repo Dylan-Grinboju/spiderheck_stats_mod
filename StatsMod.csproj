@@ -6,10 +6,10 @@
     <Title>Stats Mod</Title>
 
     <!-- Version -->
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
 
     <!-- Description -->
-    <Description>Stats Mod For Spiderheck</Description>
+    <Description>Statistics tracking mod for Spiderheck - compatible with Silk 0.6.1</Description>
 
     <!-- Author -->
     <Authors>Dylan</Authors>
@@ -17,6 +17,8 @@
     <!-- Repository (Optional) -->
     <RepositoryUrl>https://github.com/Dylan-Grinboju/spiderheck_stats_mod</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
+    <Product>Stats Mod</Product>
+    <AssemblyTitle>Spiderheck Stats Mod</AssemblyTitle>
 
     <!-- You wont need to change this stuff -->
 
@@ -28,7 +30,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="SilkLoader" Version="0.5.0" />
+    <PackageReference Include="SilkLoader" Version="0.6.1" />
   </ItemGroup>
 
   <!-- Assembly References -->
