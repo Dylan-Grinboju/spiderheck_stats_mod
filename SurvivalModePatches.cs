@@ -52,6 +52,10 @@ namespace StatsMod
                 {
                     DisplayStats.Instance.StopSurvivalTimer();
                     Logger.LogInfo($"Survival mode stopped, timer tracking completed");
+
+                    // Automatically pull up the HUD with enlarged size when game ends
+                    DisplayStats.Instance.AutoPullHUD();
+                    Logger.LogInfo("Stats HUD auto-pulled after survival mode ended");
                 }
 
             }

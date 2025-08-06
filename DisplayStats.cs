@@ -17,6 +17,12 @@ namespace StatsMod
         private Rect windowRect;
         private Vector2 scrollPosition;
 
+        // HUD size management
+        private Rect originalWindowRect;
+        private Rect enlargedWindowRect;
+        private bool isAutoPulled = false;
+        private int AutoPulledFontScaleFactor = 2;
+
         // Custom GUI Styles
         private GUIStyle titleStyle;
         private GUIStyle headerStyle;
@@ -39,8 +45,12 @@ namespace StatsMod
                 DontDestroyOnLoad(statsDisplayObj);
                 Instance = _instance;
 
-                // Set the window position to top right
-                Instance.windowRect = new Rect(Screen.width - 320, 20, 300, 350);
+                // Set the window position to top right - original size
+                Instance.originalWindowRect = new Rect(Screen.width - 320, 20, 300, 350);
+                // Set enlarged size
+                Instance.enlargedWindowRect = new Rect(Screen.width - (int)(320 * Instance.AutoPulledFontScaleFactor), 20, 300 * Instance.AutoPulledFontScaleFactor, 350 * Instance.AutoPulledFontScaleFactor);
+                // Start with original size
+                Instance.windowRect = Instance.originalWindowRect;
 
                 Logger.LogInfo("Stats Display initialized");
             }
@@ -51,9 +61,40 @@ namespace StatsMod
             Keyboard keyboard = Keyboard.current;
             if (keyboard != null && keyboard.f1Key.wasPressedThisFrame)
             {
-                isDisplayVisible = !isDisplayVisible;
-                Logger.LogInfo($"Stats display {(isDisplayVisible ? "shown" : "hidden")}");
+                ToggleDisplayManually();
             }
+        }
+
+        private void ToggleDisplayManually()
+        {
+            isDisplayVisible = !isDisplayVisible;
+
+            // When manually toggled, always use original size and clear auto-pull state
+            if (isDisplayVisible)
+            {
+                windowRect = originalWindowRect;
+                isAutoPulled = false;
+                stylesInitialized = false;
+            }
+
+            Logger.LogInfo($"Stats display {(isDisplayVisible ? "shown" : "hidden")} manually");
+        }
+
+        public void AutoPullHUD()
+        {
+            isDisplayVisible = true;
+            isAutoPulled = true;
+            windowRect = enlargedWindowRect;
+            stylesInitialized = false;
+            Logger.LogInfo("Stats HUD automatically pulled up with enlarged size");
+        }
+
+        public void HideHUD()
+        {
+            isDisplayVisible = false;
+            isAutoPulled = false;
+            stylesInitialized = false;
+            Logger.LogInfo("Stats HUD hidden and size reset");
         }
 
         private void InitializeStyles()
@@ -65,27 +106,29 @@ namespace StatsMod
             solidColorTexture.SetPixel(0, 0, new Color(0.3f, 0.3f, 0.3f, 1f)); // Dark gray solid color
             solidColorTexture.Apply();
 
+            // Scale font sizes based on whether HUD is auto-pulled (enlarged)
+            int fontScaler = isAutoPulled ? AutoPulledFontScaleFactor : 1;
             titleStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = 17,
+                fontSize = 17 * fontScaler,
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.UpperCenter
             };
 
             headerStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = 14,
+                fontSize = 14 * fontScaler,
                 fontStyle = FontStyle.Bold
             };
 
             labelStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = 12
+                fontSize = 12 * fontScaler
             };
 
             buttonStyle = new GUIStyle(GUI.skin.button)
             {
-                fontSize = 14,
+                fontSize = 14 * fontScaler,
                 normal = { background = solidColorTexture },
                 hover = { background = solidColorTexture },
                 active = { background = solidColorTexture }
@@ -114,6 +157,18 @@ namespace StatsMod
         {
             GUILayout.Label("Player Statistics", titleStyle);
             GUILayout.Space(5);
+
+            // Show auto-pull indicator if HUD was automatically pulled
+            if (isAutoPulled)
+            {
+                GUIStyle autoPullStyle = new GUIStyle(labelStyle)
+                {
+                    fontStyle = FontStyle.Italic,
+                    normal = { textColor = Color.yellow }
+                };
+                GUILayout.Label("(Auto-displayed - Survival Mode Ended)", autoPullStyle);
+                GUILayout.Space(5);
+            }
 
             // Survival Mode Stats Section
             GUILayout.Label("Survival Mode Stats", headerStyle);
@@ -184,10 +239,25 @@ namespace StatsMod
 
             GUILayout.EndScrollView();
 
+            // Button layout
+            GUILayout.BeginHorizontal();
+
             if (GUILayout.Button("Close", buttonStyle))
             {
-                isDisplayVisible = false;
+                HideHUD();
             }
+
+            // If auto-pulled, show a button to return to normal size
+            if (isAutoPulled && GUILayout.Button("Normal Size", buttonStyle))
+            {
+                windowRect = originalWindowRect;
+                isAutoPulled = false;
+                // Reset styles to use normal font sizes
+                stylesInitialized = false;
+                Logger.LogInfo("HUD resized to normal size");
+            }
+
+            GUILayout.EndHorizontal();
 
             GUI.DragWindow();
         }
