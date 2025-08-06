@@ -43,11 +43,12 @@ namespace StatsMod
                 _instance = statsDisplayObj.AddComponent<DisplayStats>();
                 DontDestroyOnLoad(statsDisplayObj);
                 Instance = _instance;
+                AutoPulledFontScaleFactor = 2;
 
                 // Set the window position to top right - original size
                 Instance.originalWindowRect = new Rect(Screen.width - 320, 20, 300, 350);
-                // Set enlarged size (twice as big)
-                Instance.enlargedWindowRect = new Rect(Screen.width - 620, 20, 600, 700);
+                // Set enlarged size
+                Instance.enlargedWindowRect = new Rect(Screen.width - (int)(320 * AutoPulledFontScaleFactor), 20, 300 * AutoPulledFontScaleFactor, 350 * AutoPulledFontScaleFactor);
                 // Start with original size
                 Instance.windowRect = Instance.originalWindowRect;
 
@@ -92,7 +93,6 @@ namespace StatsMod
         {
             isDisplayVisible = false;
             isAutoPulled = false;
-            windowRect = originalWindowRect;
             stylesInitialized = false;
             Logger.LogInfo("Stats HUD hidden and size reset");
         }
@@ -107,8 +107,7 @@ namespace StatsMod
             solidColorTexture.Apply();
 
             // Scale font sizes based on whether HUD is auto-pulled (enlarged)
-            int fontScaler = isAutoPulled ? 2 : 1;
-
+            int fontScaler = isAutoPulled ? AutoPulledFontScaleFactor : 1;
             titleStyle = new GUIStyle(GUI.skin.label)
             {
                 fontSize = 17 * fontScaler,
