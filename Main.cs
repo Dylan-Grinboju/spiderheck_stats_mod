@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace StatsMod
 {
     // SilkMod Attribute with with the format: name, authors, mod version, silk version, and identifier
-    [SilkMod("Stats Mod", new string[] { "Dylan" }, "0.1.0", "0.6.1", "Stats_Mod", 1)]
+    [SilkMod("Stats Mod", new string[] { "Dylan" }, "0.1.2", "0.6.1", "Stats_Mod", 1)]
     public class StatsMod : SilkMod
     {
         public static StatsMod Instance { get; private set; }
