@@ -215,8 +215,9 @@ namespace StatsMod
                         foreach (var stat in playerStats)
                         {
                             GUILayout.BeginHorizontal();
-                            GUILayout.Label($"{stat.playerName}", labelStyle, GUILayout.Width(180));
-                            GUILayout.Label($"Deaths: {stat.deaths}", labelStyle);
+                            GUILayout.Label($"{stat.playerName}", labelStyle, GUILayout.Width(120));
+                            GUILayout.Label($"Deaths: {stat.deaths}", labelStyle, GUILayout.Width(70));
+                            GUILayout.Label($"Kills: {stat.kills}", labelStyle);
                             GUILayout.EndHorizontal();
                             GUILayout.Space(2);
                         }
