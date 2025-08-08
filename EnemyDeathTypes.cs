@@ -14,22 +14,31 @@ namespace StatsMod
     {
         public static bool WillDieToDamage(GameObject enemy)
         {
+            // Try to get EnemyHealthSystem from the hit object itself, or from its parent hierarchy
             EnemyHealthSystem enemyHealthSystem = enemy.GetComponent<EnemyHealthSystem>();
             if (enemyHealthSystem == null)
             {
+                enemyHealthSystem = enemy.GetComponentInParent<EnemyHealthSystem>();
+            }
+
+            if (enemyHealthSystem == null)
+            {
+                Logger.LogError($"enemyHealthSystem is null");
                 return false;
             }
+
 
             // Same checks as in EnemyHealthSystem.Damage method
             // Access IsHost property using reflection since it's protected
             var isHostProperty = AccessTools.Property(typeof(Unity.Netcode.NetworkBehaviour), "IsHost");
             bool isHost = (bool)isHostProperty.GetValue(enemyHealthSystem);
 
+            // Logger.LogError($"isHost: {isHost}");
             if (!isHost)
             {
                 return false;
             }
-
+            // Logger.LogError($"ignoreDirectDamage: {enemyHealthSystem.ignoreDirectDamage}");
             if (enemyHealthSystem.ignoreDirectDamage)
             {
                 return false;
@@ -43,7 +52,8 @@ namespace StatsMod
             {
                 return false;
             }
-
+            // Logger.LogError($"shield exists: {enemyHealthSystem.shield}");
+            // Logger.LogError($"shield active: {enemyHealthSystem.shield.activeInHierarchy}");
             // If enemy has an active shield, it won't die - just lose the shield
             if (enemyHealthSystem.shield && enemyHealthSystem.shield.activeInHierarchy)
             {
@@ -105,7 +115,11 @@ namespace StatsMod
         {
             try
             {
-                if (!__instance.IsHost)
+                // Access IsHost property using reflection since it's protected
+                var isHostProperty = AccessTools.Property(typeof(Unity.Netcode.NetworkBehaviour), "IsHost");
+                bool isHost = (bool)isHostProperty.GetValue(__instance);
+
+                if (!isHost)
                 {
                     return;
                 }
@@ -158,7 +172,11 @@ namespace StatsMod
         {
             try
             {
-                if (!__instance.IsHost)
+                // Access IsHost property using reflection since it's protected
+                var isHostProperty = AccessTools.Property(typeof(Unity.Netcode.NetworkBehaviour), "IsHost");
+                bool isHost = (bool)isHostProperty.GetValue(__instance);
+
+                if (!isHost)
                 {
                     return;
                 }
@@ -215,7 +233,11 @@ namespace StatsMod
         {
             try
             {
-                if (!__instance.IsHost)
+                // Access IsHost property using reflection since it's protected
+                var isHostProperty = AccessTools.Property(typeof(Unity.Netcode.NetworkBehaviour), "IsHost");
+                bool isHost = (bool)isHostProperty.GetValue(__instance);
+
+                if (!isHost)
                 {
                     return;
                 }
@@ -294,47 +316,51 @@ namespace StatsMod
             }
         }
     }
+    //isn't related to a player
+    // // FriendlyWaspStinger
+    // [HarmonyPatch(typeof(FriendlyWaspStinger), "OnCollisionEnter2D")]
+    // class FriendlyWaspStingerDamagePatch
+    // {
+    //     static void Prefix(FriendlyWaspStinger __instance, Collision2D other)
+    //     {
+    //         try
+    //         {
+    //             // Access IsHost property using reflection since it's protected
+    //             var isHostProperty = AccessTools.Property(typeof(Unity.Netcode.NetworkBehaviour), "IsHost");
+    //             bool isHost = (bool)isHostProperty.GetValue(__instance);
 
-    // FriendlyWaspStinger
-    [HarmonyPatch(typeof(FriendlyWaspStinger), "OnCollisionEnter2D")]
-    class FriendlyWaspStingerDamagePatch
-    {
-        static void Prefix(FriendlyWaspStinger __instance, Collision2D other)
-        {
-            try
-            {
-                if (!__instance.IsHost)
-                {
-                    return;
-                }
+    //             if (!isHost)
+    //             {
+    //                 return;
+    //             }
 
-                if (other.transform.tag.Equals("Environment"))
-                {
-                    return;
-                }
+    //             if (other.transform.tag.Equals("Environment"))
+    //             {
+    //                 return;
+    //             }
 
-                IDamageable component = other.gameObject.GetComponent<IDamageable>();
-                if (component == null)
-                {
-                    return;
-                }
+    //             IDamageable component = other.gameObject.GetComponent<IDamageable>();
+    //             if (component == null)
+    //             {
+    //                 return;
+    //             }
 
-                // Check if this will call Damage (using IsDamageable method)
-                if (__instance.IsDamageable(other.gameObject) && EnemyDeathHelper.WillDieToDamage(other.gameObject))
-                {
-                    PlayerInput ownerPlayer = __instance.GetComponentInParent<PlayerInput>();
-                    if (ownerPlayer != null)
-                    {
-                        PlayerTracker.Instance.RecordPlayerKill(ownerPlayer);
-                    }
-                }
-            }
-            catch (System.Exception ex)
-            {
-                Logger.LogError($"Error tracking FriendlyWaspStinger damage: {ex.Message}");
-            }
-        }
-    }
+    //             // Check if this will call Damage (using IsDamageable method)
+    //             if (__instance.IsDamageable(other.gameObject) && EnemyDeathHelper.WillDieToDamage(other.gameObject))
+    //             {
+    //                 PlayerInput ownerPlayer = __instance.GetComponentInParent<PlayerInput>();
+    //                 if (ownerPlayer != null)
+    //                 {
+    //                     PlayerTracker.Instance.RecordPlayerKill(ownerPlayer);
+    //                 }
+    //             }
+    //         }
+    //         catch (System.Exception ex)
+    //         {
+    //             Logger.LogError($"Error tracking FriendlyWaspStinger damage: {ex.Message}");
+    //         }
+    //     }
+    // }
 
     // KhepriStaff
     [HarmonyPatch(typeof(KhepriStaff), "Zap")]
@@ -384,8 +410,11 @@ namespace StatsMod
         {
             try
             {
+                Logger.LogError($"LaserCannon1");
+
                 if (damageable != null && EnemyDeathHelper.WillDieToDamage(hit.collider.gameObject))
                 {
+                    Logger.LogError($"LaserCannon2");
                     PlayerInput ownerPlayer = __instance.GetComponentInParent<PlayerInput>();
                     if (ownerPlayer != null)
                     {
@@ -408,7 +437,11 @@ namespace StatsMod
         {
             try
             {
-                if (!__instance.IsHost)
+                // Access IsHost property using reflection since it's protected
+                var isHostProperty = AccessTools.Property(typeof(Unity.Netcode.NetworkBehaviour), "IsHost");
+                bool isHost = (bool)isHostProperty.GetValue(__instance);
+
+                if (!isHost)
                 {
                     return;
                 }
@@ -454,8 +487,12 @@ namespace StatsMod
         {
             try
             {
-                
-                if (!__instance.IsHost)
+
+                // Access IsHost property using reflection since it's protected
+                var isHostProperty = AccessTools.Property(typeof(Unity.Netcode.NetworkBehaviour), "IsHost");
+                bool isHost = (bool)isHostProperty.GetValue(__instance);
+
+                if (!isHost)
                 {
                     return;
                 }
@@ -463,10 +500,44 @@ namespace StatsMod
                 IDamageable component = hit.transform.GetComponent<IDamageable>();
                 if (component != null && EnemyDeathHelper.WillDieToDamage(hit.transform.gameObject))
                 {
-                    PlayerInput ownerPlayer = __instance.GetComponentInParent<PlayerInput>();
+                    // Find the player through the ignore list
+                    PlayerInput ownerPlayer = null;
+                    int playerCount = 0;
+
+                    foreach (GameObject ignoreObj in __instance.ignore)
+                    {
+                        if (ignoreObj != null)
+                        {
+                            // Check if this object has a SpiderHealthSystem (player)
+                            SpiderHealthSystem spiderHealth = ignoreObj.GetComponent<SpiderHealthSystem>();
+                            if (spiderHealth == null)
+                            {
+                                spiderHealth = ignoreObj.GetComponentInParent<SpiderHealthSystem>();
+                            }
+
+                            if (spiderHealth != null)
+                            {
+                                playerCount++;
+                                if (ownerPlayer == null)
+                                {
+                                    ownerPlayer = spiderHealth.GetComponentInParent<PlayerInput>();
+                                }
+                            }
+                        }
+                    }
+
+                    if (playerCount > 1)
+                    {
+                        Logger.LogError($"RailShot: Found {playerCount} players in ignore list, expected only 1");
+                    }
+
                     if (ownerPlayer != null)
                     {
                         PlayerTracker.Instance.RecordPlayerKill(ownerPlayer);
+                    }
+                    else
+                    {
+                        Logger.LogError($"RailShot: Could not find owner player in ignore list");
                     }
                 }
             }
@@ -525,6 +596,8 @@ namespace StatsMod
     {
         static void Prefix(SawDisc __instance, Collision2D other)
         {
+            Logger.LogError($"SawDisc1");
+
             try
             {
                 IDamageable component = other.gameObject.GetComponent<IDamageable>();
@@ -532,12 +605,14 @@ namespace StatsMod
                 {
                     return;
                 }
+                Logger.LogError($"SawDisc2");
 
                 // Check if this will call Damage (not Impact for weapons)
                 bool willCallDamage = !other.transform.CompareTag("Weapon");
 
                 if (willCallDamage && EnemyDeathHelper.WillDieToDamage(other.gameObject))
                 {
+                    Logger.LogError($"SawDisc3");
                     PlayerInput ownerPlayer = __instance.GetComponentInParent<PlayerInput>();
                     if (ownerPlayer != null)
                     {
@@ -615,124 +690,118 @@ namespace StatsMod
         }
     }
 
-    // Explosion
-    [HarmonyPatch(typeof(Explosion), "KnockBack")]
-    class ExplosionDamagePatch
-    {
-        static void Prefix(Explosion __instance)
-        {
-            try
-            {
-                var knockBackRadiusField = AccessTools.Field(typeof(Explosion), "knockBackRadius");
-                var layersField = AccessTools.Field(typeof(Explosion), "layers");
-                var deathRadiusField = AccessTools.Field(typeof(Explosion), "deathRadius");
-                var playerDeathRadiusField = AccessTools.Field(typeof(Explosion), "_playerDeathRadius");
-                var isBoomSpearField = AccessTools.Field(typeof(Explosion), "isBoomSpear");
-                var ignoreDisarmField = AccessTools.Field(typeof(Explosion), "ignoreDisarm");
-                var playerExplosionIDField = AccessTools.Field(typeof(Explosion), "playerExplosionID");
+    // // Explosion
+    // [HarmonyPatch(typeof(Explosion), "KnockBack")]
+    // class ExplosionDamagePatch
+    // {
+    //     static void Prefix(Explosion __instance)
+    //     {
+    //         Logger.LogError($"Explosion1");
 
-                if (knockBackRadiusField == null || layersField == null || deathRadiusField == null ||
-                    playerDeathRadiusField == null || isBoomSpearField == null || playerExplosionIDField == null)
-                {
-                    Logger.LogWarning("Could not access Explosion fields for damage tracking");
-                    return;
-                }
+    //         try
+    //         {
+    //             // Access IsHost property using reflection since it's protected
+    //             var isHostProperty = AccessTools.Property(typeof(Unity.Netcode.NetworkBehaviour), "IsHost");
+    //             bool isHost = (bool)isHostProperty.GetValue(__instance);
 
-                float knockBackRadius = (float)knockBackRadiusField.GetValue(__instance);
-                LayerMask layers = (LayerMask)layersField.GetValue(__instance);
-                float deathRadius = (float)deathRadiusField.GetValue(__instance);
-                float playerDeathRadius = (float)playerDeathRadiusField.GetValue(__instance);
-                bool isBoomSpear = (bool)isBoomSpearField.GetValue(__instance);
-                Weapon ignoreDisarm = (Weapon)ignoreDisarmField.GetValue(__instance);
-                var playerExplosionID = playerExplosionIDField.GetValue(__instance);
+    //             if (!isHost)
+    //             {
+    //                 return;
+    //             }
+    //             Logger.LogError($"Explosion2");
 
-                // Simulate the same overlap detection as the original method
-                Collider2D[] colliders = Physics2D.OverlapCircleAll(__instance.transform.position, knockBackRadius, layers);
+    //             var knockBackRadiusField = AccessTools.Field(typeof(Explosion), "knockBackRadius");
+    //             var layersField = AccessTools.Field(typeof(Explosion), "layers");
+    //             var deathRadiusField = AccessTools.Field(typeof(Explosion), "deathRadius");
+    //             var playerDeathRadiusField = AccessTools.Field(typeof(Explosion), "_playerDeathRadius");
+    //             var isBoomSpearField = AccessTools.Field(typeof(Explosion), "isBoomSpear");
+    //             var explosionOwnerIdField = AccessTools.Field(typeof(Explosion), "explosionOwnerId");
 
-                foreach (Collider2D collider2D in colliders)
-                {
-                    IDamageable componentInParent = collider2D.GetComponentInParent<IDamageable>();
-                    if (componentInParent == null)
-                    {
-                        continue;
-                    }
+    //             if (knockBackRadiusField == null || layersField == null || deathRadiusField == null ||
+    //                 playerDeathRadiusField == null || isBoomSpearField == null || explosionOwnerIdField == null)
+    //             {
+    //                 Logger.LogWarning("Could not access Explosion fields for damage tracking");
+    //                 return;
+    //             }
 
-                    bool flag = (componentInParent is IceBlock);
-                    Weapon weapon = null;
-                    if (isBoomSpear)
-                    {
-                        weapon = (componentInParent as Weapon);
-                    }
+    //             float knockBackRadius = (float)knockBackRadiusField.GetValue(__instance);
+    //             LayerMask layers = (LayerMask)layersField.GetValue(__instance);
+    //             float deathRadius = (float)deathRadiusField.GetValue(__instance);
+    //             float playerDeathRadius = (float)playerDeathRadiusField.GetValue(__instance);
+    //             bool isBoomSpear = (bool)isBoomSpearField.GetValue(__instance);
+    //             ulong explosionOwnerId = (ulong)explosionOwnerIdField.GetValue(__instance);
 
-                    Vector3 position = __instance.transform.position;
-                    Vector2 vector = collider2D.ClosestPoint(position);
-                    float num = Vector2.Distance(position, vector);
+    //             foreach (Collider2D collider2D in Physics2D.OverlapCircleAll(__instance.transform.position, knockBackRadius, layers))
+    //             {
+    //                 IDamageable componentInParent = collider2D.GetComponentInParent<IDamageable>();
+    //                 if (componentInParent == null)
+    //                 {
+    //                     continue;
+    //                 }
 
-                    // Check if this will result in Damage (not just Impact)
-                    bool willDealDamage = false;
+    //                 bool flag = (componentInParent is IceBlock);
+    //                 Vector3 position = __instance.transform.position;
+    //                 Vector2 vector = collider2D.ClosestPoint(position);
+    //                 float num = Vector2.Distance(position, vector);
 
-                    if (num <= deathRadius || flag)
-                    {
-                        // Within death radius or is ice block
-                        if (collider2D.CompareTag("PlayerRigidbody") && num <= playerDeathRadius)
-                        {
-                            // Player within player death radius - will deal damage unless it's boom spear self-damage
-                            if (isBoomSpear)
-                            {
-                                PlayerController playerController;
-                                if (collider2D.transform.parent.parent.TryGetComponent<PlayerController>(out playerController) &&
-                                    playerController != null && playerController.playerID.Value.Equals(playerExplosionID))
-                                {
-                                    // Self damage from boom spear - only Impact, no damage
-                                    willDealDamage = false;
-                                }
-                                else
-                                {
-                                    willDealDamage = true;
-                                }
-                            }
-                            else
-                            {
-                                willDealDamage = true;
-                            }
-                        }
-                        else if (!collider2D.CompareTag("PlayerRigidbody"))
-                        {
-                            // Non-player within death radius - will deal damage
-                            willDealDamage = true;
-                        }
-                    }
+    //                 // Check conditions that lead to Damage() call
+    //                 bool willCallDamage = false;
 
-                    // Check if the target will die from the damage and track the kill
-                    if (willDealDamage && EnemyDeathHelper.WillDieToDamage(collider2D.gameObject))
-                    {
-                        // Find the player who caused this explosion
-                        PlayerInput ownerPlayer = __instance.GetComponentInParent<PlayerInput>();
-                        if (ownerPlayer == null)
-                        {
-                            // Try to find player by explosion owner ID if available
-                            PlayerController[] players = UnityEngine.Object.FindObjectsOfType<PlayerController>();
-                            foreach (PlayerController player in players)
-                            {
-                                if (player.playerID.Value.Equals(playerExplosionID))
-                                {
-                                    ownerPlayer = player.GetComponent<PlayerInput>();
-                                    break;
-                                }
-                            }
-                        }
+    //                 if (num > deathRadius && !flag)
+    //                 {
+    //                     // Will call Impact, not Damage
+    //                     continue;
+    //                 }
+    //                 else if (collider2D.CompareTag("PlayerRigidbody") && num > playerDeathRadius)
+    //                 {
+    //                     // Will call Impact, not Damage
+    //                     continue;
+    //                 }
+    //                 else
+    //                 {
+    //                     // This is the else block where Damage() is called
+    //                     if (isBoomSpear)
+    //                     {
+    //                         // Check if this is the boom spear owner (will call Impact instead of Damage)
+    //                         PlayerController playerController;
+    //                         if (collider2D.CompareTag("PlayerRigidbody") &&
+    //                             collider2D.transform.parent.parent.TryGetComponent<PlayerController>(out playerController) &&
+    //                             playerController != null &&
+    //                             (ulong)playerController.playerID.Value == explosionOwnerId)
+    //                         {
+    //                             // Will call Impact, not Damage
+    //                             continue;
+    //                         }
+    //                     }
+    //                     Logger.LogError($"Explosion3");
 
-                        if (ownerPlayer != null)
-                        {
-                            PlayerTracker.Instance.RecordPlayerKill(ownerPlayer);
-                        }
-                    }
-                }
-            }
-            catch (System.Exception ex)
-            {
-                Logger.LogError($"Error tracking Explosion damage: {ex.Message}");
-            }
-        }
-    }
+    //                     // If we reach here, Damage() will be called
+    //                     willCallDamage = true;
+    //                 }
+
+    //                 if (willCallDamage && EnemyDeathHelper.WillDieToDamage(collider2D.gameObject))
+    //                 {
+    //                     Logger.LogError($"Explosion4");
+
+    //                     // Find the player who owns this explosion
+    //                     var allPlayers = UnityEngine.Object.FindObjectsOfType<PlayerInput>();
+    //                     foreach (var player in allPlayers)
+    //                     {
+    //                         var playerController = player.GetComponent<PlayerController>();
+    //                         if (playerController != null && (ulong)playerController.playerID.Value == explosionOwnerId)
+    //                         {
+    //                             PlayerTracker.Instance.RecordPlayerKill(player);
+    //                             break;
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //         catch (System.Exception ex)
+    //         {
+    //             Logger.LogError($"Error tracking Explosion damage: {ex.Message}");
+    //         }
+    //     }
+    // }
+
 }
