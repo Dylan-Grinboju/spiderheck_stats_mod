@@ -3,6 +3,9 @@ using Silk;
 using Logger = Silk.Logger;
 using System.Collections.Generic;
 using HarmonyLib;
+using System;
+using Interfaces;
+using UnityEngine.InputSystem;
 
 
 namespace StatsMod
@@ -52,21 +55,4 @@ namespace StatsMod
 
     }
 
-
-    [HarmonyPatch(typeof(EnemyHealthSystem), "Explode")]
-    class EnemyDeathCountPatch
-    {
-        static void Postfix(EnemyHealthSystem __instance)
-        {
-            try
-            {
-                EnemiesTracker.Instance.IncrementEnemiesKilled();
-                Logger.LogInfo("Enemy killed via Explode method.");
-            }
-            catch (System.Exception ex)
-            {
-                Logger.LogError($"Error recording enemy kill: {ex.Message}");
-            }
-        }
-    }
 }
