@@ -18,8 +18,13 @@ namespace StatsMod
         private static float cleanupInterval = 10f; // Clean up every 10 seconds
         private static readonly object lockObject = new object(); // Lock for thread safety
 
+        private static Dictionary<int, int> rollerBrainHealthTracker = new Dictionary<int, int>();
+        private static readonly object rollerBrainLock = new object(); // Lock for RollerStrut health tracking
+
         public static bool WillDieToDamage(GameObject enemy)
         {
+
+
             // Try to get EnemyHealthSystem from the hit object itself, or from its parent hierarchy
             EnemyHealthSystem enemyHealthSystem = enemy.GetComponent<EnemyHealthSystem>();
             if (enemyHealthSystem == null)
@@ -61,16 +66,38 @@ namespace StatsMod
             {
                 return false;
             }
-            Logger.LogInfo($"Enemy {enemy.name} will die to damage");
 
-            return true;
+            // Check if this is a RollerStrut - check both the object and its parents
+            RollerBrain rollerBrain = enemy.GetComponent<RollerBrain>();
+            if (rollerBrain == null)
+            {
+                rollerBrain = enemy.GetComponentInParent<RollerBrain>();
+            }
+            if (rollerBrain == null) return true; // Not a RollerBrain, so it will die
+            return WillRollerStrutKillCauseRollerBrainDeath(rollerBrain);
+
+
         }
 
         public static bool IsFirstTimeEnemyDies(GameObject enemy, PlayerInput player)
         {
             if (enemy == null || player == null) return false;
 
-            int enemyId = enemy.GetInstanceID();
+            // Find the EnemyHealthSystem component in the enemy or its parents
+            EnemyHealthSystem enemyHealthSystem = enemy.GetComponent<EnemyHealthSystem>();
+            if (enemyHealthSystem == null)
+            {
+                enemyHealthSystem = enemy.GetComponentInParent<EnemyHealthSystem>();
+            }
+
+            if (enemyHealthSystem == null)
+            {
+                Logger.LogError($"Could not find EnemyHealthSystem for enemy {enemy.name}");
+                return false;
+            }
+
+            // Use the EnemyHealthSystem's GameObject ID instead of the individual part's ID
+            int enemyId = enemyHealthSystem.gameObject.GetInstanceID();
             float currentTime = Time.time;
 
             lock (lockObject)
@@ -96,24 +123,71 @@ namespace StatsMod
             }
         }
 
-        private static readonly string[] namesOfEnemiesThatCanDie = new string[]
+        public static bool WillRollerStrutKillCauseRollerBrainDeath(RollerBrain rollerBrain)
         {
-            "Wasp(Clone)",
-            "Wasp Shielded(Clone)",
-            "PowerWasp Variant(Clone)",
-            // "PowerWasp Shielded Variant(Clone)" ??
-            "Strut1",
-            //power strut?
-            "Whisp(Clone)",
-            "PowerWhisp Variant(Clone)",
-            "MeleeWhisp(Clone)",
-            "PowerMeleeWhisp Variant(Clone)",
-            "Head", //butterfly
-            "Hornet_Shaman Variant(Clone)",
-            //shielded?
-            "Hornet Variant(Clone)", //darth maul
-            //shielded?
-        };
+            // Use the rollerBrain's GameObject ID for tracking
+            int rollerBrainId = rollerBrain.gameObject.GetInstanceID();
+
+            lock (rollerBrainLock)
+            {
+                // Check if we've seen this brain before
+                if (!rollerBrainHealthTracker.ContainsKey(rollerBrainId))
+                {
+                    // First time seeing this brain - get its actual health from the game
+                    int currentAliveStrutCount = 0;
+                    if (rollerBrain.struts != null)
+                    {
+                        for (int i = 0; i < rollerBrain.struts.transform.childCount; i++)
+                        {
+                            if (rollerBrain.struts.transform.GetChild(i).gameObject.activeSelf)
+                            {
+                                currentAliveStrutCount++;
+                            }
+                        }
+                    }
+                    // Initialize with current alive strut count
+                    rollerBrainHealthTracker[rollerBrainId] = currentAliveStrutCount - 1;
+                    Logger.LogInfo($"First time seeing RollerBrain {rollerBrainId}, initialized with health: {currentAliveStrutCount}");
+                }
+                else
+                {
+                    // We've seen this strut before - decrement its tracked health
+                    rollerBrainHealthTracker[rollerBrainId]--;
+                    Logger.LogInfo($"Decremented brain {rollerBrainId} health to: {rollerBrainHealthTracker[rollerBrainId]}");
+                }
+
+                // Check if this will cause the main enemy to die
+                bool willCauseMainDeath = rollerBrainHealthTracker[rollerBrainId] < rollerBrain.minStrutCount;
+
+                // Clean up the tracker if the main enemy will die
+                if (willCauseMainDeath)
+                {
+                    rollerBrainHealthTracker.Remove(rollerBrainId);
+                    Logger.LogInfo($"Brain {rollerBrainId} died");
+                }
+
+                return willCauseMainDeath;
+            }
+        }
+
+        // private static readonly string[] namesOfEnemiesThatCanDie = new string[]
+        // {
+        //     "Wasp(Clone)",
+        //     "Wasp Shielded(Clone)",
+        //     "PowerWasp Variant(Clone)",
+        //     // "PowerWasp Shielded Variant(Clone)" ??
+        //     "Strut1",
+        //     //power strut?
+        //     "Whisp(Clone)",
+        //     "PowerWhisp Variant(Clone)",
+        //     "MeleeWhisp(Clone)",
+        //     "PowerMeleeWhisp Variant(Clone)",
+        //     "Head", //butterfly
+        //     "Hornet_Shaman Variant(Clone)",
+        //     //shielded?
+        //     "Hornet Variant(Clone)", //darth maul
+        //     //shielded?
+        // };
         // public static bool WillDieToDamage(GameObject enemy)
         // {
         //     if (enemy == null)
@@ -156,17 +230,16 @@ namespace StatsMod
                     return;
                 }
 
-                Logger.LogInfo($"Shot with shotgun: {other.name}");
                 IDamageable component = other.GetComponent<IDamageable>();
                 if (component != null && EnemyDeathHelper.WillDieToDamage(other))
                 {
-                    Logger.LogInfo($"will die to shotgun: {other.name}");
+                    // Logger.LogInfo($"will die to shotgun: {other.name}");
                     PlayerInput playerInput = __instance.ignoreWeapon.owner.healthSystem.GetComponentInParent<PlayerInput>();
                     if (playerInput != null)
                     {
                         if (EnemyDeathHelper.IsFirstTimeEnemyDies(other, playerInput))
                         {
-                            Logger.LogInfo($"Recording kill with shotgun for {other.name}");
+                            // Logger.LogInfo($"Recording kill with shotgun for {other.name}");
                             PlayerTracker.Instance.RecordPlayerKill(playerInput);
                         }
                         else
@@ -487,51 +560,6 @@ namespace StatsMod
             }
         }
     }
-    //isn't related to a player
-    // // FriendlyWaspStinger
-    // [HarmonyPatch(typeof(FriendlyWaspStinger), "OnCollisionEnter2D")]
-    // class FriendlyWaspStingerDamagePatch
-    // {
-    //     static void Prefix(FriendlyWaspStinger __instance, Collision2D other)
-    //     {
-    //         try
-    //         {
-    //             // Access IsHost property using reflection since it's protected
-    //             var isHostProperty = AccessTools.Property(typeof(Unity.Netcode.NetworkBehaviour), "IsHost");
-    //             bool isHost = (bool)isHostProperty.GetValue(__instance);
-
-    //             if (!isHost)
-    //             {
-    //                 return;
-    //             }
-
-    //             if (other.transform.tag.Equals("Environment"))
-    //             {
-    //                 return;
-    //             }
-
-    //             IDamageable component = other.gameObject.GetComponent<IDamageable>();
-    //             if (component == null)
-    //             {
-    //                 return;
-    //             }
-
-    //             // Check if this will call Damage (using IsDamageable method)
-    //             if (__instance.IsDamageable(other.gameObject) && EnemyDeathHelper.WillDieToDamage(other.gameObject))
-    //             {
-    //                 PlayerInput ownerPlayer = __instance.GetComponentInParent<PlayerInput>();
-    //                 if (ownerPlayer != null)
-    //                 {
-    //                     PlayerTracker.Instance.RecordPlayerKill(ownerPlayer);
-    //                 }
-    //             }
-    //         }
-    //         catch (System.Exception ex)
-    //         {
-    //             Logger.LogError($"Error tracking FriendlyWaspStinger damage: {ex.Message}");
-    //         }
-    //     }
-    // }
 
     // KhepriStaff
     //not the energy ball itself, maybe the staff has damage when using it as melee practically
@@ -660,50 +688,6 @@ namespace StatsMod
         }
     }
 
-
-
-    //no idea what is this type of damage
-    // // RollerStrut
-    // [HarmonyPatch(typeof(RollerStrut), "OnCollisionEnter2D")]
-    // class RollerStrutDamagePatch
-    // {
-    //     static void Prefix(RollerStrut __instance, Collision2D other)
-    //     {
-    //         try
-    //         {
-    //             if (!__instance.IsHost)
-    //             {
-    //                 return;
-    //             }
-
-    //             if (other.transform.tag.Equals("Environment"))
-    //             {
-    //                 return;
-    //             }
-
-    //             IDamageable component = other.gameObject.GetComponent<IDamageable>();
-    //             if (component == null)
-    //             {
-    //                 return;
-    //             }
-
-    //             // Check if this will call Damage (only for PlayerRigidbody tag)
-    //             if (other.transform.tag.Equals("PlayerRigidbody") && EnemyDeathHelper.WillDieToDamage(other.gameObject))
-    //             {
-    //                 PlayerInput ownerPlayer = __instance.GetComponentInParent<PlayerInput>();
-    //                 if (ownerPlayer != null)
-    //                 {
-    //                     PlayerTracker.Instance.RecordPlayerKill(ownerPlayer);
-    //                 }
-    //             }
-    //         }
-    //         catch (System.Exception ex)
-    //         {
-    //             Logger.LogError($"Error tracking RollerStrut damage: {ex.Message}");
-    //         }
-    //     }
-    // }
-
     // SawDisc
     [HarmonyPatch(typeof(SawDisc), "TryDamage")]
     class SawDiscDamagePatch
@@ -807,118 +791,118 @@ namespace StatsMod
         }
     }
 
-    // // Explosion
-    // [HarmonyPatch(typeof(Explosion), "KnockBack")]
-    // class ExplosionDamagePatch
-    // {
-    //     static void Prefix(Explosion __instance)
-    //     {
-    //         Logger.LogError($"Explosion1");
+    // Explosion
+    [HarmonyPatch(typeof(Explosion), "KnockBack")]
+    class ExplosionDamagePatch
+    {
+        static void Prefix(Explosion __instance)
+        {
+            Logger.LogError($"Explosion1");
 
-    //         try
-    //         {
-    //             // Access IsHost property using reflection since it's protected
-    //             var isHostProperty = AccessTools.Property(typeof(Unity.Netcode.NetworkBehaviour), "IsHost");
-    //             bool isHost = (bool)isHostProperty.GetValue(__instance);
+            try
+            {
+                // Access IsHost property using reflection since it's protected
+                var isHostProperty = AccessTools.Property(typeof(Unity.Netcode.NetworkBehaviour), "IsHost");
+                bool isHost = (bool)isHostProperty.GetValue(__instance);
 
-    //             if (!isHost)
-    //             {
-    //                 return;
-    //             }
-    //             Logger.LogError($"Explosion2");
+                if (!isHost)
+                {
+                    return;
+                }
+                Logger.LogError($"Explosion2");
 
-    //             var knockBackRadiusField = AccessTools.Field(typeof(Explosion), "knockBackRadius");
-    //             var layersField = AccessTools.Field(typeof(Explosion), "layers");
-    //             var deathRadiusField = AccessTools.Field(typeof(Explosion), "deathRadius");
-    //             var playerDeathRadiusField = AccessTools.Field(typeof(Explosion), "_playerDeathRadius");
-    //             var isBoomSpearField = AccessTools.Field(typeof(Explosion), "isBoomSpear");
-    //             var explosionOwnerIdField = AccessTools.Field(typeof(Explosion), "explosionOwnerId");
+                var knockBackRadiusField = AccessTools.Field(typeof(Explosion), "knockBackRadius");
+                var layersField = AccessTools.Field(typeof(Explosion), "layers");
+                var deathRadiusField = AccessTools.Field(typeof(Explosion), "deathRadius");
+                var playerDeathRadiusField = AccessTools.Field(typeof(Explosion), "_playerDeathRadius");
+                var isBoomSpearField = AccessTools.Field(typeof(Explosion), "isBoomSpear");
+                var explosionOwnerIdField = AccessTools.Field(typeof(Explosion), "explosionOwnerId");
 
-    //             if (knockBackRadiusField == null || layersField == null || deathRadiusField == null ||
-    //                 playerDeathRadiusField == null || isBoomSpearField == null || explosionOwnerIdField == null)
-    //             {
-    //                 Logger.LogWarning("Could not access Explosion fields for damage tracking");
-    //                 return;
-    //             }
+                if (knockBackRadiusField == null || layersField == null || deathRadiusField == null ||
+                    playerDeathRadiusField == null || isBoomSpearField == null || explosionOwnerIdField == null)
+                {
+                    Logger.LogWarning("Could not access Explosion fields for damage tracking");
+                    return;
+                }
 
-    //             float knockBackRadius = (float)knockBackRadiusField.GetValue(__instance);
-    //             LayerMask layers = (LayerMask)layersField.GetValue(__instance);
-    //             float deathRadius = (float)deathRadiusField.GetValue(__instance);
-    //             float playerDeathRadius = (float)playerDeathRadiusField.GetValue(__instance);
-    //             bool isBoomSpear = (bool)isBoomSpearField.GetValue(__instance);
-    //             ulong explosionOwnerId = (ulong)explosionOwnerIdField.GetValue(__instance);
+                float knockBackRadius = (float)knockBackRadiusField.GetValue(__instance);
+                LayerMask layers = (LayerMask)layersField.GetValue(__instance);
+                float deathRadius = (float)deathRadiusField.GetValue(__instance);
+                float playerDeathRadius = (float)playerDeathRadiusField.GetValue(__instance);
+                bool isBoomSpear = (bool)isBoomSpearField.GetValue(__instance);
+                ulong explosionOwnerId = (ulong)explosionOwnerIdField.GetValue(__instance);
 
-    //             foreach (Collider2D collider2D in Physics2D.OverlapCircleAll(__instance.transform.position, knockBackRadius, layers))
-    //             {
-    //                 IDamageable componentInParent = collider2D.GetComponentInParent<IDamageable>();
-    //                 if (componentInParent == null)
-    //                 {
-    //                     continue;
-    //                 }
+                foreach (Collider2D collider2D in Physics2D.OverlapCircleAll(__instance.transform.position, knockBackRadius, layers))
+                {
+                    IDamageable componentInParent = collider2D.GetComponentInParent<IDamageable>();
+                    if (componentInParent == null)
+                    {
+                        continue;
+                    }
 
-    //                 bool flag = (componentInParent is IceBlock);
-    //                 Vector3 position = __instance.transform.position;
-    //                 Vector2 vector = collider2D.ClosestPoint(position);
-    //                 float num = Vector2.Distance(position, vector);
+                    bool flag = (componentInParent is IceBlock);
+                    Vector3 position = __instance.transform.position;
+                    Vector2 vector = collider2D.ClosestPoint(position);
+                    float num = Vector2.Distance(position, vector);
 
-    //                 // Check conditions that lead to Damage() call
-    //                 bool willCallDamage = false;
+                    // Check conditions that lead to Damage() call
+                    bool willCallDamage = false;
 
-    //                 if (num > deathRadius && !flag)
-    //                 {
-    //                     // Will call Impact, not Damage
-    //                     continue;
-    //                 }
-    //                 else if (collider2D.CompareTag("PlayerRigidbody") && num > playerDeathRadius)
-    //                 {
-    //                     // Will call Impact, not Damage
-    //                     continue;
-    //                 }
-    //                 else
-    //                 {
-    //                     // This is the else block where Damage() is called
-    //                     if (isBoomSpear)
-    //                     {
-    //                         // Check if this is the boom spear owner (will call Impact instead of Damage)
-    //                         PlayerController playerController;
-    //                         if (collider2D.CompareTag("PlayerRigidbody") &&
-    //                             collider2D.transform.parent.parent.TryGetComponent<PlayerController>(out playerController) &&
-    //                             playerController != null &&
-    //                             (ulong)playerController.playerID.Value == explosionOwnerId)
-    //                         {
-    //                             // Will call Impact, not Damage
-    //                             continue;
-    //                         }
-    //                     }
-    //                     Logger.LogError($"Explosion3");
+                    if (num > deathRadius && !flag)
+                    {
+                        // Will call Impact, not Damage
+                        continue;
+                    }
+                    else if (collider2D.CompareTag("PlayerRigidbody") && num > playerDeathRadius)
+                    {
+                        // Will call Impact, not Damage
+                        continue;
+                    }
+                    else
+                    {
+                        // This is the else block where Damage() is called
+                        if (isBoomSpear)
+                        {
+                            // Check if this is the boom spear owner (will call Impact instead of Damage)
+                            PlayerController playerController;
+                            if (collider2D.CompareTag("PlayerRigidbody") &&
+                                collider2D.transform.parent.parent.TryGetComponent<PlayerController>(out playerController) &&
+                                playerController != null &&
+                                (ulong)playerController.playerID.Value == explosionOwnerId)
+                            {
+                                // Will call Impact, not Damage
+                                continue;
+                            }
+                        }
+                        Logger.LogError($"Explosion3");
 
-    //                     // If we reach here, Damage() will be called
-    //                     willCallDamage = true;
-    //                 }
+                        // If we reach here, Damage() will be called
+                        willCallDamage = true;
+                    }
 
-    //                 if (willCallDamage && EnemyDeathHelper.WillDieToDamage(collider2D.gameObject))
-    //                 {
-    //                     Logger.LogError($"Explosion4");
+                    if (willCallDamage && EnemyDeathHelper.WillDieToDamage(collider2D.gameObject))
+                    {
+                        Logger.LogError($"Explosion4");
 
-    //                     // Find the player who owns this explosion
-    //                     var allPlayers = UnityEngine.Object.FindObjectsOfType<PlayerInput>();
-    //                     foreach (var player in allPlayers)
-    //                     {
-    //                         var playerController = player.GetComponent<PlayerController>();
-    //                         if (playerController != null && (ulong)playerController.playerID.Value == explosionOwnerId)
-    //                         {
-    //                             PlayerTracker.Instance.RecordPlayerKill(player);
-    //                             break;
-    //                         }
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //         catch (System.Exception ex)
-    //         {
-    //             Logger.LogError($"Error tracking Explosion damage: {ex.Message}");
-    //         }
-    //     }
-    // }
+                        // Find the player who owns this explosion
+                        var allPlayers = UnityEngine.Object.FindObjectsOfType<PlayerInput>();
+                        foreach (var player in allPlayers)
+                        {
+                            var playerController = player.GetComponent<PlayerController>();
+                            if (playerController != null && (ulong)playerController.playerID.Value == explosionOwnerId)
+                            {
+                                PlayerTracker.Instance.RecordPlayerKill(player);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Logger.LogError($"Error tracking Explosion damage: {ex.Message}");
+            }
+        }
+    }
 
 }
