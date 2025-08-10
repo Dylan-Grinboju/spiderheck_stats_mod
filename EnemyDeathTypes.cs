@@ -21,88 +21,90 @@ namespace StatsMod
         private static Dictionary<int, int> rollerBrainHealthTracker = new Dictionary<int, int>();
         private static readonly object rollerBrainLock = new object(); // Lock for RollerStrut health tracking
 
-        public static bool WillDieToDamage(GameObject enemy)
-        {
+        // public static bool WillDieToDamage(GameObject enemy)
+        // {
+        //     Logger.LogInfo($"Checking if enemy will die to damage: {enemy.name}");
+        //     // Try to get EnemyHealthSystem from the hit object itself, or from its parent hierarchy
+        //     EnemyHealthSystem enemyHealthSystem = enemy.GetComponent<EnemyHealthSystem>();
+        //     if (enemyHealthSystem == null)
+        //     {
+        //         enemyHealthSystem = enemy.GetComponentInParent<EnemyHealthSystem>();
+        //     }
+        //     Logger.LogInfo($"enemyHealthSystem: {enemyHealthSystem}");
+        //     enemyHealthSystem = enemy.GetComponentInParent<EnemyHealthSystem>();
+        //     Logger.LogInfo($"enemyHealthSystem2: {enemyHealthSystem}");
+
+        //     if (enemyHealthSystem == null)
+        //     {
+        //         Logger.LogError($"enemyHealthSystem is null");
+        //         return false;
+        //     }
+
+        //     // Same checks as in EnemyHealthSystem.Damage method
+        //     // Access IsHost property using reflection since it's protected
+        //     var isHostProperty = AccessTools.Property(typeof(Unity.Netcode.NetworkBehaviour), "IsHost");
+        //     bool isHost = (bool)isHostProperty.GetValue(enemyHealthSystem);
+
+        //     if (!isHost)
+        //     {
+        //         return false;
+        //     }
+        //     if (enemyHealthSystem.ignoreDirectDamage)
+        //     {
+        //         return false;
+        //     }
+
+        //     // Access private _immuneTime field using reflection
+        //     var immuneTimeField = AccessTools.Field(typeof(EnemyHealthSystem), "_immuneTime");
+        //     float immuneTime = (float)immuneTimeField.GetValue(enemyHealthSystem);
+
+        //     if (Time.time < immuneTime)
+        //     {
+        //         return false;
+        //     }
+
+        //     // If enemy has an active shield, it won't die - just lose the shield
+        //     if (enemyHealthSystem.shield && enemyHealthSystem.shield.activeInHierarchy)
+        //     {
+        //         return false;
+        //     }
+
+        //     // Check if this is a RollerStrut - check both the object and its parents
+        //     RollerBrain rollerBrain = enemy.GetComponent<RollerBrain>();
+        //     if (rollerBrain == null)
+        //     {
+        //         rollerBrain = enemy.GetComponentInParent<RollerBrain>();
+        //     }
+        //     if (rollerBrain == null) return true; // Not a RollerBrain, so it will die
+        //     return WillRollerStrutKillCauseRollerBrainDeath(rollerBrain);
 
 
-            // Try to get EnemyHealthSystem from the hit object itself, or from its parent hierarchy
-            EnemyHealthSystem enemyHealthSystem = enemy.GetComponent<EnemyHealthSystem>();
-            if (enemyHealthSystem == null)
-            {
-                enemyHealthSystem = enemy.GetComponentInParent<EnemyHealthSystem>();
-            }
-
-            if (enemyHealthSystem == null)
-            {
-                Logger.LogError($"enemyHealthSystem is null");
-                return false;
-            }
-
-            // Same checks as in EnemyHealthSystem.Damage method
-            // Access IsHost property using reflection since it's protected
-            var isHostProperty = AccessTools.Property(typeof(Unity.Netcode.NetworkBehaviour), "IsHost");
-            bool isHost = (bool)isHostProperty.GetValue(enemyHealthSystem);
-
-            if (!isHost)
-            {
-                return false;
-            }
-            if (enemyHealthSystem.ignoreDirectDamage)
-            {
-                return false;
-            }
-
-            // Access private _immuneTime field using reflection
-            var immuneTimeField = AccessTools.Field(typeof(EnemyHealthSystem), "_immuneTime");
-            float immuneTime = (float)immuneTimeField.GetValue(enemyHealthSystem);
-
-            if (Time.time < immuneTime)
-            {
-                return false;
-            }
-
-            // If enemy has an active shield, it won't die - just lose the shield
-            if (enemyHealthSystem.shield && enemyHealthSystem.shield.activeInHierarchy)
-            {
-                return false;
-            }
-
-            // Check if this is a RollerStrut - check both the object and its parents
-            RollerBrain rollerBrain = enemy.GetComponent<RollerBrain>();
-            if (rollerBrain == null)
-            {
-                rollerBrain = enemy.GetComponentInParent<RollerBrain>();
-            }
-            if (rollerBrain == null) return true; // Not a RollerBrain, so it will die
-            return WillRollerStrutKillCauseRollerBrainDeath(rollerBrain);
-
-
-        }
+        // }
 
         public static bool IsFirstTimeEnemyDies(GameObject enemy, PlayerInput player)
         {
             if (enemy == null || player == null) return false;
 
-            // Find the EnemyHealthSystem component in the enemy or its parents
-            EnemyHealthSystem enemyHealthSystem = enemy.GetComponent<EnemyHealthSystem>();
-            if (enemyHealthSystem == null)
+            // Find the EnemyBrain component in the enemy or its parents
+            EnemyBrain enemyBrain = enemy.GetComponent<EnemyBrain>();
+            if (enemyBrain == null)
             {
-                enemyHealthSystem = enemy.GetComponentInParent<EnemyHealthSystem>();
+                enemyBrain = enemy.GetComponentInParent<EnemyBrain>();
             }
 
-            if (enemyHealthSystem == null)
+            if (enemyBrain == null)
             {
                 Logger.LogError($"Could not find EnemyHealthSystem for enemy {enemy.name}");
                 return false;
             }
 
-            // Use the EnemyHealthSystem's GameObject ID instead of the individual part's ID
-            int enemyId = enemyHealthSystem.gameObject.GetInstanceID();
+            // Use the EnemyBrain's GameObject ID instead of the individual part's ID
+            int enemyId = enemyBrain.gameObject.GetInstanceID();
             float currentTime = Time.time;
 
             lock (lockObject)
             {
-                Logger.LogInfo($"entering lock for enemy {enemyId} at time {Time.time}");
+                // Logger.LogInfo($"entering lock for enemy {enemyId} at time {Time.time}");
                 // Clean up the set periodically
                 if (currentTime - lastCleanupTime > cleanupInterval)
                 {
@@ -118,7 +120,7 @@ namespace StatsMod
 
                 // Record this kill
                 recentlyKilledEnemies.Add(enemyId);
-                Logger.LogInfo($"Recording kill for enemy {enemyId} at time {Time.time}");
+                Logger.LogInfo($"Recording kill for enemy {enemyId}, name:{enemy.name} at time {Time.time}");
                 return true;
             }
         }
@@ -170,34 +172,42 @@ namespace StatsMod
             }
         }
 
-        // private static readonly string[] namesOfEnemiesThatCanDie = new string[]
-        // {
-        //     "Wasp(Clone)",
-        //     "Wasp Shielded(Clone)",
-        //     "PowerWasp Variant(Clone)",
-        //     // "PowerWasp Shielded Variant(Clone)" ??
-        //     "Strut1",
-        //     //power strut?
-        //     "Whisp(Clone)",
-        //     "PowerWhisp Variant(Clone)",
-        //     "MeleeWhisp(Clone)",
-        //     "PowerMeleeWhisp Variant(Clone)",
-        //     "Head", //butterfly
-        //     "Hornet_Shaman Variant(Clone)",
-        //     //shielded?
-        //     "Hornet Variant(Clone)", //darth maul
-        //     //shielded?
-        // };
-        // public static bool WillDieToDamage(GameObject enemy)
-        // {
-        //     if (enemy == null)
-        //     {
-        //         Logger.LogError("Enemy is null, cannot check if it will die to damage.");
-        //         return false;
-        //     }
-
-        //     return namesOfEnemiesThatCanDie.Contains(enemy.name);
-        // }
+        private static readonly string[] namesOfEnemiesThatCanDie = new string[]
+        {
+            "Wasp(Clone)",
+            "Wasp Shielded(Clone)",
+            "PowerWasp Variant(Clone)",
+            // "PowerWasp Shielded Variant(Clone)" ??
+            "Strut1",
+            "Strut2",
+            "Strut3",
+            //power strut?
+            "Whisp(Clone)",
+            "PowerWhisp Variant(Clone)",
+            "MeleeWhisp(Clone)",
+            "PowerMeleeWhisp Variant(Clone)",
+            "Head", //butterfly
+            // "Shielded Head", ??
+            "Hornet_Shaman Variant(Clone)",
+            //shielded?
+            "Hornet Variant(Clone)", //darth maul
+            //shielded?
+        };
+        public static bool WillDieToDamage(GameObject enemy)
+        {
+            if (enemy == null)
+            {
+                Logger.LogError("Enemy is null, cannot check if it will die to damage.");
+                return false;
+            }
+            // check for roller strut
+            RollerBrain rollerBrain = enemy.GetComponent<RollerBrain>();
+            if (rollerBrain != null)
+            {
+                return WillRollerStrutKillCauseRollerBrainDeath(rollerBrain);
+            }
+            return namesOfEnemiesThatCanDie.Contains(enemy.name);
+        }
     }
 
 
@@ -543,15 +553,14 @@ namespace StatsMod
 
                 if (willCallDamage && EnemyDeathHelper.WillDieToDamage(other.gameObject))
                 {
-                    PlayerInput ownerPlayer = __instance.GetComponentInParent<PlayerInput>();
-                    if (ownerPlayer != null)
+                    PlayerInput playerInput = __instance.GetComponentInParent<Weapon>().owner.healthSystem.GetComponentInParent<PlayerInput>();
+                    if (playerInput != null)
                     {
-                        if (EnemyDeathHelper.IsFirstTimeEnemyDies(other.gameObject, ownerPlayer))
+                        if (EnemyDeathHelper.IsFirstTimeEnemyDies(other.gameObject, playerInput))
                         {
-                            PlayerTracker.Instance.RecordPlayerKill(ownerPlayer);
+                            PlayerTracker.Instance.RecordPlayerKill(playerInput);
                         }
                     }
-                    Logger.LogInfo($"ownerPlayer is null in ForceField: {ownerPlayer == null}");
                 }
             }
             catch (System.Exception ex)
