@@ -28,7 +28,7 @@ namespace StatsMod
 
         private Dictionary<ulong, PlayerInput> playerIds = new Dictionary<ulong, PlayerInput>();
 
-        private ulong nextLocalPlayerId = 1000;
+        private ulong nextLocalPlayerId = 0;
 
         public class PlayerData
         {
@@ -99,7 +99,6 @@ namespace StatsMod
                 if (spiderHealth.rootObject != null)
                 {
                     playerInput = spiderHealth.rootObject.GetComponentInParent<PlayerInput>();
-                    Logger.LogInfo($"Player input found: {playerInput.playerIndex}");
                 }
 
                 if (playerInput != null && activePlayers.TryGetValue(playerInput, out PlayerData data))
@@ -124,7 +123,6 @@ namespace StatsMod
                 if (spiderHealth.rootObject != null)
                 {
                     playerInput = spiderHealth.rootObject.GetComponentInParent<PlayerInput>();
-                    Logger.LogInfo($"Player input found: {playerInput.playerIndex}");
                 }
 
                 if (playerInput != null && activePlayers.TryGetValue(playerInput, out PlayerData data))
@@ -154,6 +152,19 @@ namespace StatsMod
             catch (Exception ex)
             {
                 Logger.LogError($"Error recording player kill: {ex.Message}");
+            }
+        }
+
+        //record player kill via his ID
+        public void RecordPlayerKill(ulong playerId)
+        {
+            if (playerIds.TryGetValue(playerId, out PlayerInput playerInput))
+            {
+                RecordPlayerKill(playerInput);
+            }
+            else
+            {
+                Logger.LogError($"Player ID {playerId} not found in active players.");
             }
         }
 

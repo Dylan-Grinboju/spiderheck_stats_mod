@@ -23,8 +23,7 @@ namespace StatsMod
             Logger.LogInfo("Player tracker initialized");
             DisplayStats.Initialize();
             Logger.LogInfo("Player stats display initialized");
-            CheatManager.Initialize();
-            Logger.LogInfo("Cheat manager initialized");
+
 
             Harmony harmony = new Harmony("com.StatsMod");
             harmony.PatchAll();

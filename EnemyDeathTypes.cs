@@ -7,6 +7,7 @@ using Interfaces;
 using UnityEngine.InputSystem;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Netcode;
 
 
 namespace StatsMod
@@ -81,9 +82,9 @@ namespace StatsMod
 
         // }
 
-        public static bool IsFirstTimeEnemyDies(GameObject enemy, PlayerInput player)
+        public static bool IsFirstTimeEnemyDies(GameObject enemy)
         {
-            if (enemy == null || player == null) return false;
+            if (enemy == null) return false;
 
             // Find the EnemyBrain component in the enemy or its parents
             EnemyBrain enemyBrain = enemy.GetComponent<EnemyBrain>();
@@ -177,21 +178,19 @@ namespace StatsMod
             "Wasp(Clone)",
             "Wasp Shielded(Clone)",
             "PowerWasp Variant(Clone)",
-            // "PowerWasp Shielded Variant(Clone)" ??
+            "PowerWasp Variant Shield(Clone)" ??
             "Strut1",
             "Strut2",
             "Strut3",
-            //power strut?
             "Whisp(Clone)",
             "PowerWhisp Variant(Clone)",
             "MeleeWhisp(Clone)",
             "PowerMeleeWhisp Variant(Clone)",
             "Head", //butterfly
-            // "Shielded Head", ??
             "Hornet_Shaman Variant(Clone)",
-            //shielded?
+            "Shielded Hornet_Shaman Variant(Clone)", //not confirmed
             "Hornet Variant(Clone)", //darth maul
-            //shielded?
+            "Shielded Hornet Variant(Clone)",
         };
         public static bool WillDieToDamage(GameObject enemy)
         {
@@ -207,6 +206,26 @@ namespace StatsMod
                 return WillRollerStrutKillCauseRollerBrainDeath(rollerBrain);
             }
             return namesOfEnemiesThatCanDie.Contains(enemy.name);
+        }
+
+        public static PlayerInput FindPlayerInputByPlayerId(ulong playerId)
+        {
+            PlayerController[] playerControllers = UnityEngine.Object.FindObjectsOfType<PlayerController>();
+
+            foreach (PlayerController controller in playerControllers)
+            {
+                if ((ulong)controller.playerID.Value == playerId)
+                {
+                    PlayerInput playerInput = controller.GetComponentInParent<PlayerInput>();
+                    if (playerInput != null)
+                    {
+                        return playerInput;
+                    }
+                }
+            }
+
+            Logger.LogError($"Could not find PlayerController with playerID.Value: {playerId}");
+            return null;
         }
     }
 
@@ -247,7 +266,7 @@ namespace StatsMod
                     PlayerInput playerInput = __instance.ignoreWeapon.owner.healthSystem.GetComponentInParent<PlayerInput>();
                     if (playerInput != null)
                     {
-                        if (EnemyDeathHelper.IsFirstTimeEnemyDies(other, playerInput))
+                        if (EnemyDeathHelper.IsFirstTimeEnemyDies(other))
                         {
                             // Logger.LogInfo($"Recording kill with shotgun for {other.name}");
                             PlayerTracker.Instance.RecordPlayerKill(playerInput);
@@ -323,7 +342,7 @@ namespace StatsMod
 
                     if (ownerPlayer != null)
                     {
-                        if (EnemyDeathHelper.IsFirstTimeEnemyDies(hit.transform.gameObject, ownerPlayer))
+                        if (EnemyDeathHelper.IsFirstTimeEnemyDies(hit.transform.gameObject))
                         {
                             Logger.LogInfo($"railgun recorder kill: {hit.transform.gameObject.name}");
 
@@ -388,7 +407,7 @@ namespace StatsMod
                         PlayerInput ownerPlayer = __instance.GetComponentInParent<PlayerInput>();
                         if (ownerPlayer != null)
                         {
-                            if (EnemyDeathHelper.IsFirstTimeEnemyDies(hit.transform.gameObject, ownerPlayer))
+                            if (EnemyDeathHelper.IsFirstTimeEnemyDies(hit.transform.gameObject))
                             {
                                 PlayerTracker.Instance.RecordPlayerKill(ownerPlayer);
                             }
@@ -453,7 +472,7 @@ namespace StatsMod
                         PlayerInput ownerPlayer = __instance.GetComponentInParent<PlayerInput>();
                         if (ownerPlayer != null)
                         {
-                            if (EnemyDeathHelper.IsFirstTimeEnemyDies(hit.transform.gameObject, ownerPlayer))
+                            if (EnemyDeathHelper.IsFirstTimeEnemyDies(hit.transform.gameObject))
                             {
                                 PlayerTracker.Instance.RecordPlayerKill(ownerPlayer);
                             }
@@ -518,7 +537,7 @@ namespace StatsMod
                     PlayerInput ownerPlayer = __instance.owner.GetComponentInParent<PlayerInput>();
                     if (ownerPlayer != null)
                     {
-                        if (EnemyDeathHelper.IsFirstTimeEnemyDies(other.gameObject, ownerPlayer))
+                        if (EnemyDeathHelper.IsFirstTimeEnemyDies(other.gameObject))
                         {
                             PlayerTracker.Instance.RecordPlayerKill(ownerPlayer);
                         }
@@ -556,7 +575,7 @@ namespace StatsMod
                     PlayerInput playerInput = __instance.GetComponentInParent<Weapon>().owner.healthSystem.GetComponentInParent<PlayerInput>();
                     if (playerInput != null)
                     {
-                        if (EnemyDeathHelper.IsFirstTimeEnemyDies(other.gameObject, playerInput))
+                        if (EnemyDeathHelper.IsFirstTimeEnemyDies(other.gameObject))
                         {
                             PlayerTracker.Instance.RecordPlayerKill(playerInput);
                         }
@@ -600,7 +619,7 @@ namespace StatsMod
                     PlayerInput ownerPlayer = __instance.owner.healthSystem.GetComponentInParent<PlayerInput>();
                     if (ownerPlayer != null)
                     {
-                        if (EnemyDeathHelper.IsFirstTimeEnemyDies(target, ownerPlayer))
+                        if (EnemyDeathHelper.IsFirstTimeEnemyDies(target))
                         {
                             PlayerTracker.Instance.RecordPlayerKill(ownerPlayer);
                         }
@@ -629,7 +648,7 @@ namespace StatsMod
                     PlayerInput ownerPlayer = __instance.owner.GetComponentInParent<PlayerInput>();
                     if (ownerPlayer != null)
                     {
-                        if (EnemyDeathHelper.IsFirstTimeEnemyDies(hit.collider.gameObject, ownerPlayer))
+                        if (EnemyDeathHelper.IsFirstTimeEnemyDies(hit.collider.gameObject))
                         {
                             PlayerTracker.Instance.RecordPlayerKill(ownerPlayer);
                         }
@@ -682,7 +701,7 @@ namespace StatsMod
                         PlayerInput ownerPlayer = __instance.owner.GetComponentInParent<PlayerInput>();
                         if (ownerPlayer != null)
                         {
-                            if (EnemyDeathHelper.IsFirstTimeEnemyDies(hit.collider.gameObject, ownerPlayer))
+                            if (EnemyDeathHelper.IsFirstTimeEnemyDies(hit.collider.gameObject))
                             {
                                 PlayerTracker.Instance.RecordPlayerKill(ownerPlayer);
                             }
@@ -719,7 +738,7 @@ namespace StatsMod
                     PlayerInput ownerPlayer = __instance.GetComponentInParent<PlayerInput>();
                     if (ownerPlayer != null)
                     {
-                        if (EnemyDeathHelper.IsFirstTimeEnemyDies(other.gameObject, ownerPlayer))
+                        if (EnemyDeathHelper.IsFirstTimeEnemyDies(other.gameObject))
                         {
                             PlayerTracker.Instance.RecordPlayerKill(ownerPlayer);
                         }
@@ -785,7 +804,7 @@ namespace StatsMod
                         PlayerInput ownerPlayer = __instance.GetComponentInParent<PlayerInput>();
                         if (ownerPlayer != null)
                         {
-                            if (EnemyDeathHelper.IsFirstTimeEnemyDies(collider2D.gameObject, ownerPlayer))
+                            if (EnemyDeathHelper.IsFirstTimeEnemyDies(collider2D.gameObject))
                             {
                                 PlayerTracker.Instance.RecordPlayerKill(ownerPlayer);
                             }
@@ -806,29 +825,25 @@ namespace StatsMod
     {
         static void Prefix(Explosion __instance)
         {
-            Logger.LogError($"Explosion1");
 
             try
             {
-                // Access IsHost property using reflection since it's protected
-                var isHostProperty = AccessTools.Property(typeof(Unity.Netcode.NetworkBehaviour), "IsHost");
-                bool isHost = (bool)isHostProperty.GetValue(__instance);
-
-                if (!isHost)
+                // Check if this is the host using NetworkManager
+                if (!NetworkManager.Singleton.IsHost)
                 {
                     return;
                 }
-                Logger.LogError($"Explosion2");
 
                 var knockBackRadiusField = AccessTools.Field(typeof(Explosion), "knockBackRadius");
                 var layersField = AccessTools.Field(typeof(Explosion), "layers");
                 var deathRadiusField = AccessTools.Field(typeof(Explosion), "deathRadius");
                 var playerDeathRadiusField = AccessTools.Field(typeof(Explosion), "_playerDeathRadius");
                 var isBoomSpearField = AccessTools.Field(typeof(Explosion), "isBoomSpear");
+                var playerExplosionIDField = AccessTools.Field(typeof(Explosion), "playerExplosionID");
                 var explosionOwnerIdField = AccessTools.Field(typeof(Explosion), "explosionOwnerId");
 
                 if (knockBackRadiusField == null || layersField == null || deathRadiusField == null ||
-                    playerDeathRadiusField == null || isBoomSpearField == null || explosionOwnerIdField == null)
+                    playerDeathRadiusField == null || isBoomSpearField == null || playerExplosionIDField == null || explosionOwnerIdField == null)
                 {
                     Logger.LogWarning("Could not access Explosion fields for damage tracking");
                     return;
@@ -839,6 +854,7 @@ namespace StatsMod
                 float deathRadius = (float)deathRadiusField.GetValue(__instance);
                 float playerDeathRadius = (float)playerDeathRadiusField.GetValue(__instance);
                 bool isBoomSpear = (bool)isBoomSpearField.GetValue(__instance);
+                int playerExplosionId = (int)playerExplosionIDField.GetValue(__instance); //starts at 0
                 ulong explosionOwnerId = (ulong)explosionOwnerIdField.GetValue(__instance);
 
                 foreach (Collider2D collider2D in Physics2D.OverlapCircleAll(__instance.transform.position, knockBackRadius, layers))
@@ -853,9 +869,6 @@ namespace StatsMod
                     Vector3 position = __instance.transform.position;
                     Vector2 vector = collider2D.ClosestPoint(position);
                     float num = Vector2.Distance(position, vector);
-
-                    // Check conditions that lead to Damage() call
-                    bool willCallDamage = false;
 
                     if (num > deathRadius && !flag)
                     {
@@ -877,32 +890,31 @@ namespace StatsMod
                             if (collider2D.CompareTag("PlayerRigidbody") &&
                                 collider2D.transform.parent.parent.TryGetComponent<PlayerController>(out playerController) &&
                                 playerController != null &&
-                                (ulong)playerController.playerID.Value == explosionOwnerId)
+                                playerController.playerID.Value == playerExplosionId)
                             {
                                 // Will call Impact, not Damage
                                 continue;
                             }
                         }
-                        Logger.LogError($"Explosion3");
-
                         // If we reach here, Damage() will be called
-                        willCallDamage = true;
                     }
 
-                    if (willCallDamage && EnemyDeathHelper.WillDieToDamage(collider2D.gameObject))
+                    if (EnemyDeathHelper.WillDieToDamage(collider2D.gameObject))
                     {
-                        Logger.LogError($"Explosion4");
+                        // Use the more reliable explosionOwnerId instead of playerExplosionId
+                        Logger.LogInfo($"explosionOwnerId: {explosionOwnerId}");
+                        PlayerInput ownerPlayer = EnemyDeathHelper.FindPlayerInputByPlayerId(explosionOwnerId);
 
-                        // Find the player who owns this explosion
-                        var allPlayers = UnityEngine.Object.FindObjectsOfType<PlayerInput>();
-                        foreach (var player in allPlayers)
+                        if (ownerPlayer != null)
                         {
-                            var playerController = player.GetComponent<PlayerController>();
-                            if (playerController != null && (ulong)playerController.playerID.Value == explosionOwnerId)
+                            if (EnemyDeathHelper.IsFirstTimeEnemyDies(collider2D.gameObject))
                             {
-                                PlayerTracker.Instance.RecordPlayerKill(player);
-                                break;
+                                PlayerTracker.Instance.RecordPlayerKill(ownerPlayer);
                             }
+                        }
+                        else
+                        {
+                            Logger.LogError($"Could not find PlayerInput for explosion ownerClientId: {explosionOwnerId}");
                         }
                     }
                 }
@@ -910,6 +922,35 @@ namespace StatsMod
             catch (System.Exception ex)
             {
                 Logger.LogError($"Error tracking Explosion damage: {ex.Message}");
+            }
+        }
+    }
+
+
+    // Patch Weapon.Equip to set the correct ownerWeaponClientId after the original method runs
+    [HarmonyPatch(typeof(Weapon), "Equip")]
+    class WeaponEquipPatch
+    {
+        static void Postfix(Weapon __instance, WeaponManager wm)
+        {
+            try
+            {
+                // After the original Equip method runs, fix the ownerWeaponClientId
+                if (wm != null && wm.healthSystem != null)
+                {
+                    PlayerController playerController = wm.healthSystem.GetComponentInParent<PlayerController>();
+                    if (playerController != null)
+                    {
+                        // Override the ulong.MaxValue that was set by the original method
+                        __instance.ownerWeaponClientId = (ulong)playerController.playerID.Value;
+                        Logger.LogInfo($"Fixed weapon {__instance.serializationWeaponName} owner to: {playerController.playerID.Value}");
+                    }
+
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Logger.LogError($"Error in WeaponEquipPatch: {ex.Message}");
             }
         }
     }
