@@ -129,6 +129,7 @@ namespace StatsMod
         public static bool WillRollerStrutKillCauseRollerBrainDeath(RollerBrain rollerBrain)
         {
             // Use the rollerBrain's GameObject ID for tracking
+            Logger.LogDebug("Checking strut for death");
             int rollerBrainId = rollerBrain.gameObject.GetInstanceID();
 
             lock (rollerBrainLock)
@@ -161,7 +162,8 @@ namespace StatsMod
 
                 // Check if this will cause the main enemy to die
                 bool willCauseMainDeath = rollerBrainHealthTracker[rollerBrainId] < rollerBrain.minStrutCount;
-
+                Logger.LogError("current lives: " + rollerBrainHealthTracker[rollerBrainId]);
+                Logger.LogError("needed lives: " + rollerBrain.minStrutCount);
                 // Clean up the tracker if the main enemy will die
                 if (willCauseMainDeath)
                 {
@@ -178,10 +180,11 @@ namespace StatsMod
             "Wasp(Clone)",
             "Wasp Shielded(Clone)",
             "PowerWasp Variant(Clone)",
-            "PowerWasp Variant Shield(Clone)" ??
-            "Strut1",
-            "Strut2",
-            "Strut3",
+            "PowerWasp Variant Shield(Clone)",
+            //no need as they are checked separately
+            // "Strut1",
+            // "Strut2",
+            // "Strut3",
             "Whisp(Clone)",
             "PowerWhisp Variant(Clone)",
             "MeleeWhisp(Clone)",
@@ -200,7 +203,7 @@ namespace StatsMod
                 return false;
             }
             // check for roller strut
-            RollerBrain rollerBrain = enemy.GetComponent<RollerBrain>();
+            RollerBrain rollerBrain = enemy.GetComponentInParent<RollerBrain>();
             if (rollerBrain != null)
             {
                 return WillRollerStrutKillCauseRollerBrainDeath(rollerBrain);
@@ -553,7 +556,7 @@ namespace StatsMod
         }
     }
 
-    // ForceField
+    // Swords
     [HarmonyPatch(typeof(ForceField), "Damage")]
     class ForceFieldDamagePatch
     {
