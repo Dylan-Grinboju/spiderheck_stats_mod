@@ -30,6 +30,12 @@ namespace StatsMod
 
         private ulong nextLocalPlayerId = 0;
 
+        // Cache for expensive player lookups
+        private static PlayerController[] cachedPlayerControllers;
+        private static float lastPlayerCacheUpdate = 0f;
+        private static float playerCacheRefreshInterval = 60f; // Refresh every 2 seconds
+        private static readonly object playerCacheLock = new object();
+
         public class PlayerData
         {
             public ulong PlayerId { get; set; }
@@ -72,6 +78,8 @@ namespace StatsMod
             activePlayers[player] = playerData;
             playerIds[playerId] = player;
 
+            RefreshPlayerCache();
+
             Logger.LogInfo($"Registered player ID: {playerId}, Name: {playerName}, Index: {player.playerIndex}");
         }
 
@@ -86,6 +94,8 @@ namespace StatsMod
 
                 playerIds.Remove(playerData.PlayerId);
                 activePlayers.Remove(player);
+
+                RefreshPlayerCache();
             }
         }
 
@@ -187,6 +197,50 @@ namespace StatsMod
             {
                 entry.Value.Deaths = 0;
                 entry.Value.Kills = 0;
+            }
+        }
+
+        public static PlayerController[] GetCachedPlayerControllers()
+        {
+            lock (playerCacheLock)
+            {
+                float currentTime = Time.time;
+                if (cachedPlayerControllers == null || currentTime - lastPlayerCacheUpdate > playerCacheRefreshInterval)
+                {
+                    cachedPlayerControllers = UnityEngine.Object.FindObjectsOfType<PlayerController>();
+                    lastPlayerCacheUpdate = currentTime;
+                }
+                return cachedPlayerControllers;
+            }
+        }
+
+        public static PlayerInput FindPlayerInputByPlayerId(ulong playerId)
+        {
+            PlayerController[] playerControllers = GetCachedPlayerControllers();
+
+            foreach (PlayerController controller in playerControllers)
+            {
+                if (controller != null && (ulong)controller.playerID.Value == playerId)
+                {
+                    PlayerInput playerInput = controller.GetComponentInParent<PlayerInput>();
+                    if (playerInput != null)
+                    {
+                        return playerInput;
+                    }
+                }
+            }
+
+            Logger.LogError($"Could not find PlayerController with playerID.Value: {playerId}");
+            return null;
+        }
+
+
+        public static void RefreshPlayerCache()
+        {
+            lock (playerCacheLock)
+            {
+                cachedPlayerControllers = null;
+                lastPlayerCacheUpdate = 0f;
             }
         }
     }
