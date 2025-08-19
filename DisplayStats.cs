@@ -15,13 +15,17 @@ namespace StatsMod
         // UI properties
         private bool isDisplayVisible = false;
         private Rect windowRect;
-        private Vector2 scrollPosition;
 
         // HUD size management
         private Rect normalWindowRect;
         private Rect enlargedWindowRect;
         private bool isEnlarged = false;
         private float sizeScaleFactor = 1.6f;
+
+        // Dynamic sizing
+        private float baseWindowHeight = 160f; // Base height without players
+        private float playerRowHeight = 40f; // Height per player row
+        private float minWindowHeight = 150f; // Minimum window height
 
         // Material Design Colors
         private static readonly Color MaterialPrimary = new Color(0.259f, 0.522f, 0.957f, 1f); // Blue
@@ -56,6 +60,7 @@ namespace StatsMod
         // Survival Mode tracking
         private bool isSurvivalActive = false;
         private DateTime survivalStartTime;
+        private TimeSpan lastGameDuration;
 
         public static void Initialize()
         {
@@ -66,11 +71,10 @@ namespace StatsMod
                 DontDestroyOnLoad(statsDisplayObj);
                 Instance = _instance;
 
-                // Set the window position to top right - normal size
-                Instance.normalWindowRect = new Rect(Screen.width - 380, 20, 360, 400);
-                // Set enlarged size
+                // Set the window position to top right - will calculate size dynamically
+                Instance.normalWindowRect = new Rect(Screen.width - 380, 20, 360, Instance.baseWindowHeight);
                 Instance.enlargedWindowRect = new Rect(Screen.width - (int)(380 * Instance.sizeScaleFactor), 20,
-                    360 * Instance.sizeScaleFactor, 400 * Instance.sizeScaleFactor);
+                    360 * Instance.sizeScaleFactor, Instance.baseWindowHeight * Instance.sizeScaleFactor);
                 // Start with normal size
                 Instance.windowRect = Instance.normalWindowRect;
 
@@ -89,8 +93,8 @@ namespace StatsMod
                 {
                     // If display is visible and large, make it small
                     isEnlarged = false;
-                    windowRect = normalWindowRect;
                     stylesInitialized = false;
+                    UpdateWindowSize();
                 }
                 else
                 {
@@ -106,8 +110,8 @@ namespace StatsMod
                 {
                     // If display is visible and small, make it large
                     isEnlarged = true;
-                    windowRect = enlargedWindowRect;
                     stylesInitialized = false;
+                    UpdateWindowSize();
                 }
                 else
                 {
@@ -123,9 +127,9 @@ namespace StatsMod
             if (isDisplayVisible)
             {
                 // Show in small size
-                windowRect = normalWindowRect;
                 isEnlarged = false;
                 stylesInitialized = false;
+                UpdateWindowSize(); // Calculate size dynamically
             }
         }
 
@@ -135,17 +139,17 @@ namespace StatsMod
             if (isDisplayVisible)
             {
                 // Show in large size
-                windowRect = enlargedWindowRect;
                 isEnlarged = true;
                 stylesInitialized = false;
+                UpdateWindowSize(); // Calculate size dynamically
             }
         }
         public void AutoPullHUD()
         {
             isDisplayVisible = true;
             isEnlarged = true;
-            windowRect = enlargedWindowRect;
             stylesInitialized = false;
+            UpdateWindowSize(); // Calculate size dynamically
             Logger.LogInfo("Stats HUD automatically pulled up with enlarged size - player stats preserved");
         }
 
@@ -171,7 +175,7 @@ namespace StatsMod
             windowStyle = new GUIStyle(GUI.skin.window)
             {
                 normal = { background = surfaceTexture },
-                padding = new RectOffset(16, 16, 24, 16),
+                padding = new RectOffset(16, 16, 24, 24),
                 border = new RectOffset(2, 2, 2, 2)
             };
 
@@ -318,6 +322,7 @@ namespace StatsMod
             if (!isDisplayVisible) return;
 
             InitializeStyles();
+            UpdateWindowSize();
 
             // Apply the Material Design window style
             GUI.Window(0, windowRect, DrawStatsWindow, "Game Statistics", windowStyle);
@@ -331,7 +336,7 @@ namespace StatsMod
             GUILayout.BeginVertical(cardStyle);
             GUILayout.Label("Survival Mode", headerStyle);
 
-            // Single row showing either "Inactive" or the current timer
+            // Single row showing either current timer or last game duration
             GUILayout.BeginHorizontal();
             if (isSurvivalActive)
             {
@@ -344,12 +349,12 @@ namespace StatsMod
             }
             else
             {
-                GUILayout.Label("Status:", labelStyle, GUILayout.Width(GetScaledWidth(60)));
+                GUILayout.Label("Last Game:", labelStyle, GUILayout.Width(GetScaledWidth(150)));
                 GUIStyle statusStyle = new GUIStyle(valueStyle)
                 {
                     normal = { textColor = MaterialOnSurfaceVariant }
                 };
-                GUILayout.Label("Inactive", statusStyle);
+                GUILayout.Label(lastGameDuration.TotalSeconds > 0 ? FormatTimeSpan(lastGameDuration) : "No games yet", statusStyle);
             }
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
@@ -392,10 +397,8 @@ namespace StatsMod
 
             GUILayout.Space(4);
 
-            // Player Statistics Card with Scroll View
+            // Player Statistics Card
             GUILayout.BeginVertical(cardStyle);
-
-            scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Height(GetScaledHeight(140)));
             try
             {
                 if (PlayerTracker.Instance != null)
@@ -432,12 +435,12 @@ namespace StatsMod
                             GUILayout.Label(stat.kills.ToString(), killsStyle, GUILayout.Width(GetScaledWidth(60)));
                             GUILayout.EndHorizontal();
 
-                            GUILayout.Space(2);
+                            GUILayout.Space(8);
                         }
                     }
                     else
                     {
-                        GUILayout.Label("No player stats available", labelStyle);
+                        GUILayout.Label("No players connected", labelStyle);
                     }
                 }
                 else
@@ -454,8 +457,6 @@ namespace StatsMod
                 GUILayout.Label($"Error: {ex.Message}", errorStyle);
                 Logger.LogError($"Error displaying player stats: {ex.Message}");
             }
-
-            GUILayout.EndScrollView();
             GUILayout.EndVertical();
 
             GUILayout.EndVertical();
@@ -472,6 +473,53 @@ namespace StatsMod
         {
             float scale = isEnlarged ? sizeScaleFactor : 1f;
             return baseHeight * scale;
+        }
+
+        private void UpdateWindowSize()
+        {
+            int playerCount = 0;
+            try
+            {
+                if (PlayerTracker.Instance != null)
+                {
+                    var playerStats = PlayerTracker.Instance.GetPlayerStatsList();
+                    playerCount = playerStats?.Count ?? 0;
+                }
+            }
+            catch (System.Exception)
+            {
+                playerCount = 0;
+            }
+
+            // Calculate dynamic height - show all players without scrolling
+            float playerSectionHeight;
+            if (playerCount == 0)
+            {
+                // Minimal space when no players
+                playerSectionHeight = 25f;
+            }
+            else
+            {
+                // Calculate height for all players plus header and padding
+                playerSectionHeight = playerCount * playerRowHeight + 30f; // 30f for header and padding
+            }
+
+            float dynamicHeight = Mathf.Max(
+                baseWindowHeight + playerSectionHeight,
+                minWindowHeight
+            );
+
+            // Update window rectangles
+            if (isEnlarged)
+            {
+                enlargedWindowRect.height = dynamicHeight * sizeScaleFactor;
+                windowRect = enlargedWindowRect;
+            }
+            else
+            {
+                normalWindowRect.height = dynamicHeight;
+                windowRect = normalWindowRect;
+            }
         }
 
         // Helper method for formatting TimeSpan in a readable way
@@ -492,6 +540,7 @@ namespace StatsMod
             if (!isSurvivalActive) return;
 
             TimeSpan sessionTime = DateTime.Now - survivalStartTime;
+            lastGameDuration = sessionTime;
             isSurvivalActive = false;
 
             Logger.LogInfo($"Survival mode timer stopped. Session time: {FormatTimeSpan(sessionTime)}");
