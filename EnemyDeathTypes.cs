@@ -389,9 +389,22 @@ namespace StatsMod
                 }
 
                 bool damageEnemies = (bool)damageEnemiesField.GetValue(__instance);
-                if (__instance.IsEnemy(other.gameObject) && !damageEnemies) return;
 
-                if (__instance.IsDamageable(other.gameObject))
+                // Use reflection to access private methods
+                var isEnemyMethod = AccessTools.Method(typeof(EnergyBall), "IsEnemy");
+                var isDamageableMethod = AccessTools.Method(typeof(EnergyBall), "IsDamageable");
+
+                if (isEnemyMethod == null || isDamageableMethod == null)
+                {
+                    Logger.LogWarning("Could not access EnergyBall IsEnemy or IsDamageable methods");
+                    return;
+                }
+
+                bool isEnemy = (bool)isEnemyMethod.Invoke(__instance, new object[] { other.gameObject });
+                if (isEnemy && !damageEnemies) return;
+
+                bool isDamageable = (bool)isDamageableMethod.Invoke(__instance, new object[] { other.gameObject });
+                if (isDamageable)
                 {
                     PlayerInput ownerPlayer = __instance.owner.GetComponentInParent<PlayerInput>();
                     EnemyDeathHelper.TryRecordKill(other.gameObject, ownerPlayer, "EnergyBall");

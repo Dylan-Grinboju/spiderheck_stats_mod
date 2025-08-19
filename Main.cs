@@ -24,7 +24,7 @@ namespace StatsMod
             DisplayStats.Initialize();
             Logger.LogInfo("Player stats display initialized");
 
-
+            WeaponSpawnPatch.Initialize();
             Harmony harmony = new Harmony("com.StatsMod");
             harmony.PatchAll();
 
