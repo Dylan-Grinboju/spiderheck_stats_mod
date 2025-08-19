@@ -175,7 +175,7 @@ namespace StatsMod
             windowStyle = new GUIStyle(GUI.skin.window)
             {
                 normal = { background = surfaceTexture },
-                padding = new RectOffset(16, 16, 24, 24),
+                padding = isEnlarged ? new RectOffset(16, 16, 24, 12) : new RectOffset(16, 16, 24, 24),
                 border = new RectOffset(2, 2, 2, 2)
             };
 
@@ -512,7 +512,7 @@ namespace StatsMod
             // Update window rectangles
             if (isEnlarged)
             {
-                enlargedWindowRect.height = dynamicHeight * sizeScaleFactor;
+                enlargedWindowRect.height = dynamicHeight * (sizeScaleFactor - 0.2f);
                 windowRect = enlargedWindowRect;
             }
             else
