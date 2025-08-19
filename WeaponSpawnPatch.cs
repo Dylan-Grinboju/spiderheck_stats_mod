@@ -34,8 +34,10 @@ public class WeaponSpawnPatchInput : MonoBehaviour
 public static class WeaponSpawnPatch
 {
     //All weapons:
-    // BigGrenade, BigParticleBlade,BurstLauncher,DeathRay,DoubleParticleBlade,DoubleRailvolver,GrenadeLauncher,Grenade,HeckSaw,KhepriStaff,LaserCannon,LaserCube,Mine,MiniShotgun,BeachBall,FireworkLauncher,Flare,Flashlight,ParticleBladeLauncher,ParticleBlade,ParticleSpear,PerArmedGrenade,PreArmedParticleBlade,Railvolver,RocketLauncher,Shotgun,AutoShotgun,GravityGrenade,GravitySaw,BoomStick,DeathCube,Snowballs
-    public static string ForceWeaponName = "KhepriStaff";
+    // BigGrenade, BigParticleBlade,BurstLauncher,DeathRay,DoubleParticleBlade,DoubleRailvolver,GrenadeLauncher,Grenade,HeckSaw,KhepriStaff,LaserCannon,LaserCube,Mine,MiniShotgun,Flashlight,ParticleBladeLauncher,ParticleBlade,ParticleSpear,Railvolver,RocketLauncher,Shotgun,AutoShotgun,GravityGrenade,GravitySaw,BoomStick,DeathCube
+    //weird stuff
+    //Flare,Snowballs,PreArmedParticleBlade,PerArmedGrenade,FireworkLauncher,BeachBall
+    public static string ForceWeaponName = "HeckSaw";
 
     private static bool _patchApplied = false;
     private static GameObject _cachedWeaponPrefab = null;

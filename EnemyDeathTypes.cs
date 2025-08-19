@@ -22,6 +22,10 @@ namespace StatsMod
         private static Dictionary<int, int> rollerBrainHealthTracker = new Dictionary<int, int>();
         private static readonly object rollerBrainLock = new object();
 
+        // Dictionary to track disc projectiles and their owners
+        private static Dictionary<int, PlayerInput> discOwnerTracker = new Dictionary<int, PlayerInput>();
+        private static readonly object discOwnerLock = new object();
+
         // Cached reflection fields to avoid expensive lookups
         private static System.Reflection.PropertyInfo _isHostProperty;
         public static System.Reflection.PropertyInfo IsHostProperty
@@ -153,6 +157,43 @@ namespace StatsMod
                 return WillRollerStrutKillCauseRollerBrainDeath(rollerBrain);
             }
             return namesOfEnemiesThatCanDie.Contains(enemy.name);
+        }
+
+        public static void RegisterDiscOwner(GameObject discProjectile, PlayerInput owner)
+        {
+            if (discProjectile == null || owner == null) return;
+
+            int discId = discProjectile.GetInstanceID();
+            lock (discOwnerLock)
+            {
+                discOwnerTracker[discId] = owner;
+            }
+        }
+
+        public static PlayerInput GetDiscOwner(GameObject discProjectile)
+        {
+            if (discProjectile == null) return null;
+
+            int discId = discProjectile.GetInstanceID();
+            lock (discOwnerLock)
+            {
+                if (discOwnerTracker.TryGetValue(discId, out PlayerInput owner))
+                {
+                    return owner;
+                }
+            }
+            return null;
+        }
+
+        public static void CleanupDiscOwner(GameObject discProjectile)
+        {
+            if (discProjectile == null) return;
+
+            int discId = discProjectile.GetInstanceID();
+            lock (discOwnerLock)
+            {
+                discOwnerTracker.Remove(discId);
+            }
         }
 
         public static PlayerInput FindPlayerInputByPlayerId(ulong playerId)
@@ -542,13 +583,97 @@ namespace StatsMod
                 bool willCallDamage = !other.transform.CompareTag("Weapon");
                 if (willCallDamage)
                 {
-                    PlayerInput ownerPlayer = __instance.GetComponentInParent<PlayerInput>();
+                    // First try to get the owner from disc tracking
+                    PlayerInput ownerPlayer = EnemyDeathHelper.GetDiscOwner(__instance.gameObject);
+
+                    // Fallback to getting from parent (may not work for projectiles)
+                    if (ownerPlayer == null)
+                    {
+                        ownerPlayer = __instance.GetComponentInParent<PlayerInput>();
+                    }
+
                     EnemyDeathHelper.TryRecordKill(other.gameObject, ownerPlayer, "SawDisc");
                 }
             }
             catch (System.Exception ex)
             {
                 Logger.LogError($"Error tracking SawDisc damage: {ex.Message}");
+            }
+        }
+    }
+
+    // DiscLauncher - Track disc projectiles and their owners
+    [HarmonyPatch(typeof(DiscLauncher), "LaunchDisc")]
+    class DiscLauncherLaunchDiscPatch
+    {
+        static bool Prefix(DiscLauncher __instance)
+        {
+            try
+            {
+                // Replicate the entire LaunchDisc function with our addition
+                if (__instance.ammo <= 0f)
+                {
+                    return false; // Skip original
+                }
+
+                float ammo = __instance.ammo;
+                __instance.ammo = ammo - 1f;
+
+                // Create the disc projectile
+                GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(__instance.discProjectile, __instance.mountedDisc.transform.position, __instance.point.rotation);
+                gameObject.GetComponent<NetworkObject>().Spawn(true);
+                gameObject.GetComponent<Rigidbody2D>().AddForce(__instance.transform.up * __instance.shotForce, ForceMode2D.Impulse);
+
+                // **THIS IS OUR ADDITION** - Track the disc owner
+                PlayerInput ownerPlayer = __instance.owner.healthSystem.GetComponentInParent<PlayerInput>();
+                EnemyDeathHelper.RegisterDiscOwner(gameObject, ownerPlayer);
+
+                // Reset phase effect and visual elements
+                __instance.discPhaseEffect.ResetEffect();
+                __instance.mountedDisc.SetActive(false);
+                __instance.targetingLasers.SetActive(false);
+
+                if ((bool)EnemyDeathHelper.IsHostProperty.GetValue(__instance))
+                {
+                    // Call LaunchDiscClientRpc using reflection
+                    var launchDiscClientRpcMethod = AccessTools.Method(typeof(DiscLauncher), "LaunchDiscClientRpc");
+                    if (launchDiscClientRpcMethod != null)
+                    {
+                        launchDiscClientRpcMethod.Invoke(__instance, null);
+                    }
+                }
+
+                // Call Impact method
+                var impactMethod = AccessTools.Method(typeof(DiscLauncher), "Impact");
+                if (impactMethod != null)
+                {
+                    impactMethod.Invoke(__instance, new object[] { __instance.transform.up * -__instance.recoil, __instance.point.position, false, true });
+                }
+
+                return false; // Skip the original method
+            }
+            catch (System.Exception ex)
+            {
+                Logger.LogError($"Error in DiscLauncher LaunchDisc patch: {ex.Message}");
+                return true; // Execute original method on error
+            }
+        }
+    }
+
+    // SawDisc - Clean up disc owner tracking when disc is destroyed
+    [HarmonyPatch(typeof(SawDisc), "OnDesintegrateClientRpc")]
+    class SawDiscCleanupPatch
+    {
+        static void Prefix(SawDisc __instance)
+        {
+            try
+            {
+                // Clean up the disc owner tracking when the disc is about to be destroyed
+                EnemyDeathHelper.CleanupDiscOwner(__instance.gameObject);
+            }
+            catch (System.Exception ex)
+            {
+                Logger.LogError($"Error cleaning up SawDisc owner tracking: {ex.Message}");
             }
         }
     }
