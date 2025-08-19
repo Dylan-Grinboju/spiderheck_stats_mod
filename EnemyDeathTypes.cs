@@ -167,6 +167,7 @@ namespace StatsMod
             lock (discOwnerLock)
             {
                 discOwnerTracker[discId] = owner;
+                Logger.LogInfo($"Registered disc owner for disc {discId}, owner: {owner.name}");
             }
         }
 
@@ -192,7 +193,10 @@ namespace StatsMod
             int discId = discProjectile.GetInstanceID();
             lock (discOwnerLock)
             {
-                discOwnerTracker.Remove(discId);
+                if (discOwnerTracker.Remove(discId))
+                {
+                    Logger.LogInfo($"Cleaned up disc owner for disc {discId}");
+                }
             }
         }
 
@@ -458,7 +462,7 @@ namespace StatsMod
         }
     }
 
-    // Swords
+    // Particle Blade
     [HarmonyPatch(typeof(ForceField), "Damage")]
     class ForceFieldDamagePatch
     {
@@ -472,8 +476,12 @@ namespace StatsMod
                 bool willCallDamage = !other.transform.CompareTag("Weapon");
                 if (willCallDamage)
                 {
-                    PlayerInput playerInput = __instance.GetComponentInParent<Weapon>().owner.healthSystem.GetComponentInParent<PlayerInput>();
-                    EnemyDeathHelper.TryRecordKill(other.gameObject, playerInput, "sword");
+                    Weapon parentWeapon = __instance.GetComponentInParent<Weapon>();
+                    if (parentWeapon != null && parentWeapon.owner != null)
+                    {
+                        PlayerInput playerInput = parentWeapon.owner.healthSystem.GetComponentInParent<PlayerInput>();
+                        EnemyDeathHelper.TryRecordKill(other.gameObject, playerInput, "sword");
+                    }
                 }
             }
             catch (System.Exception ex)
@@ -821,6 +829,116 @@ namespace StatsMod
             public bool isBoomSpear;
             public int playerExplosionId;
             public ulong explosionOwnerId;
+        }
+    }
+
+
+    // ParticleBladeLauncher - Track particle blade projectiles and their owners
+    [HarmonyPatch(typeof(ProjectileLauncher), "Shoot")]
+    class ProjectileLauncherShootPatch
+    {
+        static bool Prefix(ProjectileLauncher __instance)
+        {
+            try
+            {
+                // Check if this launcher fires ParticleBlade projectiles
+                ParticleBlade particleBladeComponent = __instance.projectile.GetComponent<ParticleBlade>();
+                if (particleBladeComponent == null)
+                {
+                    return true; // Not a ParticleBlade launcher, let original method run
+                }
+
+                // Replicate the entire Shoot method with our owner tracking addition
+                if (Physics2D.Raycast(__instance.point.transform.position, __instance.transform.up, 0.01f, GameController.instance.worldLayers).collider)
+                {
+                    return false; // Skip original
+                }
+
+                if ((bool)EnemyDeathHelper.IsHostProperty.GetValue(__instance))
+                {
+                    // Call ShotClientRpc using reflection
+                    var shotClientRpcMethod = AccessTools.Method(typeof(ProjectileLauncher), "ShotClientRpc");
+                    if (shotClientRpcMethod != null)
+                    {
+                        shotClientRpcMethod.Invoke(__instance, null);
+                    }
+                }
+
+                GameObject gameObject;
+                if (CustomMapEditor.ParkourActive())
+                {
+                    gameObject = UnityEngine.Object.Instantiate<GameObject>(__instance.projectile, __instance.point.position, __instance.transform.rotation, CustomMapEditor.instance.objParent);
+                }
+                else
+                {
+                    gameObject = UnityEngine.Object.Instantiate<GameObject>(__instance.projectile, __instance.point.position, __instance.transform.rotation);
+                }
+
+                BasicProjectile basicProjectileComponent = gameObject.GetComponent<BasicProjectile>();
+                if (basicProjectileComponent != null)
+                {
+                    basicProjectileComponent.projectileOwnerId = __instance.GetOwnerClientId();
+                }
+                else
+                {
+                    Weapon weaponComponent = gameObject.GetComponent<Weapon>();
+                    if (weaponComponent)
+                    {
+                        weaponComponent.ownerWeaponClientId = __instance.GetOwnerClientId();
+
+                        // **THIS IS MY ADDITION** - Set the owner property for ParticleBlade tracking
+                        weaponComponent.owner = __instance.owner;
+                    }
+                }
+
+                gameObject.GetComponent<NetworkObject>().Spawn(true);
+                PickupEffects componentInChildren = gameObject.GetComponentInChildren<PickupEffects>();
+                if (componentInChildren != null)
+                {
+                    componentInChildren.StopFloat();
+                }
+
+                Rigidbody2D rigidbody = gameObject.GetComponent<Rigidbody2D>();
+                rigidbody.AddForce(__instance.transform.up * __instance.shotForce, ForceMode2D.Impulse);
+                rigidbody.AddTorque(__instance.rotationForce, ForceMode2D.Impulse);
+
+                // Call Impact method using reflection
+                var impactMethod = AccessTools.Method(typeof(ProjectileLauncher), "Impact");
+                if (impactMethod != null)
+                {
+                    impactMethod.Invoke(__instance, new object[] { -__instance.recoil * __instance.transform.up, __instance.point.position, false, true });
+                }
+
+                // Handle collision ignoring
+                var launcherColliderField = AccessTools.Field(typeof(ProjectileLauncher), "_launcherCollider");
+                if (launcherColliderField != null)
+                {
+                    Collider2D launcherCollider = (Collider2D)launcherColliderField.GetValue(__instance);
+                    Physics2D.IgnoreCollision(launcherCollider, gameObject.GetComponent<Collider2D>(), true);
+                }
+
+                if (__instance.equipped)
+                {
+                    Physics2D.IgnoreCollision(__instance.owner.healthSystem.GetComponent<Collider2D>(), gameObject.GetComponent<Collider2D>(), true);
+                }
+
+                float ammo = __instance.ammo;
+                __instance.ammo = ammo - 1f;
+
+                // Set hold offset using reflection
+                var reloadOffsetField = AccessTools.Field(typeof(ProjectileLauncher), "reloadOffset");
+                if (reloadOffsetField != null)
+                {
+                    __instance.holdOffset = (Vector2)reloadOffsetField.GetValue(__instance);
+                }
+
+                return false; // Skip the original method
+            }
+            catch (System.Exception ex)
+            {
+                Logger.LogError($"Error in ProjectileLauncher Shoot patch: {ex.Message}");
+                return true; // Execute original method on error
+            }
         }
     }
 
