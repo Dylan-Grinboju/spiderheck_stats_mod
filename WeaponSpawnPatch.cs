@@ -33,18 +33,15 @@ public class WeaponSpawnPatchInput : MonoBehaviour
 
 public static class WeaponSpawnPatch
 {
-    // Set this to the weapon name you want to force spawn at all weapon spawners
-    // Example: "ParticleBlade", "Railvolver", "Shotgun", etc.
-    public static string ForceWeaponName = "ParticleBlade";
+    //All weapons:
+    // BigGrenade, BigParticleBlade,BurstLauncher,DeathRay,DoubleParticleBlade,DoubleRailvolver,GrenadeLauncher,Grenade,HeckSaw,KhepriStaff,LaserCannon,LaserCube,Mine,MiniShotgun,BeachBall,FireworkLauncher,Flare,Flashlight,ParticleBladeLauncher,ParticleBlade,ParticleSpear,PerArmedGrenade,PreArmedParticleBlade,Railvolver,RocketLauncher,Shotgun,AutoShotgun,GravityGrenade,GravitySaw,BoomStick,DeathCube,Snowballs
+    public static string ForceWeaponName = "KhepriStaff";
 
     private static bool _patchApplied = false;
     private static GameObject _cachedWeaponPrefab = null;
     private static WeaponSpawnPatchInput _inputHandler = null;
     private static int _currentWeaponIndex = 0;
 
-    /// <summary>
-    /// Initialize the F3 key handler. Call this once when your mod starts.
-    /// </summary>
     public static void Initialize()
     {
         if (_inputHandler == null)
