@@ -343,7 +343,7 @@ namespace StatsMod
                     laserColliderLayers
                 );
 
-                PlayerInput ownerPlayer = __instance.GetComponentInParent<PlayerInput>();
+                PlayerInput ownerPlayer = __instance.owner.GetComponentInParent<PlayerInput>();
                 foreach (RaycastHit2D hit in hits)
                 {
                     IDamageable component = hit.transform.GetComponent<IDamageable>();
@@ -394,7 +394,7 @@ namespace StatsMod
                     damageLayers
                 );
 
-                PlayerInput ownerPlayer = __instance.GetComponentInParent<PlayerInput>();
+                PlayerInput ownerPlayer = __instance.owner.GetComponentInParent<PlayerInput>();
                 foreach (RaycastHit2D hit in hits)
                 {
                     IDamageable component = hit.transform.GetComponent<IDamageable>();
