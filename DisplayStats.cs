@@ -26,6 +26,8 @@ namespace StatsMod
         private float baseWindowHeight = 160f; // Base height without players
         private float playerRowHeight = 40f; // Height per player row
         private float minWindowHeight = 150f; // Minimum window height
+        private float windowWidth = 300f; // Window width
+        private float windowMargin = 20f; // Margin from screen edge
 
         // Material Design Colors
         private static readonly Color MaterialPrimary = new Color(0.259f, 0.522f, 0.957f, 1f); // Blue
@@ -72,9 +74,10 @@ namespace StatsMod
                 Instance = _instance;
 
                 // Set the window position to top right - will calculate size dynamically
-                Instance.normalWindowRect = new Rect(Screen.width - 380, 20, 360, Instance.baseWindowHeight);
-                Instance.enlargedWindowRect = new Rect(Screen.width - (int)(380 * Instance.sizeScaleFactor), 20,
-                    360 * Instance.sizeScaleFactor, Instance.baseWindowHeight * Instance.sizeScaleFactor);
+                Instance.normalWindowRect = new Rect(Screen.width - Instance.windowWidth - Instance.windowMargin,
+                    Instance.windowMargin, Instance.windowWidth, Instance.baseWindowHeight);
+                Instance.enlargedWindowRect = new Rect(Screen.width - (Instance.windowWidth + Instance.windowMargin) * Instance.sizeScaleFactor,
+                    Instance.windowMargin, Instance.windowWidth * Instance.sizeScaleFactor, Instance.baseWindowHeight * Instance.sizeScaleFactor);
                 // Start with normal size
                 Instance.windowRect = Instance.normalWindowRect;
 
@@ -349,7 +352,7 @@ namespace StatsMod
             }
             else
             {
-                GUILayout.Label("Last Game:", labelStyle, GUILayout.Width(GetScaledWidth(150)));
+                GUILayout.Label("Last Game:", labelStyle, GUILayout.Width(GetScaledWidth(120)));
                 GUIStyle statusStyle = new GUIStyle(valueStyle)
                 {
                     normal = { textColor = MaterialOnSurfaceVariant }
@@ -408,7 +411,7 @@ namespace StatsMod
                     {
                         // Header row
                         GUILayout.BeginHorizontal();
-                        GUILayout.Label("Player", headerStyle, GUILayout.Width(GetScaledWidth(130)));
+                        GUILayout.Label("Player", headerStyle, GUILayout.Width(GetScaledWidth(95)));
                         GUILayout.Label("Deaths", headerStyle, GUILayout.Width(GetScaledWidth(100)));
                         GUILayout.Label("Kills", headerStyle, GUILayout.Width(GetScaledWidth(60)));
                         GUILayout.EndHorizontal();
@@ -420,13 +423,13 @@ namespace StatsMod
                         {
                             GUILayout.BeginHorizontal();
                             GUILayout.Label("", valueStyle, GUILayout.Width(GetScaledWidth(5)));
-                            GUILayout.Label(stat.playerName, valueStyle, GUILayout.Width(GetScaledWidth(145)));
+                            GUILayout.Label(stat.playerName, valueStyle, GUILayout.Width(GetScaledWidth(115)));
 
                             GUIStyle deathsStyle = new GUIStyle(valueStyle)
                             {
                                 normal = { textColor = stat.deaths > 0 ? MaterialAccent : MaterialOnSurface }
                             };
-                            GUILayout.Label(stat.deaths.ToString(), deathsStyle, GUILayout.Width(GetScaledWidth(100)));
+                            GUILayout.Label(stat.deaths.ToString(), deathsStyle, GUILayout.Width(GetScaledWidth(90)));
 
                             GUIStyle killsStyle = new GUIStyle(valueStyle)
                             {
