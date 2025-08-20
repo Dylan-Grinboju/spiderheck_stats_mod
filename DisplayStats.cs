@@ -15,26 +15,54 @@ namespace StatsMod
         // UI properties
         private bool isDisplayVisible = false;
         private Rect windowRect;
-        private Vector2 scrollPosition;
 
         // HUD size management
-        private Rect originalWindowRect;
+        private Rect normalWindowRect;
         private Rect enlargedWindowRect;
-        private bool isAutoPulled = false;
-        private int AutoPulledFontScaleFactor = 2;
+        private bool isEnlarged = false;
+        private float sizeScaleFactor = 1.6f;
+
+        // Dynamic sizing
+        private float baseWindowHeight = 160f; // Base height without players
+        private float playerRowHeight = 40f; // Height per player row
+        private float minWindowHeight = 150f; // Minimum window height
+        private float windowWidth = 300f; // Window width
+        private float windowMargin = 20f; // Margin from screen edge
+
+        // Material Design Colors
+        private static readonly Color MaterialPrimary = new Color(0.259f, 0.522f, 0.957f, 1f); // Blue
+        private static readonly Color MaterialPrimaryDark = new Color(0.196f, 0.427f, 0.859f, 1f); // Darker Blue
+        private static readonly Color MaterialAccent = new Color(1f, 0.341f, 0.133f, 1f); // Orange
+        private static readonly Color MaterialSurface = new Color(0.18f, 0.18f, 0.18f, 0.95f); // Dark surface with transparency
+        private static readonly Color MaterialSurfaceVariant = new Color(0.25f, 0.25f, 0.25f, 0.95f);
+        private static readonly Color MaterialOnSurface = new Color(0.9f, 0.9f, 0.9f, 1f); // Light text
+        private static readonly Color MaterialOnSurfaceVariant = new Color(0.7f, 0.7f, 0.7f, 1f); // Muted text
+        private static readonly Color MaterialPositive = new Color(0.298f, 0.686f, 0.314f, 1f); // Green
+        private static readonly Color MaterialWarning = new Color(1f, 0.757f, 0.027f, 1f); // Amber
 
         // Custom GUI Styles
+        private GUIStyle windowStyle;
         private GUIStyle titleStyle;
         private GUIStyle headerStyle;
         private GUIStyle labelStyle;
+        private GUIStyle valueStyle;
         private GUIStyle buttonStyle;
+        private GUIStyle primaryButtonStyle;
+        private GUIStyle cardStyle;
+        private GUIStyle separatorStyle;
         private bool stylesInitialized = false;
-        private Texture2D solidColorTexture;
+
+        // Material Design textures
+        private Texture2D surfaceTexture;
+        private Texture2D surfaceVariantTexture;
+        private Texture2D primaryTexture;
+        private Texture2D primaryDarkTexture;
+        private Texture2D separatorTexture;
 
         // Survival Mode tracking
         private bool isSurvivalActive = false;
         private DateTime survivalStartTime;
-        private TimeSpan lastSessionTime = TimeSpan.Zero;
+        private TimeSpan lastGameDuration;
 
         public static void Initialize()
         {
@@ -45,12 +73,13 @@ namespace StatsMod
                 DontDestroyOnLoad(statsDisplayObj);
                 Instance = _instance;
 
-                // Set the window position to top right - original size
-                Instance.originalWindowRect = new Rect(Screen.width - 320, 20, 300, 350);
-                // Set enlarged size
-                Instance.enlargedWindowRect = new Rect(Screen.width - (int)(320 * Instance.AutoPulledFontScaleFactor), 20, 300 * Instance.AutoPulledFontScaleFactor, 350 * Instance.AutoPulledFontScaleFactor);
-                // Start with original size
-                Instance.windowRect = Instance.originalWindowRect;
+                // Set the window position to top right - will calculate size dynamically
+                Instance.normalWindowRect = new Rect(Screen.width - Instance.windowWidth - Instance.windowMargin,
+                    Instance.windowMargin, Instance.windowWidth, Instance.baseWindowHeight);
+                Instance.enlargedWindowRect = new Rect(Screen.width - (Instance.windowWidth + Instance.windowMargin) * Instance.sizeScaleFactor,
+                    Instance.windowMargin, Instance.windowWidth * Instance.sizeScaleFactor, Instance.baseWindowHeight * Instance.sizeScaleFactor);
+                // Start with normal size
+                Instance.windowRect = Instance.normalWindowRect;
 
                 Logger.LogInfo("Stats Display initialized");
             }
@@ -59,90 +88,236 @@ namespace StatsMod
         private void Update()
         {
             Keyboard keyboard = Keyboard.current;
+
+            // F1 key - toggle UI in small size, or make large UI small
             if (keyboard != null && keyboard.f1Key.wasPressedThisFrame)
             {
-                ToggleDisplayManually();
+                if (isDisplayVisible && isEnlarged)
+                {
+                    // If display is visible and large, make it small
+                    isEnlarged = false;
+                    stylesInitialized = false;
+                    UpdateWindowSize();
+                }
+                else
+                {
+                    // Toggle display in small size
+                    ToggleDisplaySmall();
+                }
+            }
+
+            // F2 key - toggle UI in large size, or make small UI large
+            if (keyboard != null && keyboard.f2Key.wasPressedThisFrame)
+            {
+                if (isDisplayVisible && !isEnlarged)
+                {
+                    // If display is visible and small, make it large
+                    isEnlarged = true;
+                    stylesInitialized = false;
+                    UpdateWindowSize();
+                }
+                else
+                {
+                    // Toggle display in large size
+                    ToggleDisplayLarge();
+                }
             }
         }
 
-        private void ToggleDisplayManually()
+        private void ToggleDisplaySmall()
         {
             isDisplayVisible = !isDisplayVisible;
-
-            // When manually toggled, always use original size and clear auto-pull state
             if (isDisplayVisible)
             {
-                windowRect = originalWindowRect;
-                isAutoPulled = false;
+                // Show in small size
+                isEnlarged = false;
                 stylesInitialized = false;
+                UpdateWindowSize(); // Calculate size dynamically
             }
-
-            Logger.LogInfo($"Stats display {(isDisplayVisible ? "shown" : "hidden")} manually");
         }
 
+        private void ToggleDisplayLarge()
+        {
+            isDisplayVisible = !isDisplayVisible;
+            if (isDisplayVisible)
+            {
+                // Show in large size
+                isEnlarged = true;
+                stylesInitialized = false;
+                UpdateWindowSize(); // Calculate size dynamically
+            }
+        }
         public void AutoPullHUD()
         {
             isDisplayVisible = true;
-            isAutoPulled = true;
-            windowRect = enlargedWindowRect;
+            isEnlarged = true;
             stylesInitialized = false;
-            Logger.LogInfo("Stats HUD automatically pulled up with enlarged size");
+            UpdateWindowSize(); // Calculate size dynamically
+            Logger.LogInfo("Stats HUD automatically pulled up with enlarged size - player stats preserved");
         }
 
         public void HideHUD()
         {
             isDisplayVisible = false;
-            isAutoPulled = false;
+            isEnlarged = false;
             stylesInitialized = false;
-            Logger.LogInfo("Stats HUD hidden and size reset");
+            Logger.LogInfo("Stats HUD hidden - player stats preserved until new game");
         }
 
         private void InitializeStyles()
         {
             if (stylesInitialized) return;
 
-            // Create a solid color texture for the button
-            solidColorTexture = new Texture2D(1, 1);
-            solidColorTexture.SetPixel(0, 0, new Color(0.3f, 0.3f, 0.3f, 1f)); // Dark gray solid color
-            solidColorTexture.Apply();
+            // Create Material Design textures
+            CreateMaterialTextures();
 
-            // Scale font sizes based on whether HUD is auto-pulled (enlarged)
-            int fontScaler = isAutoPulled ? AutoPulledFontScaleFactor : 1;
+            // Calculate scale factor based on current size mode
+            float fontScale = isEnlarged ? sizeScaleFactor : 1f;
+
+            // Material Design window style
+            windowStyle = new GUIStyle(GUI.skin.window)
+            {
+                normal = { background = surfaceTexture },
+                padding = isEnlarged ? new RectOffset(16, 16, 24, 12) : new RectOffset(16, 16, 24, 24),
+                border = new RectOffset(2, 2, 2, 2)
+            };
+
+            // Title style - Material Design headline
             titleStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = 17 * fontScaler,
+                fontSize = Mathf.RoundToInt(22 * fontScale),
                 fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.UpperCenter
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = MaterialOnSurface },
+                padding = new RectOffset(0, 0, 8, 12),
+                margin = new RectOffset(0, 0, 0, 8)
             };
 
+            // Section header style
             headerStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = 14 * fontScaler,
-                fontStyle = FontStyle.Bold
+                fontSize = Mathf.RoundToInt(16 * fontScale),
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleLeft,
+                normal = { textColor = MaterialPrimary },
+                padding = new RectOffset(6, 0, 4, 2),
+                margin = new RectOffset(0, 0, 4, 2)
             };
 
+            // Regular label style
             labelStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = 12 * fontScaler
+                fontSize = Mathf.RoundToInt(14 * fontScale),
+                normal = { textColor = MaterialOnSurfaceVariant },
+                padding = new RectOffset(8, 0, 2, 2),
+                margin = new RectOffset(0, 0, 1, 1)
             };
 
+            // Value/data style
+            valueStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = Mathf.RoundToInt(14 * fontScale),
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = MaterialOnSurface },
+                padding = new RectOffset(0, 8, 2, 2),
+                margin = new RectOffset(0, 0, 1, 1)
+            };
+
+            // Primary button style
+            primaryButtonStyle = new GUIStyle(GUI.skin.button)
+            {
+                fontSize = Mathf.RoundToInt(14 * fontScale),
+                fontStyle = FontStyle.Bold,
+                normal = {
+                    background = primaryTexture,
+                    textColor = Color.white
+                },
+                hover = {
+                    background = primaryDarkTexture,
+                    textColor = Color.white
+                },
+                active = {
+                    background = primaryDarkTexture,
+                    textColor = Color.white
+                },
+                padding = new RectOffset(16, 16, 8, 8),
+                margin = new RectOffset(4, 4, 4, 4)
+            };
+
+            // Secondary button style
             buttonStyle = new GUIStyle(GUI.skin.button)
             {
-                fontSize = 14 * fontScaler,
-                normal = { background = solidColorTexture },
-                hover = { background = solidColorTexture },
-                active = { background = solidColorTexture }
+                fontSize = Mathf.RoundToInt(14 * fontScale),
+                normal = {
+                    background = surfaceVariantTexture,
+                    textColor = MaterialOnSurface
+                },
+                hover = {
+                    background = surfaceVariantTexture,
+                    textColor = MaterialPrimary
+                },
+                active = {
+                    background = surfaceVariantTexture,
+                    textColor = MaterialPrimary
+                },
+                padding = new RectOffset(16, 16, 8, 8),
+                margin = new RectOffset(4, 4, 4, 4)
+            };
+
+            // Card-like container style
+            cardStyle = new GUIStyle()
+            {
+                normal = { background = surfaceVariantTexture },
+                padding = new RectOffset(8, 8, 4, 4),
+                margin = new RectOffset(2, 2, 2, 2)
+            };
+
+            // Separator style
+            separatorStyle = new GUIStyle()
+            {
+                normal = { background = separatorTexture },
+                fixedHeight = 1,
+                margin = new RectOffset(8, 8, 8, 8)
             };
 
             stylesInitialized = true;
         }
 
+        private void CreateMaterialTextures()
+        {
+            // Surface texture
+            surfaceTexture = new Texture2D(1, 1);
+            surfaceTexture.SetPixel(0, 0, MaterialSurface);
+            surfaceTexture.Apply();
+
+            // Surface variant texture
+            surfaceVariantTexture = new Texture2D(1, 1);
+            surfaceVariantTexture.SetPixel(0, 0, MaterialSurfaceVariant);
+            surfaceVariantTexture.Apply();
+
+            // Primary texture
+            primaryTexture = new Texture2D(1, 1);
+            primaryTexture.SetPixel(0, 0, MaterialPrimary);
+            primaryTexture.Apply();
+
+            // Primary dark texture
+            primaryDarkTexture = new Texture2D(1, 1);
+            primaryDarkTexture.SetPixel(0, 0, MaterialPrimaryDark);
+            primaryDarkTexture.Apply();
+
+            // Separator texture
+            separatorTexture = new Texture2D(1, 1);
+            separatorTexture.SetPixel(0, 0, new Color(0.5f, 0.5f, 0.5f, 0.3f));
+            separatorTexture.Apply();
+        }
+
         private void OnDestroy()
         {
-            if (solidColorTexture != null)
-            {
-                Destroy(solidColorTexture);
-            }
+            if (surfaceTexture != null) Destroy(surfaceTexture);
+            if (surfaceVariantTexture != null) Destroy(surfaceVariantTexture);
+            if (primaryTexture != null) Destroy(primaryTexture);
+            if (primaryDarkTexture != null) Destroy(primaryDarkTexture);
+            if (separatorTexture != null) Destroy(separatorTexture);
         }
 
         private void OnGUI()
@@ -150,45 +325,62 @@ namespace StatsMod
             if (!isDisplayVisible) return;
 
             InitializeStyles();
-            windowRect = GUILayout.Window(0, windowRect, DrawStatsWindow, "Player Stats");
+            UpdateWindowSize();
+
+            // Apply the Material Design window style
+            GUI.Window(0, windowRect, DrawStatsWindow, "Game Statistics", windowStyle);
         }
 
         private void DrawStatsWindow(int windowID)
         {
-            GUILayout.Label("Player Statistics", titleStyle);
-            GUILayout.Space(5);
+            GUILayout.BeginVertical();
 
-            // Show auto-pull indicator if HUD was automatically pulled
-            if (isAutoPulled)
+            // Survival Mode Stats Card
+            GUILayout.BeginVertical(cardStyle);
+            GUILayout.Label("Survival Mode", headerStyle);
+
+            // Single row showing either current timer or last game duration
+            GUILayout.BeginHorizontal();
+            if (isSurvivalActive)
             {
-                GUIStyle autoPullStyle = new GUIStyle(labelStyle)
+                GUILayout.Label("Time:", labelStyle, GUILayout.Width(GetScaledWidth(50)));
+                GUIStyle timerStyle = new GUIStyle(valueStyle)
                 {
-                    fontStyle = FontStyle.Italic,
-                    normal = { textColor = Color.yellow }
+                    normal = { textColor = MaterialPositive }
                 };
-                GUILayout.Label("(Auto-displayed - Survival Mode Ended)", autoPullStyle);
-                GUILayout.Space(5);
+                GUILayout.Label(FormatTimeSpan(DateTime.Now - survivalStartTime), timerStyle, GUILayout.MinWidth(GetScaledWidth(80)));
             }
+            else
+            {
+                GUILayout.Label("Last Game:", labelStyle, GUILayout.Width(GetScaledWidth(120)));
+                GUIStyle statusStyle = new GUIStyle(valueStyle)
+                {
+                    normal = { textColor = MaterialOnSurfaceVariant }
+                };
+                GUILayout.Label(lastGameDuration.TotalSeconds > 0 ? FormatTimeSpan(lastGameDuration) : "No games yet", statusStyle);
+            }
+            GUILayout.EndHorizontal();
+            GUILayout.EndVertical();
 
-            // Survival Mode Stats Section
-            GUILayout.Label("Survival Mode Stats", headerStyle);
+            GUILayout.Space(4);
 
-            string survivalTimeText = isSurvivalActive
-                ? $"Current Session: {FormatTimeSpan(DateTime.Now - survivalStartTime)}"
-                : "Not in Survival Mode";
-
-            GUILayout.Label(survivalTimeText, labelStyle);
-            GUILayout.Label($"Last Session Time: {FormatTimeSpan(lastSessionTime)}", labelStyle);
-
-            GUILayout.Space(5);
-
-            // Enemy Stats Section
+            // Enemy Statistics Card
+            GUILayout.BeginVertical(cardStyle);
             GUILayout.Label("Enemy Statistics", headerStyle);
+
             try
             {
                 if (EnemiesTracker.Instance != null)
                 {
-                    GUILayout.Label($"Enemies Killed: {EnemiesTracker.Instance.GetEnemiesKilled()}", labelStyle);
+                    int enemiesKilled = EnemiesTracker.Instance.GetEnemiesKilled();
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label("Enemies Killed:", labelStyle, GUILayout.Width(GetScaledWidth(120)));
+                    GUIStyle killsStyle = new GUIStyle(valueStyle)
+                    {
+                        normal = { textColor = enemiesKilled > 0 ? MaterialPositive : MaterialOnSurface }
+                    };
+                    GUILayout.Label(enemiesKilled.ToString(), killsStyle);
+                    GUILayout.EndHorizontal();
                 }
                 else
                 {
@@ -197,14 +389,19 @@ namespace StatsMod
             }
             catch (System.Exception ex)
             {
-                GUILayout.Label($"Error displaying enemy stats: {ex.Message}", labelStyle);
+                GUIStyle errorStyle = new GUIStyle(labelStyle)
+                {
+                    normal = { textColor = MaterialAccent }
+                };
+                GUILayout.Label($"Error: {ex.Message}", errorStyle);
                 Logger.LogError($"Error displaying enemy stats: {ex.Message}");
             }
+            GUILayout.EndVertical();
 
-            // Player Stats Section
-            GUILayout.Space(5);
-            GUILayout.Label("Player Statistics", headerStyle);
-            scrollPosition = GUILayout.BeginScrollView(scrollPosition);
+            GUILayout.Space(4);
+
+            // Player Statistics Card
+            GUILayout.BeginVertical(cardStyle);
             try
             {
                 if (PlayerTracker.Instance != null)
@@ -212,18 +409,41 @@ namespace StatsMod
                     var playerStats = PlayerTracker.Instance.GetPlayerStatsList();
                     if (playerStats != null && playerStats.Count > 0)
                     {
+                        // Header row
+                        GUILayout.BeginHorizontal();
+                        GUILayout.Label("Player", headerStyle, GUILayout.Width(GetScaledWidth(95)));
+                        GUILayout.Label("Deaths", headerStyle, GUILayout.Width(GetScaledWidth(100)));
+                        GUILayout.Label("Kills", headerStyle, GUILayout.Width(GetScaledWidth(60)));
+                        GUILayout.EndHorizontal();
+
+                        // Add a subtle separator
+                        GUILayout.Box("", separatorStyle);
+
                         foreach (var stat in playerStats)
                         {
                             GUILayout.BeginHorizontal();
-                            GUILayout.Label($"{stat.playerName}", labelStyle, GUILayout.Width(180));
-                            GUILayout.Label($"Deaths: {stat.deaths}", labelStyle);
+                            GUILayout.Label("", valueStyle, GUILayout.Width(GetScaledWidth(5)));
+                            GUILayout.Label(stat.playerName, valueStyle, GUILayout.Width(GetScaledWidth(115)));
+
+                            GUIStyle deathsStyle = new GUIStyle(valueStyle)
+                            {
+                                normal = { textColor = stat.deaths > 0 ? MaterialAccent : MaterialOnSurface }
+                            };
+                            GUILayout.Label(stat.deaths.ToString(), deathsStyle, GUILayout.Width(GetScaledWidth(90)));
+
+                            GUIStyle killsStyle = new GUIStyle(valueStyle)
+                            {
+                                normal = { textColor = stat.kills > 0 ? MaterialPositive : MaterialOnSurface }
+                            };
+                            GUILayout.Label(stat.kills.ToString(), killsStyle, GUILayout.Width(GetScaledWidth(60)));
                             GUILayout.EndHorizontal();
-                            GUILayout.Space(2);
+
+                            GUILayout.Space(8);
                         }
                     }
                     else
                     {
-                        GUILayout.Label("No player stats available", labelStyle);
+                        GUILayout.Label("No players connected", labelStyle);
                     }
                 }
                 else
@@ -233,33 +453,76 @@ namespace StatsMod
             }
             catch (System.Exception ex)
             {
-                GUILayout.Label($"Error displaying stats: {ex.Message}", labelStyle);
-                Logger.LogError($"Error displaying stats: {ex.Message}");
+                GUIStyle errorStyle = new GUIStyle(labelStyle)
+                {
+                    normal = { textColor = MaterialAccent }
+                };
+                GUILayout.Label($"Error: {ex.Message}", errorStyle);
+                Logger.LogError($"Error displaying player stats: {ex.Message}");
             }
+            GUILayout.EndVertical();
 
-            GUILayout.EndScrollView();
-
-            // Button layout
-            GUILayout.BeginHorizontal();
-
-            if (GUILayout.Button("Close", buttonStyle))
-            {
-                HideHUD();
-            }
-
-            // If auto-pulled, show a button to return to normal size
-            if (isAutoPulled && GUILayout.Button("Normal Size", buttonStyle))
-            {
-                windowRect = originalWindowRect;
-                isAutoPulled = false;
-                // Reset styles to use normal font sizes
-                stylesInitialized = false;
-                Logger.LogInfo("HUD resized to normal size");
-            }
-
-            GUILayout.EndHorizontal();
-
+            GUILayout.EndVertical();
             GUI.DragWindow();
+        }
+
+        private float GetScaledWidth(float baseWidth)
+        {
+            float scale = isEnlarged ? sizeScaleFactor : 1f;
+            return baseWidth * scale;
+        }
+
+        private float GetScaledHeight(float baseHeight)
+        {
+            float scale = isEnlarged ? sizeScaleFactor : 1f;
+            return baseHeight * scale;
+        }
+
+        private void UpdateWindowSize()
+        {
+            int playerCount = 0;
+            try
+            {
+                if (PlayerTracker.Instance != null)
+                {
+                    var playerStats = PlayerTracker.Instance.GetPlayerStatsList();
+                    playerCount = playerStats?.Count ?? 0;
+                }
+            }
+            catch (System.Exception)
+            {
+                playerCount = 0;
+            }
+
+            // Calculate dynamic height - show all players without scrolling
+            float playerSectionHeight;
+            if (playerCount == 0)
+            {
+                // Minimal space when no players
+                playerSectionHeight = 25f;
+            }
+            else
+            {
+                // Calculate height for all players plus header and padding
+                playerSectionHeight = playerCount * playerRowHeight + 30f; // 30f for header and padding
+            }
+
+            float dynamicHeight = Mathf.Max(
+                baseWindowHeight + playerSectionHeight,
+                minWindowHeight
+            );
+
+            // Update window rectangles
+            if (isEnlarged)
+            {
+                enlargedWindowRect.height = dynamicHeight * (sizeScaleFactor - 0.2f);
+                windowRect = enlargedWindowRect;
+            }
+            else
+            {
+                normalWindowRect.height = dynamicHeight;
+                windowRect = normalWindowRect;
+            }
         }
 
         // Helper method for formatting TimeSpan in a readable way
@@ -279,11 +542,11 @@ namespace StatsMod
         {
             if (!isSurvivalActive) return;
 
+            TimeSpan sessionTime = DateTime.Now - survivalStartTime;
+            lastGameDuration = sessionTime;
             isSurvivalActive = false;
-            // Store only the last session time, not a cumulative total
-            lastSessionTime = DateTime.Now - survivalStartTime;
 
-            Logger.LogInfo($"Survival mode timer stopped. Session time: {FormatTimeSpan(lastSessionTime)}");
+            Logger.LogInfo($"Survival mode timer stopped. Session time: {FormatTimeSpan(sessionTime)}");
         }
     }
 }

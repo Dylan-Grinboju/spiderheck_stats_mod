@@ -28,12 +28,19 @@ namespace StatsMod
 
         private Dictionary<ulong, PlayerInput> playerIds = new Dictionary<ulong, PlayerInput>();
 
-        private ulong nextLocalPlayerId = 1000;
+        private ulong nextLocalPlayerId = 0;
+
+        // Cache for expensive player lookups
+        private static PlayerController[] cachedPlayerControllers;
+        private static float lastPlayerCacheUpdate = 0f;
+        private static float playerCacheRefreshInterval = 60f; // Refresh every 60 seconds
+        private static readonly object playerCacheLock = new object();
 
         public class PlayerData
         {
             public ulong PlayerId { get; set; }
             public int Deaths { get; set; }
+            public int Kills { get; set; }
             public string PlayerName { get; set; }
             public DateTime JoinTime { get; set; }
 
@@ -41,6 +48,7 @@ namespace StatsMod
             {
                 PlayerId = id;
                 Deaths = 0;
+                Kills = 0;
                 PlayerName = name;
                 JoinTime = DateTime.Now;
             }
@@ -70,6 +78,8 @@ namespace StatsMod
             activePlayers[player] = playerData;
             playerIds[playerId] = player;
 
+            RefreshPlayerCache();
+
             Logger.LogInfo($"Registered player ID: {playerId}, Name: {playerName}, Index: {player.playerIndex}");
         }
 
@@ -84,6 +94,8 @@ namespace StatsMod
 
                 playerIds.Remove(playerData.PlayerId);
                 activePlayers.Remove(player);
+
+                RefreshPlayerCache();
             }
         }
 
@@ -97,7 +109,6 @@ namespace StatsMod
                 if (spiderHealth.rootObject != null)
                 {
                     playerInput = spiderHealth.rootObject.GetComponentInParent<PlayerInput>();
-                    Logger.LogInfo($"Player input found: {playerInput.playerIndex}");
                 }
 
                 if (playerInput != null && activePlayers.TryGetValue(playerInput, out PlayerData data))
@@ -122,7 +133,6 @@ namespace StatsMod
                 if (spiderHealth.rootObject != null)
                 {
                     playerInput = spiderHealth.rootObject.GetComponentInParent<PlayerInput>();
-                    Logger.LogInfo($"Player input found: {playerInput.playerIndex}");
                 }
 
                 if (playerInput != null && activePlayers.TryGetValue(playerInput, out PlayerData data))
@@ -137,22 +147,48 @@ namespace StatsMod
             }
         }
 
-        public List<(string playerName, int deaths, ulong playerId)> GetPlayerStatsList()
+        public void RecordPlayerKill(PlayerInput playerInput)
         {
-            List<(string playerName, int deaths, ulong playerId)> result = new List<(string playerName, int deaths, ulong playerId)>();
+            if (playerInput == null) return;
+
+            try
+            {
+                if (activePlayers.TryGetValue(playerInput, out PlayerData data))
+                {
+                    data.Kills++;
+                    Logger.LogInfo($"Recorded kill for player ID: {data.PlayerId}, Total kills: {data.Kills}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error recording player kill: {ex.Message}");
+            }
+        }
+
+        //record player kill via his ID
+        public void RecordPlayerKill(ulong playerId)
+        {
+            if (playerIds.TryGetValue(playerId, out PlayerInput playerInput))
+            {
+                RecordPlayerKill(playerInput);
+            }
+            else
+            {
+                Logger.LogError($"Player ID {playerId} not found in active players.");
+            }
+        }
+
+        public List<(string playerName, int deaths, int kills, ulong playerId)> GetPlayerStatsList()
+        {
+            List<(string playerName, int deaths, int kills, ulong playerId)> result = new List<(string playerName, int deaths, int kills, ulong playerId)>();
 
             foreach (var entry in activePlayers)
             {
                 PlayerData player = entry.Value;
-                result.Add((player.PlayerName, player.Deaths, player.PlayerId));
+                result.Add((player.PlayerName, player.Deaths, player.Kills, player.PlayerId));
             }
 
             return result;
-        }
-
-        public int GetActivePlayerCount()
-        {
-            return activePlayers.Count;
         }
 
         public void ResetPlayerStats()
@@ -160,6 +196,51 @@ namespace StatsMod
             foreach (var entry in activePlayers)
             {
                 entry.Value.Deaths = 0;
+                entry.Value.Kills = 0;
+            }
+        }
+
+        public static PlayerController[] GetCachedPlayerControllers()
+        {
+            lock (playerCacheLock)
+            {
+                float currentTime = Time.time;
+                if (cachedPlayerControllers == null || currentTime - lastPlayerCacheUpdate > playerCacheRefreshInterval)
+                {
+                    cachedPlayerControllers = UnityEngine.Object.FindObjectsOfType<PlayerController>();
+                    lastPlayerCacheUpdate = currentTime;
+                }
+                return cachedPlayerControllers;
+            }
+        }
+
+        public static PlayerInput FindPlayerInputByPlayerId(ulong playerId)
+        {
+            PlayerController[] playerControllers = GetCachedPlayerControllers();
+
+            foreach (PlayerController controller in playerControllers)
+            {
+                if (controller != null && (ulong)controller.playerID.Value == playerId)
+                {
+                    PlayerInput playerInput = controller.GetComponentInParent<PlayerInput>();
+                    if (playerInput != null)
+                    {
+                        return playerInput;
+                    }
+                }
+            }
+
+            Logger.LogError($"Could not find PlayerController with playerID.Value: {playerId}");
+            return null;
+        }
+
+
+        public static void RefreshPlayerCache()
+        {
+            lock (playerCacheLock)
+            {
+                cachedPlayerControllers = null;
+                lastPlayerCacheUpdate = 0f;
             }
         }
     }
