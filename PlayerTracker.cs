@@ -33,7 +33,7 @@ namespace StatsMod
         // Cache for expensive player lookups
         private static PlayerController[] cachedPlayerControllers;
         private static float lastPlayerCacheUpdate = 0f;
-        private static float playerCacheRefreshInterval = 60f; // Refresh every 2 seconds
+        private static float playerCacheRefreshInterval = 60f; // Refresh every 60 seconds
         private static readonly object playerCacheLock = new object();
 
         public class PlayerData
