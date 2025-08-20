@@ -33,7 +33,7 @@ A simple statistics tracking mod for Spider Heck that monitors player performanc
 
 ## The Future
 - I plan to continue expanding this mod
-- Some of the immediate ideas are saving the stats to a local log file, and expanding on the stats themselves, like types of enemies killed, how many shields destroyed, and fun stuff like greatest hight reached by a player in game
+- Some of the immediate ideas are saving the stats to a local log file, and expanding on the stats themselves, like types of enemies killed, how many shields destroyed, and fun stuff like greatest height reached by a player in game
 - I welcome any help or feedback! You can send me a message on Discord or Reddit, open a PR or try to send me a bug report using smoke signals. Some options are better than others
 
 
