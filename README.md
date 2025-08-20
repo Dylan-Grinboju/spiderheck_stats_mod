@@ -9,12 +9,11 @@ A simple statistics tracking mod for Spider Heck that monitors player performanc
 
 ## Features
 
-- **In-Game Display**: Press F1 to toggle stats display window
+- **In-Game Display**: Press F1 to toggle the small stats display window, F2 for the large
 - **Auto-Pull HUD**: Stats automatically appear when survival mode ends
 - **Enemy Tracking**: Counts enemies killed during survival gameplay
-- **Player Statistics**: Monitors player deaths and active player counts
-- **Survival Mode Timer**: Tracks session duration in survival mode
-- **Session History**: Records your last survival session time
+- **Player Statistics**: Monitors player deaths and kills
+- **Survival Mode Timer**: Tracks session duration
 
 ## Installation
 
@@ -23,14 +22,15 @@ A simple statistics tracking mod for Spider Heck that monitors player performanc
 3. Place the mod file in your Silk mods folder
 4. Launch the game
 
-## Usage
+## Notes
+- Stats reset when starting a new game. After the game ending you can return to the lobby and the overlay will show the last game's stats.
+- There are Bugs. Not just the ones that you need to kill in the game, also in this mod.
+- There are some kills that won't register such as activating a weapon with another (hitting a grenade with a particle blade). This just complicates the logic and is up to interpretation of who gets the kill in difficult scenarios. Also, this is just very complicated to track, and I wasn't feeling like coding it. 
 
-- **Press F1** to show/hide the statistics window manually
-- **Auto-Display**: Stats automatically appear when survival mode ends
-- Stats reset when starting a new survival mode session
-
-## Contributing
-I hope to continue expanding this, and I welcome any help or feedback! 
+## The Future
+- I plan to continue expanding this mod.
+- Some of the immediate ideas are saving the stats to a local log file, and expanding on the stats themselves, like types of enemies killed, how many shields destroyed, and fun stuff like greatest hight reached by a player in game.
+- I welcome any help or feedback! You can send me a message on Discord or Reddit, open a PR or try to send me a bug report using smoke signals. Some options are better than others.
 
 
 
