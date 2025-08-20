@@ -16,7 +16,7 @@ namespace StatsMod
     {
         private static HashSet<int> recentlyKilledEnemies = new HashSet<int>();
         private static float lastCleanupTime = 0f;
-        private static float cleanupInterval = 10f; // Clean up every 10 seconds
+        private static float cleanupInterval = 10f; // Clean up 10 seconds after nobody acquires the lock
         private static readonly object recentlyKilledLock = new object();
 
         private static Dictionary<int, int> rollerBrainHealthTracker = new Dictionary<int, int>();
@@ -61,12 +61,12 @@ namespace StatsMod
 
             lock (recentlyKilledLock)
             {
-                // Clean up the set periodically
+                // Clean up the set if enough time has passed since last lock acquisition
                 if (currentTime - lastCleanupTime > cleanupInterval)
                 {
                     recentlyKilledEnemies.Clear();
-                    lastCleanupTime = currentTime;
                 }
+                lastCleanupTime = currentTime;
 
                 // Check if this enemy was already killed recently
                 if (recentlyKilledEnemies.Contains(enemyId))
@@ -150,7 +150,6 @@ namespace StatsMod
                 Logger.LogError("Enemy is null, cannot check if it will die to damage.");
                 return false;
             }
-            // check for roller strut
             RollerBrain rollerBrain = enemy.GetComponentInParent<RollerBrain>();
             if (rollerBrain != null)
             {
@@ -218,6 +217,7 @@ namespace StatsMod
     }
 
 
+    //death function of an enemy, no matter the cause (even lava)
     [HarmonyPatch(typeof(EnemyHealthSystem), "Explode")]
     class EnemyDeathCountPatch
     {
