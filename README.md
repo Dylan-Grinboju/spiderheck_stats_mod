@@ -1,7 +1,6 @@
 # Stats Mod for Spider Heck
 
-A simple statistics tracking mod for Spider Heck that monitors player performance and game events.
-
+A simple statistics tracking mod for Spiderheck that monitors player performance and game events.
 
 
 ## Features
