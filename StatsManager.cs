@@ -117,6 +117,11 @@ namespace StatsMod
             playerTracker.IncrementPlayerKill(player);
         }
 
+        public void UpdatePlayerColor(PlayerInput player, Color color)
+        {
+            playerTracker.UpdatePlayerColor(player, color);
+        }
+
         public void IncrementEnemyKilled()
         {
             enemiesTracker.IncrementEnemiesKilled();

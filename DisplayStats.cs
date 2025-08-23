@@ -411,7 +411,12 @@ namespace StatsMod
 
                         GUILayout.BeginHorizontal();
                         GUILayout.Label("", valueStyle, GUILayout.Width(GetScaledWidth(5)));
-                        GUILayout.Label(playerData.PlayerName, valueStyle, GUILayout.Width(GetScaledWidth(115)));
+
+                        GUIStyle playerNameStyle = new GUIStyle(valueStyle)
+                        {
+                            normal = { textColor = playerData.PlayerColor }
+                        };
+                        GUILayout.Label(playerData.PlayerName, playerNameStyle, GUILayout.Width(GetScaledWidth(115)));
 
                         GUIStyle deathsStyle = new GUIStyle(valueStyle)
                         {
