@@ -59,11 +59,6 @@ namespace StatsMod
         private Texture2D primaryDarkTexture;
         private Texture2D separatorTexture;
 
-        // Survival Mode tracking
-        private bool isSurvivalActive = false;
-        private DateTime survivalStartTime;
-        private TimeSpan lastGameDuration;
-
         public static void Initialize()
         {
             if (_instance == null)
@@ -341,14 +336,15 @@ namespace StatsMod
 
             // Single row showing either current timer or last game duration
             GUILayout.BeginHorizontal();
-            if (isSurvivalActive)
+            var statsSnapshot = StatsManager.Instance.GetStatsSnapshot();
+            if (statsSnapshot.IsSurvivalActive)
             {
                 GUILayout.Label("Time:", labelStyle, GUILayout.Width(GetScaledWidth(50)));
                 GUIStyle timerStyle = new GUIStyle(valueStyle)
                 {
                     normal = { textColor = MaterialPositive }
                 };
-                GUILayout.Label(FormatTimeSpan(DateTime.Now - survivalStartTime), timerStyle, GUILayout.MinWidth(GetScaledWidth(80)));
+                GUILayout.Label(FormatTimeSpan(statsSnapshot.CurrentSessionTime), timerStyle, GUILayout.MinWidth(GetScaledWidth(80)));
             }
             else
             {
@@ -357,7 +353,7 @@ namespace StatsMod
                 {
                     normal = { textColor = MaterialOnSurfaceVariant }
                 };
-                GUILayout.Label(lastGameDuration.TotalSeconds > 0 ? FormatTimeSpan(lastGameDuration) : "No games yet", statusStyle);
+                GUILayout.Label(statsSnapshot.LastGameDuration.TotalSeconds > 0 ? FormatTimeSpan(statsSnapshot.LastGameDuration) : "No games yet", statusStyle);
             }
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
@@ -370,22 +366,15 @@ namespace StatsMod
 
             try
             {
-                if (EnemiesTracker.Instance != null)
+                int enemiesKilled = statsSnapshot.EnemiesKilled;
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Enemies Killed:", labelStyle, GUILayout.Width(GetScaledWidth(120)));
+                GUIStyle killsStyle = new GUIStyle(valueStyle)
                 {
-                    int enemiesKilled = EnemiesTracker.Instance.GetEnemiesKilled();
-                    GUILayout.BeginHorizontal();
-                    GUILayout.Label("Enemies Killed:", labelStyle, GUILayout.Width(GetScaledWidth(120)));
-                    GUIStyle killsStyle = new GUIStyle(valueStyle)
-                    {
-                        normal = { textColor = enemiesKilled > 0 ? MaterialPositive : MaterialOnSurface }
-                    };
-                    GUILayout.Label(enemiesKilled.ToString(), killsStyle);
-                    GUILayout.EndHorizontal();
-                }
-                else
-                {
-                    GUILayout.Label("Enemy Tracker not initialized", labelStyle);
-                }
+                    normal = { textColor = enemiesKilled > 0 ? MaterialPositive : MaterialOnSurface }
+                };
+                GUILayout.Label(enemiesKilled.ToString(), killsStyle);
+                GUILayout.EndHorizontal();
             }
             catch (System.Exception ex)
             {
@@ -404,51 +393,45 @@ namespace StatsMod
             GUILayout.BeginVertical(cardStyle);
             try
             {
-                if (PlayerTracker.Instance != null)
+                if (statsSnapshot.ActivePlayers != null && statsSnapshot.ActivePlayers.Count > 0)
                 {
-                    var playerStats = PlayerTracker.Instance.GetPlayerStatsList();
-                    if (playerStats != null && playerStats.Count > 0)
+                    // Header row
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label("Player", headerStyle, GUILayout.Width(GetScaledWidth(95)));
+                    GUILayout.Label("Deaths", headerStyle, GUILayout.Width(GetScaledWidth(100)));
+                    GUILayout.Label("Kills", headerStyle, GUILayout.Width(GetScaledWidth(60)));
+                    GUILayout.EndHorizontal();
+
+                    // Add a subtle separator
+                    GUILayout.Box("", separatorStyle);
+
+                    foreach (var playerEntry in statsSnapshot.ActivePlayers)
                     {
-                        // Header row
+                        var playerData = playerEntry.Value;
+
                         GUILayout.BeginHorizontal();
-                        GUILayout.Label("Player", headerStyle, GUILayout.Width(GetScaledWidth(95)));
-                        GUILayout.Label("Deaths", headerStyle, GUILayout.Width(GetScaledWidth(100)));
-                        GUILayout.Label("Kills", headerStyle, GUILayout.Width(GetScaledWidth(60)));
+                        GUILayout.Label("", valueStyle, GUILayout.Width(GetScaledWidth(5)));
+                        GUILayout.Label(playerData.PlayerName, valueStyle, GUILayout.Width(GetScaledWidth(115)));
+
+                        GUIStyle deathsStyle = new GUIStyle(valueStyle)
+                        {
+                            normal = { textColor = playerData.Deaths > 0 ? MaterialAccent : MaterialOnSurface }
+                        };
+                        GUILayout.Label(playerData.Deaths.ToString(), deathsStyle, GUILayout.Width(GetScaledWidth(90)));
+
+                        GUIStyle killsStyle = new GUIStyle(valueStyle)
+                        {
+                            normal = { textColor = playerData.Kills > 0 ? MaterialPositive : MaterialOnSurface }
+                        };
+                        GUILayout.Label(playerData.Kills.ToString(), killsStyle, GUILayout.Width(GetScaledWidth(60)));
                         GUILayout.EndHorizontal();
 
-                        // Add a subtle separator
-                        GUILayout.Box("", separatorStyle);
-
-                        foreach (var stat in playerStats)
-                        {
-                            GUILayout.BeginHorizontal();
-                            GUILayout.Label("", valueStyle, GUILayout.Width(GetScaledWidth(5)));
-                            GUILayout.Label(stat.playerName, valueStyle, GUILayout.Width(GetScaledWidth(115)));
-
-                            GUIStyle deathsStyle = new GUIStyle(valueStyle)
-                            {
-                                normal = { textColor = stat.deaths > 0 ? MaterialAccent : MaterialOnSurface }
-                            };
-                            GUILayout.Label(stat.deaths.ToString(), deathsStyle, GUILayout.Width(GetScaledWidth(90)));
-
-                            GUIStyle killsStyle = new GUIStyle(valueStyle)
-                            {
-                                normal = { textColor = stat.kills > 0 ? MaterialPositive : MaterialOnSurface }
-                            };
-                            GUILayout.Label(stat.kills.ToString(), killsStyle, GUILayout.Width(GetScaledWidth(60)));
-                            GUILayout.EndHorizontal();
-
-                            GUILayout.Space(8);
-                        }
-                    }
-                    else
-                    {
-                        GUILayout.Label("No players connected", labelStyle);
+                        GUILayout.Space(8);
                     }
                 }
                 else
                 {
-                    GUILayout.Label("Player Tracker not initialized", labelStyle);
+                    GUILayout.Label("No players connected", labelStyle);
                 }
             }
             catch (System.Exception ex)
@@ -483,11 +466,8 @@ namespace StatsMod
             int playerCount = 0;
             try
             {
-                if (PlayerTracker.Instance != null)
-                {
-                    var playerStats = PlayerTracker.Instance.GetPlayerStatsList();
-                    playerCount = playerStats?.Count ?? 0;
-                }
+                var statsSnapshot = StatsManager.Instance.GetStatsSnapshot();
+                playerCount = statsSnapshot.ActivePlayers?.Count ?? 0;
             }
             catch (System.Exception)
             {
@@ -529,24 +509,6 @@ namespace StatsMod
         private string FormatTimeSpan(TimeSpan timeSpan)
         {
             return $"{timeSpan.Hours:00}:{timeSpan.Minutes:00}:{timeSpan.Seconds:00}";
-        }
-
-        public void StartSurvivalTimer()
-        {
-            isSurvivalActive = true;
-            survivalStartTime = DateTime.Now;
-            Logger.LogInfo("Survival mode timer started");
-        }
-
-        public void StopSurvivalTimer()
-        {
-            if (!isSurvivalActive) return;
-
-            TimeSpan sessionTime = DateTime.Now - survivalStartTime;
-            lastGameDuration = sessionTime;
-            isSurvivalActive = false;
-
-            Logger.LogInfo($"Survival mode timer stopped. Session time: {FormatTimeSpan(sessionTime)}");
         }
     }
 }

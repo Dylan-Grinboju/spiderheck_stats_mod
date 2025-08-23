@@ -29,12 +29,10 @@ namespace StatsMod
         private bool isSurvivalActive = false;
         private DateTime survivalStartTime;
         private TimeSpan lastGameDuration;
-        private int totalGamesPlayed = 0;
 
         public bool IsSurvivalActive => isSurvivalActive;
         public DateTime SurvivalStartTime => survivalStartTime;
         public TimeSpan LastGameDuration => lastGameDuration;
-        public int TotalGamesPlayed => totalGamesPlayed;
 
         public PlayerTracker PlayerTracker => playerTracker;
         public EnemiesTracker EnemiesTracker => enemiesTracker;
@@ -56,12 +54,11 @@ namespace StatsMod
 
             isSurvivalActive = true;
             survivalStartTime = DateTime.Now;
-            totalGamesPlayed++;
 
             playerTracker.ResetPlayerStats();
             enemiesTracker.ResetEnemiesKilled();
 
-            Logger.LogInfo($"Survival session started. Total games played: {totalGamesPlayed}");
+            Logger.LogInfo($"Survival session started");
         }
 
         public void StopSurvivalSession()
@@ -90,16 +87,6 @@ namespace StatsMod
         public Dictionary<PlayerInput, PlayerTracker.PlayerData> GetActivePlayers()
         {
             return playerTracker.GetActivePlayers();
-        }
-
-        public int GetTotalPlayerDeaths()
-        {
-            return playerTracker.GetTotalPlayerDeaths();
-        }
-
-        public int GetTotalPlayerKills()
-        {
-            return playerTracker.GetTotalPlayerKills();
         }
 
         public int GetEnemiesKilled()
@@ -132,6 +119,16 @@ namespace StatsMod
             enemiesTracker.IncrementEnemiesKilled();
         }
 
+        public void RecordPlayerDeath(SpiderHealthSystem spiderHealth)
+        {
+            playerTracker.RecordPlayerDeath(spiderHealth);
+        }
+
+        public void UndoPlayerDeath(SpiderHealthSystem spiderHealth)
+        {
+            playerTracker.UndoPlayerDeath(spiderHealth);
+        }
+
         public GameStatsSnapshot GetStatsSnapshot()
         {
             return new GameStatsSnapshot
@@ -139,10 +136,7 @@ namespace StatsMod
                 IsSurvivalActive = isSurvivalActive,
                 CurrentSessionTime = GetCurrentSessionTime(),
                 LastGameDuration = lastGameDuration,
-                TotalGamesPlayed = totalGamesPlayed,
                 ActivePlayers = GetActivePlayers(),
-                TotalPlayerDeaths = GetTotalPlayerDeaths(),
-                TotalPlayerKills = GetTotalPlayerKills(),
                 EnemiesKilled = GetEnemiesKilled()
             };
         }

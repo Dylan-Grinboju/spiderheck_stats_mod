@@ -200,6 +200,29 @@ namespace StatsMod
             }
         }
 
+        public Dictionary<PlayerInput, PlayerData> GetActivePlayers()
+        {
+            return new Dictionary<PlayerInput, PlayerData>(activePlayers);
+        }
+
+        public void IncrementPlayerDeath(PlayerInput player)
+        {
+            if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
+            {
+                data.Deaths++;
+                Logger.LogInfo($"Incremented death for player ID: {data.PlayerId}, Total deaths: {data.Deaths}");
+            }
+        }
+
+        public void IncrementPlayerKill(PlayerInput player)
+        {
+            if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
+            {
+                data.Kills++;
+                Logger.LogInfo($"Incremented kill for player ID: {data.PlayerId}, Total kills: {data.Kills}");
+            }
+        }
+
         public static PlayerController[] GetCachedPlayerControllers()
         {
             lock (playerCacheLock)
@@ -252,7 +275,7 @@ namespace StatsMod
         {
             try
             {
-                PlayerTracker.Instance.RegisterPlayer(__instance);
+                StatsManager.Instance.RegisterPlayer(__instance);
             }
             catch (Exception ex)
             {
@@ -268,7 +291,7 @@ namespace StatsMod
         {
             try
             {
-                PlayerTracker.Instance.UnregisterPlayer(__instance);
+                StatsManager.Instance.UnregisterPlayer(__instance);
             }
             catch (Exception ex)
             {
@@ -284,7 +307,7 @@ namespace StatsMod
         {
             try
             {
-                PlayerTracker.Instance.RecordPlayerDeath(__instance);
+                StatsManager.Instance.RecordPlayerDeath(__instance);
             }
             catch (Exception ex)
             {
@@ -302,11 +325,11 @@ namespace StatsMod
         {
             try
             {
-                PlayerTracker.Instance.UndoPlayerDeath(__instance);
+                StatsManager.Instance.UndoPlayerDeath(__instance);
             }
             catch (Exception ex)
             {
-                Logger.LogError($"Error in SpiderHealthSystem.DisintegrateLegsAndDestroy patch: {ex.Message}");
+                Logger.LogError($"Error in SpiderHealthSystem.DisableDeathEffect patch: {ex.Message}");
             }
         }
     }

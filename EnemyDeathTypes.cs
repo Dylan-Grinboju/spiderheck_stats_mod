@@ -211,7 +211,7 @@ namespace StatsMod
 
             if (WillDieToDamage(target) && IsFirstTimeEnemyDies(target))
             {
-                PlayerTracker.Instance.RecordPlayerKill(playerInput);
+                StatsManager.Instance.IncrementPlayerKill(playerInput);
             }
         }
     }
@@ -225,7 +225,7 @@ namespace StatsMod
         {
             try
             {
-                EnemiesTracker.Instance.IncrementEnemiesKilled();
+                StatsManager.Instance.IncrementEnemyKilled();
             }
             catch (System.Exception ex)
             {
