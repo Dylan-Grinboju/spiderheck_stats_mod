@@ -9,33 +9,26 @@ namespace StatsMod
     public class DisplayStats : MonoBehaviour
     {
         #region Constants
-        // UI Size Constants
-        private const float SIZE_SCALE_FACTOR = 1.5f;
         private const float WINDOW_WIDTH = 300f;
-        private const float BASE_WINDOW_HEIGHT = 30f;
+        private const float WINDOW_HEIGHT = 35f;
+        private const int PADDING = 8;
+        private const int HEADER_SIZE = 16;
+        private const int LABEL_SIZE = 14;
 
-        // Font Sizes
-        private const int HEADER_FONT_SIZE = 16;
-        private const int LABEL_FONT_SIZE = 14;
+        // Component height constants
+        private const float PLAY_TIME_HEIGHT = 45f;
+        private const float ENEMY_DEATHS_HEIGHT = 45f;
+        private const float PLAYER_STATS_BASE_HEIGHT = 60f;
+        private const float PLAYER_STATS_PER_PLAYER_HEIGHT = 35f;
 
-        // Spacing Constants
-        private const float SECTION_SPACING = 4f;
-        private const float PLAYER_ROW_SPACING = 8f;
-        private const float CARD_PADDING = 8f;
-        private const float CARD_MARGIN = 2f;
-        private const float SEPARATOR_HEIGHT = 1f;
-        private const float SEPARATOR_MARGIN = 8f;
-        private const float TITLE_BAR_HEIGHT = 20f;
-
-        // Material Design Colors
-        private static readonly Color MaterialPrimary = new Color(0.259f, 0.522f, 0.957f, 1f);
-        private static readonly Color MaterialAccent = new Color(1f, 0.341f, 0.133f, 1f);
-        private static readonly Color MaterialSurface = new Color(0.18f, 0.18f, 0.18f, 0.95f);
-        private static readonly Color MaterialSurfaceVariant = new Color(0.25f, 0.25f, 0.25f, 0.95f);
-        private static readonly Color MaterialOnSurface = new Color(0.9f, 0.9f, 0.9f, 1f);
-        private static readonly Color MaterialOnSurfaceVariant = new Color(0.7f, 0.7f, 0.7f, 1f);
-        private static readonly Color MaterialPositive = new Color(0.298f, 0.686f, 0.314f, 1f);
-        private static readonly Color MaterialSeparator = new Color(0.5f, 0.5f, 0.5f, 0.3f);
+        // Colors
+        private static readonly Color Blue = new Color(0.259f, 0.522f, 0.957f, 1f);
+        private static readonly Color Red = new Color(1f, 0.341f, 0.133f, 1f);
+        private static readonly Color Green = new Color(0.298f, 0.686f, 0.314f, 1f);
+        private static readonly Color White = new Color(0.9f, 0.9f, 0.9f, 1f);
+        private static readonly Color Gray = new Color(0.7f, 0.7f, 0.7f, 1f);
+        private static readonly Color DarkGray = new Color(0.18f, 0.18f, 0.18f, 0.95f);
+        private static readonly Color MediumGray = new Color(0.25f, 0.25f, 0.25f, 0.95f);
         #endregion
 
         #region Instance Management
@@ -45,10 +38,8 @@ namespace StatsMod
 
         #region UI State
         private bool isDisplayVisible = false;
-        private bool isEnlarged = false;
+        private bool isDisplayVisibleAtAll = true;
         private Rect windowRect;
-        private Rect normalWindowRect;
-        private Rect enlargedWindowRect;
         #endregion
 
         #region GUI Styles and Resources
@@ -57,12 +48,11 @@ namespace StatsMod
         private GUIStyle labelStyle;
         private GUIStyle valueStyle;
         private GUIStyle cardStyle;
-        private GUIStyle separatorStyle;
+        private GUIStyle errorStyle;
         private bool stylesInitialized = false;
 
-        private Texture2D surfaceTexture;
-        private Texture2D surfaceVariantTexture;
-        private Texture2D separatorTexture;
+        private Texture2D darkTexture;
+        private Texture2D mediumTexture;
         #endregion
 
         #region Initialization
@@ -78,15 +68,9 @@ namespace StatsMod
                 float xPos = ModConfig.DisplayPositionX;
                 float yPos = ModConfig.DisplayPositionY;
 
-                Instance.normalWindowRect = new Rect(xPos, yPos, WINDOW_WIDTH, BASE_WINDOW_HEIGHT);
-                Instance.enlargedWindowRect = new Rect(
-                    xPos - (WINDOW_WIDTH * (SIZE_SCALE_FACTOR - 1) / 2),
-                    yPos - (BASE_WINDOW_HEIGHT * (SIZE_SCALE_FACTOR - 1) / 2),
-                    WINDOW_WIDTH * SIZE_SCALE_FACTOR,
-                    BASE_WINDOW_HEIGHT * SIZE_SCALE_FACTOR);
-
-                Instance.windowRect = Instance.normalWindowRect;
-                Instance.isDisplayVisible = ModConfig.ShowStats;
+                Instance.windowRect = new Rect(xPos, yPos, WINDOW_WIDTH, 100f);
+                Instance.isDisplayVisibleAtAll = ModConfig.ShowStatsWindow;
+                Instance.UpdateWindowSize();
 
                 Logger.LogInfo("Stats Display initialized with config settings");
             }
@@ -101,55 +85,23 @@ namespace StatsMod
 
             if (keyboard.f1Key.wasPressedThisFrame)
             {
-                if (isDisplayVisible && isEnlarged)
-                {
-                    SetSizeMode(false);
-                }
-                else
-                {
-                    ToggleDisplay(false);
-                }
-            }
-
-            if (keyboard.f2Key.wasPressedThisFrame)
-            {
-                if (isDisplayVisible && !isEnlarged)
-                {
-                    SetSizeMode(true);
-                }
-                else
-                {
-                    ToggleDisplay(true);
-                }
+                ToggleDisplay();
             }
         }
 
-        private void ToggleDisplay(bool enlarged)
+        private void ToggleDisplay()
         {
             isDisplayVisible = !isDisplayVisible;
-            if (isDisplayVisible)
-            {
-                SetSizeMode(enlarged);
-            }
-        }
-
-        private void SetSizeMode(bool enlarged)
-        {
-            isEnlarged = enlarged;
-            stylesInitialized = false;
-            UpdateWindowSize();
         }
 
         public void AutoPullHUD()
         {
             isDisplayVisible = true;
-            SetSizeMode(true);
         }
 
         public void HideHUD()
         {
             isDisplayVisible = false;
-            SetSizeMode(false);
         }
         #endregion
 
@@ -158,65 +110,60 @@ namespace StatsMod
         {
             if (stylesInitialized) return;
 
-            CreateMaterialTextures();
-
-            int basePadding = Mathf.RoundToInt(CARD_PADDING);
-            int largePadding = basePadding * 2;
+            CreateTextures();
 
             windowStyle = new GUIStyle(GUI.skin.window)
             {
-                normal = { background = surfaceTexture },
-                padding = new RectOffset(largePadding, largePadding, largePadding,
-                                       isEnlarged ? largePadding + basePadding : largePadding),
-                border = new RectOffset(2, 2, 2, 2)
+                normal = { background = darkTexture },
+                padding = new RectOffset(PADDING * 2, PADDING * 2, PADDING * 2, PADDING * 2)
             };
 
-            headerStyle = CreateScaledLabelStyle(HEADER_FONT_SIZE, FontStyle.Bold, MaterialPrimary, 6, 0, 4, 2, 0, 0, 4, 2);
-            labelStyle = CreateScaledLabelStyle(LABEL_FONT_SIZE, FontStyle.Normal, MaterialOnSurfaceVariant, basePadding, 0, 2, 2, 0, 0, 1, 1);
-            valueStyle = CreateScaledLabelStyle(LABEL_FONT_SIZE, FontStyle.Bold, MaterialOnSurface, 0, basePadding, 2, 2, 0, 0, 1, 1);
+            headerStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = HEADER_SIZE,
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = Blue },
+                padding = new RectOffset(PADDING, 0, 4, 2)
+            };
+
+            labelStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = LABEL_SIZE,
+                normal = { textColor = Gray },
+                padding = new RectOffset(PADDING, 0, 2, 2)
+            };
+
+            valueStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = LABEL_SIZE,
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = White },
+                padding = new RectOffset(0, PADDING, 2, 2)
+            };
 
             cardStyle = new GUIStyle()
             {
-                normal = { background = surfaceVariantTexture },
-                padding = new RectOffset(basePadding, basePadding, 4, 4),
+                normal = { background = mediumTexture },
+                padding = new RectOffset(PADDING, PADDING, 4, 4),
                 margin = new RectOffset(2, 2, 2, 2)
             };
 
-            separatorStyle = new GUIStyle()
+            errorStyle = new GUIStyle(GUI.skin.label)
             {
-                normal = { background = separatorTexture },
-                fixedHeight = SEPARATOR_HEIGHT,
-                margin = new RectOffset(Mathf.RoundToInt(SEPARATOR_MARGIN), Mathf.RoundToInt(SEPARATOR_MARGIN),
-                                       Mathf.RoundToInt(SEPARATOR_MARGIN), Mathf.RoundToInt(SEPARATOR_MARGIN))
+                fontSize = LABEL_SIZE,
+                normal = { textColor = Red }
             };
 
             stylesInitialized = true;
         }
 
-        private GUIStyle CreateScaledLabelStyle(int baseFontSize, FontStyle fontStyle, Color textColor,
-                                              int paddingLeft, int paddingRight, int paddingTop, int paddingBottom,
-                                              int marginLeft, int marginRight, int marginTop, int marginBottom)
+        private void CreateTextures()
         {
-            float fontScale = isEnlarged ? SIZE_SCALE_FACTOR : 1f;
-            return new GUIStyle(GUI.skin.label)
-            {
-                fontSize = Mathf.RoundToInt(baseFontSize * fontScale),
-                fontStyle = fontStyle,
-                alignment = fontStyle == FontStyle.Bold ? TextAnchor.MiddleLeft : TextAnchor.UpperLeft,
-                normal = { textColor = textColor },
-                padding = new RectOffset(paddingLeft, paddingRight, paddingTop, paddingBottom),
-                margin = new RectOffset(marginLeft, marginRight, marginTop, marginBottom)
-            };
+            darkTexture = CreateColorTexture(DarkGray);
+            mediumTexture = CreateColorTexture(MediumGray);
         }
 
-        private void CreateMaterialTextures()
-        {
-            surfaceTexture = CreateSingleColorTexture(MaterialSurface);
-            surfaceVariantTexture = CreateSingleColorTexture(MaterialSurfaceVariant);
-            separatorTexture = CreateSingleColorTexture(MaterialSeparator);
-        }
-
-        private Texture2D CreateSingleColorTexture(Color color)
+        private Texture2D CreateColorTexture(Color color)
         {
             var texture = new Texture2D(1, 1);
             texture.SetPixel(0, 0, color);
@@ -226,28 +173,26 @@ namespace StatsMod
 
         private void OnDestroy()
         {
-            if (surfaceTexture != null) Destroy(surfaceTexture);
-            if (surfaceVariantTexture != null) Destroy(surfaceVariantTexture);
-            if (separatorTexture != null) Destroy(separatorTexture);
+            if (darkTexture != null) Destroy(darkTexture);
+            if (mediumTexture != null) Destroy(mediumTexture);
         }
         #endregion
 
         #region GUI Drawing
         private void OnGUI()
         {
-            if (!isDisplayVisible || !ModConfig.ShowStats) return;
+            if (!isDisplayVisibleAtAll || !isDisplayVisible) return;
 
             InitializeStyles();
             UpdateWindowSize();
 
             Vector2 oldPosition = new Vector2(windowRect.x, windowRect.y);
-            windowRect = GUI.Window(0, windowRect, DrawStatsWindow, "Game Statistics", windowStyle);
+            windowRect = GUI.Window(0, windowRect, DrawStatsWindow, "", windowStyle);
 
             Vector2 newPosition = new Vector2(windowRect.x, windowRect.y);
             if (oldPosition != newPosition)
             {
                 ModConfig.SetDisplayPosition((int)newPosition.x, (int)newPosition.y);
-                UpdateWindowRectsPosition(newPosition);
             }
         }
 
@@ -262,12 +207,12 @@ namespace StatsMod
                 DrawSurvivalModeStats(statsSnapshot);
             }
 
-            if (ModConfig.ShowKillCount)
+            if (ModConfig.ShowEnemyDeaths)
             {
                 DrawEnemyStats(statsSnapshot);
             }
 
-            if (ModConfig.ShowDeathCount)
+            if (ModConfig.ShowPlayers)
             {
                 DrawPlayerStats(statsSnapshot);
             }
@@ -279,28 +224,20 @@ namespace StatsMod
 
         private void DrawSurvivalModeStats(GameStatsSnapshot statsSnapshot)
         {
-            // Survival Mode Stats Card
             GUILayout.BeginVertical(cardStyle);
             GUILayout.Label("Survival Mode", headerStyle);
 
-            // Single row showing either current timer or last game duration
             GUILayout.BeginHorizontal();
             if (statsSnapshot.IsSurvivalActive)
             {
-                GUILayout.Label("Time:", labelStyle, GUILayout.Width(GetScaledWidth(50)));
-                GUIStyle timerStyle = new GUIStyle(valueStyle)
-                {
-                    normal = { textColor = MaterialPositive }
-                };
-                GUILayout.Label(FormatTimeSpan(statsSnapshot.CurrentSessionTime), timerStyle, GUILayout.MinWidth(GetScaledWidth(80)));
+                GUILayout.Label("Time:", labelStyle, GUILayout.Width(50));
+                var timerStyle = new GUIStyle(valueStyle) { normal = { textColor = Green } };
+                GUILayout.Label(FormatTimeSpan(statsSnapshot.CurrentSessionTime), timerStyle, GUILayout.MinWidth(80));
             }
             else
             {
-                GUILayout.Label("Last Game:", labelStyle, GUILayout.Width(GetScaledWidth(120)));
-                GUIStyle statusStyle = new GUIStyle(valueStyle)
-                {
-                    normal = { textColor = MaterialOnSurfaceVariant }
-                };
+                GUILayout.Label("Last Game:", labelStyle, GUILayout.Width(120));
+                var statusStyle = new GUIStyle(valueStyle) { normal = { textColor = Gray } };
                 GUILayout.Label(statsSnapshot.LastGameDuration.TotalSeconds > 0 ? FormatTimeSpan(statsSnapshot.LastGameDuration) : "No games yet", statusStyle);
             }
             GUILayout.EndHorizontal();
@@ -310,7 +247,6 @@ namespace StatsMod
 
         private void DrawEnemyStats(GameStatsSnapshot statsSnapshot)
         {
-            // Enemy Statistics Card
             GUILayout.BeginVertical(cardStyle);
             GUILayout.Label("Enemy Statistics", headerStyle);
 
@@ -318,20 +254,13 @@ namespace StatsMod
             {
                 int enemiesKilled = statsSnapshot.EnemiesKilled;
                 GUILayout.BeginHorizontal();
-                GUILayout.Label("Enemies Killed:", labelStyle, GUILayout.Width(GetScaledWidth(120)));
-                GUIStyle killsStyle = new GUIStyle(valueStyle)
-                {
-                    normal = { textColor = enemiesKilled > 0 ? MaterialPositive : MaterialOnSurface }
-                };
+                GUILayout.Label("Enemies Killed:", labelStyle, GUILayout.Width(120));
+                var killsStyle = new GUIStyle(valueStyle) { normal = { textColor = enemiesKilled > 0 ? Green : White } };
                 GUILayout.Label(enemiesKilled.ToString(), killsStyle);
                 GUILayout.EndHorizontal();
             }
             catch (System.Exception ex)
             {
-                GUIStyle errorStyle = new GUIStyle(labelStyle)
-                {
-                    normal = { textColor = MaterialAccent }
-                };
                 GUILayout.Label($"Error: {ex.Message}", errorStyle);
                 Logger.LogError($"Error displaying enemy stats: {ex.Message}");
             }
@@ -341,7 +270,6 @@ namespace StatsMod
 
         private void DrawPlayerStats(GameStatsSnapshot statsSnapshot)
         {
-            // Player Statistics Card
             GUILayout.BeginVertical(cardStyle);
             try
             {
@@ -349,38 +277,28 @@ namespace StatsMod
                 {
                     // Header row
                     GUILayout.BeginHorizontal();
-                    GUILayout.Label("Player", headerStyle, GUILayout.Width(GetScaledWidth(95)));
-                    GUILayout.Label("Deaths", headerStyle, GUILayout.Width(GetScaledWidth(100)));
-                    GUILayout.Label("Kills", headerStyle, GUILayout.Width(GetScaledWidth(60)));
+                    GUILayout.Label("Player", headerStyle, GUILayout.Width(95));
+                    GUILayout.Label("Deaths", headerStyle, GUILayout.Width(100));
+                    GUILayout.Label("Kills", headerStyle, GUILayout.Width(60));
                     GUILayout.EndHorizontal();
 
-                    // Add a subtle separator
-                    GUILayout.Box("", separatorStyle);
+                    GUILayout.Space(4);
 
                     foreach (var playerEntry in statsSnapshot.ActivePlayers)
                     {
                         var playerData = playerEntry.Value;
 
                         GUILayout.BeginHorizontal();
-                        GUILayout.Label("", valueStyle, GUILayout.Width(GetScaledWidth(5)));
+                        GUILayout.Label("", valueStyle, GUILayout.Width(5));
 
-                        GUIStyle playerNameStyle = new GUIStyle(valueStyle)
-                        {
-                            normal = { textColor = playerData.PlayerColor }
-                        };
-                        GUILayout.Label(playerData.PlayerName, playerNameStyle, GUILayout.Width(GetScaledWidth(115)));
+                        var playerNameStyle = new GUIStyle(valueStyle) { normal = { textColor = playerData.PlayerColor } };
+                        GUILayout.Label(playerData.PlayerName, playerNameStyle, GUILayout.Width(115));
 
-                        GUIStyle deathsStyle = new GUIStyle(valueStyle)
-                        {
-                            normal = { textColor = playerData.Deaths > 0 ? MaterialAccent : MaterialOnSurface }
-                        };
-                        GUILayout.Label(playerData.Deaths.ToString(), deathsStyle, GUILayout.Width(GetScaledWidth(90)));
+                        var deathsStyle = new GUIStyle(valueStyle) { normal = { textColor = playerData.Deaths > 0 ? Red : White } };
+                        GUILayout.Label(playerData.Deaths.ToString(), deathsStyle, GUILayout.Width(90));
 
-                        GUIStyle killsStyle = new GUIStyle(valueStyle)
-                        {
-                            normal = { textColor = playerData.Kills > 0 ? MaterialPositive : MaterialOnSurface }
-                        };
-                        GUILayout.Label(playerData.Kills.ToString(), killsStyle, GUILayout.Width(GetScaledWidth(60)));
+                        var killsStyle = new GUIStyle(valueStyle) { normal = { textColor = playerData.Kills > 0 ? Green : White } };
+                        GUILayout.Label(playerData.Kills.ToString(), killsStyle, GUILayout.Width(60));
                         GUILayout.EndHorizontal();
 
                         GUILayout.Space(8);
@@ -393,10 +311,6 @@ namespace StatsMod
             }
             catch (System.Exception ex)
             {
-                GUIStyle errorStyle = new GUIStyle(labelStyle)
-                {
-                    normal = { textColor = MaterialAccent }
-                };
                 GUILayout.Label($"Error: {ex.Message}", errorStyle);
                 Logger.LogError($"Error displaying player stats: {ex.Message}");
             }
@@ -404,11 +318,6 @@ namespace StatsMod
         }
 
         #region Utility Methods
-        private float GetScaledWidth(float baseWidth)
-        {
-            return baseWidth * (isEnlarged ? SIZE_SCALE_FACTOR : 1f);
-        }
-
         private string FormatTimeSpan(TimeSpan timeSpan)
         {
             return $"{timeSpan.Hours:00}:{timeSpan.Minutes:00}:{timeSpan.Seconds:00}";
@@ -418,108 +327,40 @@ namespace StatsMod
         #region Window Size Management
         private void UpdateWindowSize()
         {
-            int playerCount = 0;
-            try
-            {
-                var statsSnapshot = StatsManager.Instance.GetStatsSnapshot();
-                playerCount = statsSnapshot.ActivePlayers?.Count ?? 0;
-            }
-            catch (System.Exception)
-            {
-                playerCount = 0;
-            }
-
-            float baseHeight = CalculateBaseWindowHeight(playerCount);
-
-            if (isEnlarged)
-            {
-                enlargedWindowRect.height = baseHeight * SIZE_SCALE_FACTOR;
-                windowRect = enlargedWindowRect;
-            }
-            else
-            {
-                normalWindowRect.height = baseHeight;
-                windowRect = normalWindowRect;
-            }
-        }
-
-        private float CalculateBaseWindowHeight(int playerCount)
-        {
-            float height = GetBaseWindowChrome();
-            int visibleSections = 0;
+            float totalHeight = WINDOW_HEIGHT;
 
             if (ModConfig.ShowPlayTime)
             {
-                height += GetBaseSectionHeight();
-                visibleSections++;
+                totalHeight += PLAY_TIME_HEIGHT;
             }
 
-            if (ModConfig.ShowKillCount)
+            if (ModConfig.ShowEnemyDeaths)
             {
-                height += GetBaseSectionHeight();
-                visibleSections++;
+                totalHeight += ENEMY_DEATHS_HEIGHT;
             }
 
-            if (ModConfig.ShowDeathCount)
+            if (ModConfig.ShowPlayers)
             {
-                height += GetBasePlayerStatsHeight(playerCount);
-                visibleSections++;
+                totalHeight += PLAYER_STATS_BASE_HEIGHT;
+
+                var statsSnapshot = StatsManager.Instance?.GetStatsSnapshot();
+                if (statsSnapshot?.ActivePlayers != null)
+                {
+                    totalHeight += statsSnapshot.ActivePlayers.Count * PLAYER_STATS_PER_PLAYER_HEIGHT;
+                }
             }
 
-            if (visibleSections > 0)
-            {
-                height += visibleSections * SECTION_SPACING;
-            }
-            else
-            {
-                height += 20f; // Minimum content
-            }
-
-            return height;
+            windowRect.height = totalHeight;
         }
 
-        private float GetBaseWindowChrome()
+        public void OnPlayerJoined()
         {
-            // Base window chrome without scaling
-            return TITLE_BAR_HEIGHT + BASE_WINDOW_HEIGHT;
+            UpdateWindowSize();
         }
 
-        private float GetBaseSectionHeight()
+        public void OnPlayerLeft()
         {
-            // Base height for simple sections (Survival Mode and Enemy Stats)
-            float cardOverhead = CARD_PADDING + 4f;
-            float headerHeight = HEADER_FONT_SIZE + 12f; // Header + padding/margin
-            float rowHeight = LABEL_FONT_SIZE + 6f; // Row + padding/margin
-            return cardOverhead + headerHeight + rowHeight;
-        }
-
-        private float GetBasePlayerStatsHeight(int playerCount)
-        {
-            float cardOverhead = CARD_PADDING + 4f;
-
-            if (playerCount == 0)
-            {
-                float noPlayersHeight = LABEL_FONT_SIZE + 6f;
-                return cardOverhead + noPlayersHeight;
-            }
-            else
-            {
-                float headerRowHeight = HEADER_FONT_SIZE + 12f;
-                float separatorHeight = SEPARATOR_HEIGHT + (SEPARATOR_MARGIN * 2);
-                float playerRowHeight = LABEL_FONT_SIZE + 6f + PLAYER_ROW_SPACING;
-                float allPlayersHeight = playerCount * playerRowHeight;
-
-                return cardOverhead + headerRowHeight + separatorHeight + allPlayersHeight;
-            }
-        }
-
-        private void UpdateWindowRectsPosition(Vector2 newPosition)
-        {
-            normalWindowRect.x = newPosition.x;
-            normalWindowRect.y = newPosition.y;
-
-            enlargedWindowRect.x = newPosition.x - (WINDOW_WIDTH * (SIZE_SCALE_FACTOR - 1) / 2);
-            enlargedWindowRect.y = newPosition.y - (normalWindowRect.height * (SIZE_SCALE_FACTOR - 1) / 2);
+            UpdateWindowSize();
         }
         #endregion
     }

@@ -97,6 +97,8 @@ namespace StatsMod
 
             RefreshPlayerCache();
 
+            DisplayStats.Instance?.OnPlayerJoined();
+
             Logger.LogInfo($"Registered player ID: {playerId}, Name: {playerName}, Index: {player.playerIndex}");
         }
 
@@ -113,6 +115,8 @@ namespace StatsMod
                 activePlayers.Remove(player);
 
                 RefreshPlayerCache();
+
+                DisplayStats.Instance?.OnPlayerLeft();
             }
         }
 

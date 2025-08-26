@@ -48,10 +48,12 @@ namespace StatsMod
             {
                 { "display", new Dictionary<string, object>
                     {
-                        { "showStats", true },
-                        { "showKillCount", true },
-                        { "showDeathCount", true },
-                        { "showPlayTime", true },
+                        { "ShowStatsWindow", true },
+                        { "ShowPlayers", true },
+                        { "ShowKillCount", true },
+                        { "ShowDeathCount", true },
+                        { "ShowPlayTime", true },
+                        { "ShowEnemyDeaths", true },
                         { "position", new Dictionary<string, object>
                             {
                                 { "x", 10 },

@@ -10,10 +10,12 @@ namespace StatsMod
         private const string ModId = StatsMod.ModId;
 
         // Display settings
-        public static bool ShowStats => Config.GetModConfigValue<bool>(ModId, "display.showStats", true);
+        public static bool ShowStatsWindow => Config.GetModConfigValue<bool>(ModId, "display.showStatsWindow", true);
+        public static bool ShowPlayers => Config.GetModConfigValue<bool>(ModId, "display.showPlayers", true);
         public static bool ShowKillCount => Config.GetModConfigValue<bool>(ModId, "display.showKillCount", true);
         public static bool ShowDeathCount => Config.GetModConfigValue<bool>(ModId, "display.showDeathCount", true);
         public static bool ShowPlayTime => Config.GetModConfigValue<bool>(ModId, "display.showPlayTime", true);
+        public static bool ShowEnemyDeaths => Config.GetModConfigValue<bool>(ModId, "display.showEnemyDeaths", true);
 
         public static int DisplayPositionX => ValidatePosition(Config.GetModConfigValue<int>(ModId, "display.position.x", 10));
         public static int DisplayPositionY => ValidatePosition(Config.GetModConfigValue<int>(ModId, "display.position.y", 10));
