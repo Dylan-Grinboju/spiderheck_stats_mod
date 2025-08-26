@@ -1,0 +1,40 @@
+# Silk 0.6 YAML Configuration Example
+# This file shows how your Stats Mod would be configured when running with Silk 0.6
+
+# This configuration file will be automatically created at:
+# Spiderheck/Silk/Config/Mods/Stats_Mod.yaml
+
+# Display settings - control what stats are shown and where
+display:
+  showStats: true              # Master toggle - show/hide all stats
+  showKillCount: true          # Show enemy kill statistics
+  showDeathCount: true         # Show player death/kill statistics  
+  showTimeAlive: true          # Show time survived in current/last game
+  
+  # Position of the stats window (top-left corner)
+  position:
+    x: 10                      # X coordinate from left edge
+    y: 10                      # Y coordinate from top edge
+
+# Tracking settings - control what data is collected
+tracking:
+  enabled: true                # Enable/disable stat tracking entirely
+  trackEnemyTypes: true        # Track different enemy types separately
+  saveStatsToFile: true        # Save stats to a log file
+  resetStatsOnNewGame: false   # Whether to clear stats when starting new game
+
+# Keybind settings - customize control keys
+keybinds:
+  toggleStats: "F1"            # Key to toggle stats display on/off
+  resetStats: "F2"             # Key to reset all stats to zero
+
+# Additional configuration ideas for future versions:
+# colors:
+#   background: "#2E2E2E"      # Custom background color
+#   text: "#FFFFFF"            # Custom text color
+#   accent: "#FF5722"          # Custom accent color
+#
+# advanced:
+#   updateInterval: 1.0        # How often to update stats (seconds)
+#   maxHistoryEntries: 100     # Maximum number of historical games to keep
+#   enableDebugMode: false     # Show additional debug information
