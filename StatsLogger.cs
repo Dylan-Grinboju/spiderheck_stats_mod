@@ -111,6 +111,7 @@ namespace StatsMod
 
                     lines.Add($"  {playerData.PlayerName}:");
                     lines.Add($"    Player ID: {playerData.PlayerId}");
+                    lines.Add($"    Color: R={playerData.PlayerColor.r:F2}, G={playerData.PlayerColor.g:F2}, B={playerData.PlayerColor.b:F2}, A={playerData.PlayerColor.a:F2}");
                     lines.Add($"    Kills: {playerData.Kills}");
                     lines.Add($"    Deaths: {playerData.Deaths}");
                     lines.Add("");

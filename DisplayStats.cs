@@ -1,5 +1,4 @@
 using UnityEngine;
-using System.Collections.Generic;
 using Silk;
 using Logger = Silk.Logger;
 using UnityEngine.InputSystem;
@@ -9,56 +8,64 @@ namespace StatsMod
 {
     public class DisplayStats : MonoBehaviour
     {
-        private static DisplayStats _instance;
-        public static DisplayStats Instance { get; private set; }
+        #region Constants
+        // UI Size Constants
+        private const float SIZE_SCALE_FACTOR = 1.5f;
+        private const float WINDOW_WIDTH = 300f;
+        private const float BASE_WINDOW_HEIGHT = 30f;
 
-        // UI properties
-        private bool isDisplayVisible = false;
-        private Rect windowRect;
+        // Font Sizes
+        private const int HEADER_FONT_SIZE = 16;
+        private const int LABEL_FONT_SIZE = 14;
 
-        // HUD size management
-        private Rect normalWindowRect;
-        private Rect enlargedWindowRect;
-        private bool isEnlarged = false;
-        private float sizeScaleFactor = 1.6f;
-
-        // Dynamic sizing
-        private float baseWindowHeight = 160f; // Base height without players
-        private float playerRowHeight = 40f; // Height per player row
-        private float minWindowHeight = 150f; // Minimum window height
-        private float windowWidth = 300f; // Window width
-        private float windowMargin = 20f; // Margin from screen edge
+        // Spacing Constants
+        private const float SECTION_SPACING = 4f;
+        private const float PLAYER_ROW_SPACING = 8f;
+        private const float CARD_PADDING = 8f;
+        private const float CARD_MARGIN = 2f;
+        private const float SEPARATOR_HEIGHT = 1f;
+        private const float SEPARATOR_MARGIN = 8f;
+        private const float TITLE_BAR_HEIGHT = 20f;
 
         // Material Design Colors
-        private static readonly Color MaterialPrimary = new Color(0.259f, 0.522f, 0.957f, 1f); // Blue
-        private static readonly Color MaterialPrimaryDark = new Color(0.196f, 0.427f, 0.859f, 1f); // Darker Blue
-        private static readonly Color MaterialAccent = new Color(1f, 0.341f, 0.133f, 1f); // Orange
-        private static readonly Color MaterialSurface = new Color(0.18f, 0.18f, 0.18f, 0.95f); // Dark surface with transparency
+        private static readonly Color MaterialPrimary = new Color(0.259f, 0.522f, 0.957f, 1f);
+        private static readonly Color MaterialAccent = new Color(1f, 0.341f, 0.133f, 1f);
+        private static readonly Color MaterialSurface = new Color(0.18f, 0.18f, 0.18f, 0.95f);
         private static readonly Color MaterialSurfaceVariant = new Color(0.25f, 0.25f, 0.25f, 0.95f);
-        private static readonly Color MaterialOnSurface = new Color(0.9f, 0.9f, 0.9f, 1f); // Light text
-        private static readonly Color MaterialOnSurfaceVariant = new Color(0.7f, 0.7f, 0.7f, 1f); // Muted text
-        private static readonly Color MaterialPositive = new Color(0.298f, 0.686f, 0.314f, 1f); // Green
-        private static readonly Color MaterialWarning = new Color(1f, 0.757f, 0.027f, 1f); // Amber
+        private static readonly Color MaterialOnSurface = new Color(0.9f, 0.9f, 0.9f, 1f);
+        private static readonly Color MaterialOnSurfaceVariant = new Color(0.7f, 0.7f, 0.7f, 1f);
+        private static readonly Color MaterialPositive = new Color(0.298f, 0.686f, 0.314f, 1f);
+        private static readonly Color MaterialSeparator = new Color(0.5f, 0.5f, 0.5f, 0.3f);
+        #endregion
 
-        // Custom GUI Styles
+        #region Instance Management
+        private static DisplayStats _instance;
+        public static DisplayStats Instance { get; private set; }
+        #endregion
+
+        #region UI State
+        private bool isDisplayVisible = false;
+        private bool isEnlarged = false;
+        private Rect windowRect;
+        private Rect normalWindowRect;
+        private Rect enlargedWindowRect;
+        #endregion
+
+        #region GUI Styles and Resources
         private GUIStyle windowStyle;
-        private GUIStyle titleStyle;
         private GUIStyle headerStyle;
         private GUIStyle labelStyle;
         private GUIStyle valueStyle;
-        private GUIStyle buttonStyle;
-        private GUIStyle primaryButtonStyle;
         private GUIStyle cardStyle;
         private GUIStyle separatorStyle;
         private bool stylesInitialized = false;
 
-        // Material Design textures
         private Texture2D surfaceTexture;
         private Texture2D surfaceVariantTexture;
-        private Texture2D primaryTexture;
-        private Texture2D primaryDarkTexture;
         private Texture2D separatorTexture;
+        #endregion
 
+        #region Initialization
         public static void Initialize()
         {
             if (_instance == null)
@@ -68,275 +75,216 @@ namespace StatsMod
                 DontDestroyOnLoad(statsDisplayObj);
                 Instance = _instance;
 
-                // Set the window position to top right - will calculate size dynamically
-                Instance.normalWindowRect = new Rect(Screen.width - Instance.windowWidth - Instance.windowMargin,
-                    Instance.windowMargin, Instance.windowWidth, Instance.baseWindowHeight);
-                Instance.enlargedWindowRect = new Rect(Screen.width - (Instance.windowWidth + Instance.windowMargin) * Instance.sizeScaleFactor,
-                    Instance.windowMargin, Instance.windowWidth * Instance.sizeScaleFactor, Instance.baseWindowHeight * Instance.sizeScaleFactor);
-                // Start with normal size
-                Instance.windowRect = Instance.normalWindowRect;
+                float xPos = ModConfig.DisplayPositionX;
+                float yPos = ModConfig.DisplayPositionY;
 
-                Logger.LogInfo("Stats Display initialized");
+                Instance.normalWindowRect = new Rect(xPos, yPos, WINDOW_WIDTH, BASE_WINDOW_HEIGHT);
+                Instance.enlargedWindowRect = new Rect(
+                    xPos - (WINDOW_WIDTH * (SIZE_SCALE_FACTOR - 1) / 2),
+                    yPos - (BASE_WINDOW_HEIGHT * (SIZE_SCALE_FACTOR - 1) / 2),
+                    WINDOW_WIDTH * SIZE_SCALE_FACTOR,
+                    BASE_WINDOW_HEIGHT * SIZE_SCALE_FACTOR);
+
+                Instance.windowRect = Instance.normalWindowRect;
+                Instance.isDisplayVisible = ModConfig.ShowStats;
+
+                Logger.LogInfo("Stats Display initialized with config settings");
             }
         }
+        #endregion
 
+        #region Input Handling
         private void Update()
         {
             Keyboard keyboard = Keyboard.current;
+            if (keyboard == null) return;
 
-            // F1 key - toggle UI in small size, or make large UI small
-            if (keyboard != null && keyboard.f1Key.wasPressedThisFrame)
+            if (keyboard.f1Key.wasPressedThisFrame)
             {
                 if (isDisplayVisible && isEnlarged)
                 {
-                    // If display is visible and large, make it small
-                    isEnlarged = false;
-                    stylesInitialized = false;
-                    UpdateWindowSize();
+                    SetSizeMode(false);
                 }
                 else
                 {
-                    // Toggle display in small size
-                    ToggleDisplaySmall();
+                    ToggleDisplay(false);
                 }
             }
 
-            // F2 key - toggle UI in large size, or make small UI large
-            if (keyboard != null && keyboard.f2Key.wasPressedThisFrame)
+            if (keyboard.f2Key.wasPressedThisFrame)
             {
                 if (isDisplayVisible && !isEnlarged)
                 {
-                    // If display is visible and small, make it large
-                    isEnlarged = true;
-                    stylesInitialized = false;
-                    UpdateWindowSize();
+                    SetSizeMode(true);
                 }
                 else
                 {
-                    // Toggle display in large size
-                    ToggleDisplayLarge();
+                    ToggleDisplay(true);
                 }
             }
         }
 
-        private void ToggleDisplaySmall()
+        private void ToggleDisplay(bool enlarged)
         {
             isDisplayVisible = !isDisplayVisible;
             if (isDisplayVisible)
             {
-                // Show in small size
-                isEnlarged = false;
-                stylesInitialized = false;
-                UpdateWindowSize(); // Calculate size dynamically
+                SetSizeMode(enlarged);
             }
         }
 
-        private void ToggleDisplayLarge()
+        private void SetSizeMode(bool enlarged)
         {
-            isDisplayVisible = !isDisplayVisible;
-            if (isDisplayVisible)
-            {
-                // Show in large size
-                isEnlarged = true;
-                stylesInitialized = false;
-                UpdateWindowSize(); // Calculate size dynamically
-            }
+            isEnlarged = enlarged;
+            stylesInitialized = false;
+            UpdateWindowSize();
         }
+
         public void AutoPullHUD()
         {
             isDisplayVisible = true;
-            isEnlarged = true;
-            stylesInitialized = false;
-            UpdateWindowSize(); // Calculate size dynamically
-            Logger.LogInfo("Stats HUD automatically pulled up with enlarged size - player stats preserved");
+            SetSizeMode(true);
         }
 
         public void HideHUD()
         {
             isDisplayVisible = false;
-            isEnlarged = false;
-            stylesInitialized = false;
-            Logger.LogInfo("Stats HUD hidden - player stats preserved until new game");
+            SetSizeMode(false);
         }
+        #endregion
 
+        #region Style Management
         private void InitializeStyles()
         {
             if (stylesInitialized) return;
 
-            // Create Material Design textures
             CreateMaterialTextures();
 
-            // Calculate scale factor based on current size mode
-            float fontScale = isEnlarged ? sizeScaleFactor : 1f;
+            int basePadding = Mathf.RoundToInt(CARD_PADDING);
+            int largePadding = basePadding * 2;
 
-            // Material Design window style
             windowStyle = new GUIStyle(GUI.skin.window)
             {
                 normal = { background = surfaceTexture },
-                padding = isEnlarged ? new RectOffset(16, 16, 24, 12) : new RectOffset(16, 16, 24, 24),
+                padding = new RectOffset(largePadding, largePadding, largePadding,
+                                       isEnlarged ? largePadding + basePadding : largePadding),
                 border = new RectOffset(2, 2, 2, 2)
             };
 
-            // Title style - Material Design headline
-            titleStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = Mathf.RoundToInt(22 * fontScale),
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleCenter,
-                normal = { textColor = MaterialOnSurface },
-                padding = new RectOffset(0, 0, 8, 12),
-                margin = new RectOffset(0, 0, 0, 8)
-            };
+            headerStyle = CreateScaledLabelStyle(HEADER_FONT_SIZE, FontStyle.Bold, MaterialPrimary, 6, 0, 4, 2, 0, 0, 4, 2);
+            labelStyle = CreateScaledLabelStyle(LABEL_FONT_SIZE, FontStyle.Normal, MaterialOnSurfaceVariant, basePadding, 0, 2, 2, 0, 0, 1, 1);
+            valueStyle = CreateScaledLabelStyle(LABEL_FONT_SIZE, FontStyle.Bold, MaterialOnSurface, 0, basePadding, 2, 2, 0, 0, 1, 1);
 
-            // Section header style
-            headerStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = Mathf.RoundToInt(16 * fontScale),
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleLeft,
-                normal = { textColor = MaterialPrimary },
-                padding = new RectOffset(6, 0, 4, 2),
-                margin = new RectOffset(0, 0, 4, 2)
-            };
-
-            // Regular label style
-            labelStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = Mathf.RoundToInt(14 * fontScale),
-                normal = { textColor = MaterialOnSurfaceVariant },
-                padding = new RectOffset(8, 0, 2, 2),
-                margin = new RectOffset(0, 0, 1, 1)
-            };
-
-            // Value/data style
-            valueStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = Mathf.RoundToInt(14 * fontScale),
-                fontStyle = FontStyle.Bold,
-                normal = { textColor = MaterialOnSurface },
-                padding = new RectOffset(0, 8, 2, 2),
-                margin = new RectOffset(0, 0, 1, 1)
-            };
-
-            // Primary button style
-            primaryButtonStyle = new GUIStyle(GUI.skin.button)
-            {
-                fontSize = Mathf.RoundToInt(14 * fontScale),
-                fontStyle = FontStyle.Bold,
-                normal = {
-                    background = primaryTexture,
-                    textColor = Color.white
-                },
-                hover = {
-                    background = primaryDarkTexture,
-                    textColor = Color.white
-                },
-                active = {
-                    background = primaryDarkTexture,
-                    textColor = Color.white
-                },
-                padding = new RectOffset(16, 16, 8, 8),
-                margin = new RectOffset(4, 4, 4, 4)
-            };
-
-            // Secondary button style
-            buttonStyle = new GUIStyle(GUI.skin.button)
-            {
-                fontSize = Mathf.RoundToInt(14 * fontScale),
-                normal = {
-                    background = surfaceVariantTexture,
-                    textColor = MaterialOnSurface
-                },
-                hover = {
-                    background = surfaceVariantTexture,
-                    textColor = MaterialPrimary
-                },
-                active = {
-                    background = surfaceVariantTexture,
-                    textColor = MaterialPrimary
-                },
-                padding = new RectOffset(16, 16, 8, 8),
-                margin = new RectOffset(4, 4, 4, 4)
-            };
-
-            // Card-like container style
             cardStyle = new GUIStyle()
             {
                 normal = { background = surfaceVariantTexture },
-                padding = new RectOffset(8, 8, 4, 4),
+                padding = new RectOffset(basePadding, basePadding, 4, 4),
                 margin = new RectOffset(2, 2, 2, 2)
             };
 
-            // Separator style
             separatorStyle = new GUIStyle()
             {
                 normal = { background = separatorTexture },
-                fixedHeight = 1,
-                margin = new RectOffset(8, 8, 8, 8)
+                fixedHeight = SEPARATOR_HEIGHT,
+                margin = new RectOffset(Mathf.RoundToInt(SEPARATOR_MARGIN), Mathf.RoundToInt(SEPARATOR_MARGIN),
+                                       Mathf.RoundToInt(SEPARATOR_MARGIN), Mathf.RoundToInt(SEPARATOR_MARGIN))
             };
 
             stylesInitialized = true;
         }
 
+        private GUIStyle CreateScaledLabelStyle(int baseFontSize, FontStyle fontStyle, Color textColor,
+                                              int paddingLeft, int paddingRight, int paddingTop, int paddingBottom,
+                                              int marginLeft, int marginRight, int marginTop, int marginBottom)
+        {
+            float fontScale = isEnlarged ? SIZE_SCALE_FACTOR : 1f;
+            return new GUIStyle(GUI.skin.label)
+            {
+                fontSize = Mathf.RoundToInt(baseFontSize * fontScale),
+                fontStyle = fontStyle,
+                alignment = fontStyle == FontStyle.Bold ? TextAnchor.MiddleLeft : TextAnchor.UpperLeft,
+                normal = { textColor = textColor },
+                padding = new RectOffset(paddingLeft, paddingRight, paddingTop, paddingBottom),
+                margin = new RectOffset(marginLeft, marginRight, marginTop, marginBottom)
+            };
+        }
+
         private void CreateMaterialTextures()
         {
-            // Surface texture
-            surfaceTexture = new Texture2D(1, 1);
-            surfaceTexture.SetPixel(0, 0, MaterialSurface);
-            surfaceTexture.Apply();
+            surfaceTexture = CreateSingleColorTexture(MaterialSurface);
+            surfaceVariantTexture = CreateSingleColorTexture(MaterialSurfaceVariant);
+            separatorTexture = CreateSingleColorTexture(MaterialSeparator);
+        }
 
-            // Surface variant texture
-            surfaceVariantTexture = new Texture2D(1, 1);
-            surfaceVariantTexture.SetPixel(0, 0, MaterialSurfaceVariant);
-            surfaceVariantTexture.Apply();
-
-            // Primary texture
-            primaryTexture = new Texture2D(1, 1);
-            primaryTexture.SetPixel(0, 0, MaterialPrimary);
-            primaryTexture.Apply();
-
-            // Primary dark texture
-            primaryDarkTexture = new Texture2D(1, 1);
-            primaryDarkTexture.SetPixel(0, 0, MaterialPrimaryDark);
-            primaryDarkTexture.Apply();
-
-            // Separator texture
-            separatorTexture = new Texture2D(1, 1);
-            separatorTexture.SetPixel(0, 0, new Color(0.5f, 0.5f, 0.5f, 0.3f));
-            separatorTexture.Apply();
+        private Texture2D CreateSingleColorTexture(Color color)
+        {
+            var texture = new Texture2D(1, 1);
+            texture.SetPixel(0, 0, color);
+            texture.Apply();
+            return texture;
         }
 
         private void OnDestroy()
         {
             if (surfaceTexture != null) Destroy(surfaceTexture);
             if (surfaceVariantTexture != null) Destroy(surfaceVariantTexture);
-            if (primaryTexture != null) Destroy(primaryTexture);
-            if (primaryDarkTexture != null) Destroy(primaryDarkTexture);
             if (separatorTexture != null) Destroy(separatorTexture);
         }
+        #endregion
 
+        #region GUI Drawing
         private void OnGUI()
         {
-            if (!isDisplayVisible) return;
+            if (!isDisplayVisible || !ModConfig.ShowStats) return;
 
             InitializeStyles();
             UpdateWindowSize();
 
-            // Apply the Material Design window style
-            GUI.Window(0, windowRect, DrawStatsWindow, "Game Statistics", windowStyle);
+            Vector2 oldPosition = new Vector2(windowRect.x, windowRect.y);
+            windowRect = GUI.Window(0, windowRect, DrawStatsWindow, "Game Statistics", windowStyle);
+
+            Vector2 newPosition = new Vector2(windowRect.x, windowRect.y);
+            if (oldPosition != newPosition)
+            {
+                ModConfig.SetDisplayPosition((int)newPosition.x, (int)newPosition.y);
+                UpdateWindowRectsPosition(newPosition);
+            }
         }
 
         private void DrawStatsWindow(int windowID)
         {
             GUILayout.BeginVertical();
 
+            var statsSnapshot = StatsManager.Instance.GetStatsSnapshot();
+
+            if (ModConfig.ShowPlayTime)
+            {
+                DrawSurvivalModeStats(statsSnapshot);
+            }
+
+            if (ModConfig.ShowKillCount)
+            {
+                DrawEnemyStats(statsSnapshot);
+            }
+
+            if (ModConfig.ShowDeathCount)
+            {
+                DrawPlayerStats(statsSnapshot);
+            }
+
+            GUILayout.EndVertical();
+            GUI.DragWindow();
+        }
+        #endregion
+
+        private void DrawSurvivalModeStats(GameStatsSnapshot statsSnapshot)
+        {
             // Survival Mode Stats Card
             GUILayout.BeginVertical(cardStyle);
             GUILayout.Label("Survival Mode", headerStyle);
 
             // Single row showing either current timer or last game duration
             GUILayout.BeginHorizontal();
-            var statsSnapshot = StatsManager.Instance.GetStatsSnapshot();
             if (statsSnapshot.IsSurvivalActive)
             {
                 GUILayout.Label("Time:", labelStyle, GUILayout.Width(GetScaledWidth(50)));
@@ -357,9 +305,11 @@ namespace StatsMod
             }
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
-
             GUILayout.Space(4);
+        }
 
+        private void DrawEnemyStats(GameStatsSnapshot statsSnapshot)
+        {
             // Enemy Statistics Card
             GUILayout.BeginVertical(cardStyle);
             GUILayout.Label("Enemy Statistics", headerStyle);
@@ -386,9 +336,11 @@ namespace StatsMod
                 Logger.LogError($"Error displaying enemy stats: {ex.Message}");
             }
             GUILayout.EndVertical();
-
             GUILayout.Space(4);
+        }
 
+        private void DrawPlayerStats(GameStatsSnapshot statsSnapshot)
+        {
             // Player Statistics Card
             GUILayout.BeginVertical(cardStyle);
             try
@@ -449,23 +401,21 @@ namespace StatsMod
                 Logger.LogError($"Error displaying player stats: {ex.Message}");
             }
             GUILayout.EndVertical();
-
-            GUILayout.EndVertical();
-            GUI.DragWindow();
         }
 
+        #region Utility Methods
         private float GetScaledWidth(float baseWidth)
         {
-            float scale = isEnlarged ? sizeScaleFactor : 1f;
-            return baseWidth * scale;
+            return baseWidth * (isEnlarged ? SIZE_SCALE_FACTOR : 1f);
         }
 
-        private float GetScaledHeight(float baseHeight)
+        private string FormatTimeSpan(TimeSpan timeSpan)
         {
-            float scale = isEnlarged ? sizeScaleFactor : 1f;
-            return baseHeight * scale;
+            return $"{timeSpan.Hours:00}:{timeSpan.Minutes:00}:{timeSpan.Seconds:00}";
         }
+        #endregion
 
+        #region Window Size Management
         private void UpdateWindowSize()
         {
             int playerCount = 0;
@@ -479,41 +429,98 @@ namespace StatsMod
                 playerCount = 0;
             }
 
-            // Calculate dynamic height - show all players without scrolling
-            float playerSectionHeight;
-            if (playerCount == 0)
-            {
-                // Minimal space when no players
-                playerSectionHeight = 25f;
-            }
-            else
-            {
-                // Calculate height for all players plus header and padding
-                playerSectionHeight = playerCount * playerRowHeight + 30f; // 30f for header and padding
-            }
+            float baseHeight = CalculateBaseWindowHeight(playerCount);
 
-            float dynamicHeight = Mathf.Max(
-                baseWindowHeight + playerSectionHeight,
-                minWindowHeight
-            );
-
-            // Update window rectangles
             if (isEnlarged)
             {
-                enlargedWindowRect.height = dynamicHeight * (sizeScaleFactor - 0.2f);
+                enlargedWindowRect.height = baseHeight * SIZE_SCALE_FACTOR;
                 windowRect = enlargedWindowRect;
             }
             else
             {
-                normalWindowRect.height = dynamicHeight;
+                normalWindowRect.height = baseHeight;
                 windowRect = normalWindowRect;
             }
         }
 
-        // Helper method for formatting TimeSpan in a readable way
-        private string FormatTimeSpan(TimeSpan timeSpan)
+        private float CalculateBaseWindowHeight(int playerCount)
         {
-            return $"{timeSpan.Hours:00}:{timeSpan.Minutes:00}:{timeSpan.Seconds:00}";
+            float height = GetBaseWindowChrome();
+            int visibleSections = 0;
+
+            if (ModConfig.ShowPlayTime)
+            {
+                height += GetBaseSectionHeight();
+                visibleSections++;
+            }
+
+            if (ModConfig.ShowKillCount)
+            {
+                height += GetBaseSectionHeight();
+                visibleSections++;
+            }
+
+            if (ModConfig.ShowDeathCount)
+            {
+                height += GetBasePlayerStatsHeight(playerCount);
+                visibleSections++;
+            }
+
+            if (visibleSections > 0)
+            {
+                height += visibleSections * SECTION_SPACING;
+            }
+            else
+            {
+                height += 20f; // Minimum content
+            }
+
+            return height;
         }
+
+        private float GetBaseWindowChrome()
+        {
+            // Base window chrome without scaling
+            return TITLE_BAR_HEIGHT + BASE_WINDOW_HEIGHT;
+        }
+
+        private float GetBaseSectionHeight()
+        {
+            // Base height for simple sections (Survival Mode and Enemy Stats)
+            float cardOverhead = CARD_PADDING + 4f;
+            float headerHeight = HEADER_FONT_SIZE + 12f; // Header + padding/margin
+            float rowHeight = LABEL_FONT_SIZE + 6f; // Row + padding/margin
+            return cardOverhead + headerHeight + rowHeight;
+        }
+
+        private float GetBasePlayerStatsHeight(int playerCount)
+        {
+            float cardOverhead = CARD_PADDING + 4f;
+
+            if (playerCount == 0)
+            {
+                float noPlayersHeight = LABEL_FONT_SIZE + 6f;
+                return cardOverhead + noPlayersHeight;
+            }
+            else
+            {
+                float headerRowHeight = HEADER_FONT_SIZE + 12f;
+                float separatorHeight = SEPARATOR_HEIGHT + (SEPARATOR_MARGIN * 2);
+                float playerRowHeight = LABEL_FONT_SIZE + 6f + PLAYER_ROW_SPACING;
+                float allPlayersHeight = playerCount * playerRowHeight;
+
+                return cardOverhead + headerRowHeight + separatorHeight + allPlayersHeight;
+            }
+        }
+
+        private void UpdateWindowRectsPosition(Vector2 newPosition)
+        {
+            normalWindowRect.x = newPosition.x;
+            normalWindowRect.y = newPosition.y;
+
+            enlargedWindowRect.x = newPosition.x - (WINDOW_WIDTH * (SIZE_SCALE_FACTOR - 1) / 2);
+            enlargedWindowRect.y = newPosition.y - (normalWindowRect.height * (SIZE_SCALE_FACTOR - 1) / 2);
+        }
+        #endregion
     }
 }

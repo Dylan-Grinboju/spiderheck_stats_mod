@@ -1,5 +1,7 @@
 using Silk;
+using Logger = Silk.Logger;
 using System.Collections.Generic;
+using System;
 
 namespace StatsMod
 {
@@ -11,19 +13,18 @@ namespace StatsMod
         public static bool ShowStats => Config.GetModConfigValue<bool>(ModId, "display.showStats", true);
         public static bool ShowKillCount => Config.GetModConfigValue<bool>(ModId, "display.showKillCount", true);
         public static bool ShowDeathCount => Config.GetModConfigValue<bool>(ModId, "display.showDeathCount", true);
-        public static bool ShowTimeAlive => Config.GetModConfigValue<bool>(ModId, "display.showTimeAlive", true);
+        public static bool ShowPlayTime => Config.GetModConfigValue<bool>(ModId, "display.showPlayTime", true);
 
-        public static int DisplayPositionX => Config.GetModConfigValue<int>(ModId, "display.position.x", 10);
-        public static int DisplayPositionY => Config.GetModConfigValue<int>(ModId, "display.position.y", 10);
+        public static int DisplayPositionX => ValidatePosition(Config.GetModConfigValue<int>(ModId, "display.position.x", 10));
+        public static int DisplayPositionY => ValidatePosition(Config.GetModConfigValue<int>(ModId, "display.position.y", 10));
 
         // Tracking settings
         public static bool TrackingEnabled => Config.GetModConfigValue<bool>(ModId, "tracking.enabled", true);
-        public static bool TrackEnemyTypes => Config.GetModConfigValue<bool>(ModId, "tracking.trackEnemyTypes", true);
         public static bool SaveStatsToFile => Config.GetModConfigValue<bool>(ModId, "tracking.saveStatsToFile", true);
         public static bool ResetStatsOnNewGame => Config.GetModConfigValue<bool>(ModId, "tracking.resetStatsOnNewGame", false);
 
         // Keybind settings
-        public static string ToggleStatsKey => Config.GetModConfigValue<string>(ModId, "keybinds.toggleStats", "F1");
+        // public static string ToggleStatsKey => Config.GetModConfigValue<string>(ModId, "keybinds.toggleStats", "F1");
 
         // Methods to update config values at runtime
         public static void SetShowStats(bool value)
@@ -33,6 +34,10 @@ namespace StatsMod
 
         public static void SetDisplayPosition(int x, int y)
         {
+            // Validate the values before setting them
+            x = ValidatePosition(x);
+            y = ValidatePosition(y);
+
             Config.SetModConfigValue(ModId, "display.position.x", x);
             Config.SetModConfigValue(ModId, "display.position.y", y);
         }
@@ -40,6 +45,17 @@ namespace StatsMod
         public static void SetTrackingEnabled(bool value)
         {
             Config.SetModConfigValue(ModId, "tracking.enabled", value);
+        }
+
+        // Validation methods to ensure config values are within acceptable ranges
+        private static int ValidatePosition(int value)
+        {
+            if (value < 0)
+            {
+                Logger.LogWarning($"Position value {value} is negative, clamping to 0");
+                return 0;
+            }
+            return value;
         }
     }
 }
