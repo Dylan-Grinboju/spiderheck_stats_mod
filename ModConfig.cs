@@ -23,7 +23,6 @@ namespace StatsMod
         // Tracking settings
         public static bool TrackingEnabled => Config.GetModConfigValue<bool>(ModId, "tracking.enabled", true);
         public static bool SaveStatsToFile => Config.GetModConfigValue<bool>(ModId, "tracking.saveStatsToFile", true);
-        public static bool ResetStatsOnNewGame => Config.GetModConfigValue<bool>(ModId, "tracking.resetStatsOnNewGame", false);
 
         // Keybind settings
         // public static string ToggleStatsKey => Config.GetModConfigValue<string>(ModId, "keybinds.toggleStats", "F1");

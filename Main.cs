@@ -18,11 +18,18 @@ namespace StatsMod
         public override void Initialize()
         {
             Instance = this;
-            Logger.LogInfo("Stats Mod instance set");
             Logger.LogInfo("Initializing Stats Mod...");
 
-            // Initialize configuration with default values
+            // Initialize configuration with default values first
             SetupConfiguration();
+
+            // Check if tracking is enabled before initializing mod components
+            if (!ModConfig.TrackingEnabled)
+            {
+                Logger.LogInfo("Stats Mod tracking is disabled in configuration. Mod components will not be initialized.");
+                return;
+            }
+
 
             var tracker = PlayerTracker.Instance;
             Logger.LogInfo("Player tracker initialized");
@@ -66,7 +73,6 @@ namespace StatsMod
                     {
                         { "enabled", true },
                         { "saveStatsToFile", true },
-                        { "resetStatsOnNewGame", true }
                     }
                 },
                 // { "keybinds", new Dictionary<string, object>
@@ -85,7 +91,18 @@ namespace StatsMod
         public override void Unload()
         {
             Logger.LogInfo("Unloading Stats Mod...");
-            Harmony.UnpatchID("com.StatsMod");
+
+            // Only unpatch if tracking was enabled and patches were applied
+            if (ModConfig.TrackingEnabled)
+            {
+                Harmony.UnpatchID("com.StatsMod");
+                Logger.LogInfo("Harmony patches removed.");
+            }
+            else
+            {
+                Logger.LogInfo("No patches to remove - tracking was disabled.");
+            }
+
             Instance = null;
         }
     }

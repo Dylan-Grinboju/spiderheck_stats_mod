@@ -74,7 +74,11 @@ namespace StatsMod
             isSurvivalActive = false;
 
             GameStatsSnapshot statsSnapshot = GetStatsSnapshot();
-            StatsLogger.Instance.LogGameStats(statsSnapshot);
+
+            if (ModConfig.SaveStatsToFile)
+            {
+                StatsLogger.Instance.LogGameStats(statsSnapshot);
+            }
 
             Logger.LogInfo($"Survival session stopped. Duration: {FormatTimeSpan(sessionTime)}");
         }
