@@ -12,17 +12,29 @@ namespace StatsMod
     public class StatsMod : SilkMod
     {
         public static StatsMod Instance { get; private set; }
+        public const string ModId = "Stats_Mod";
 
         // Called by Silk when Unity loads this mod
         public override void Initialize()
         {
             Instance = this;
-            Logger.LogInfo("Stats Mod instance set");
             Logger.LogInfo("Initializing Stats Mod...");
+
+            // Initialize configuration with default values first
+            SetupConfiguration();
+
+            // Check if tracking is enabled before initializing mod components
+            if (!ModConfig.TrackingEnabled)
+            {
+                Logger.LogInfo("Stats Mod tracking is disabled in configuration. Mod components will not be initialized.");
+                return;
+            }
+
+
             var tracker = PlayerTracker.Instance;
             Logger.LogInfo("Player tracker initialized");
-            DisplayStats.Initialize();
-            Logger.LogInfo("Player stats display initialized");
+            UIManager.Initialize();
+            Logger.LogInfo("UI Manager initialized");
 
             Harmony harmony = new Harmony("com.StatsMod");
             harmony.PatchAll();
@@ -36,10 +48,63 @@ namespace StatsMod
             Logger.LogInfo("Harmony patches applied.");
         }
 
+        private void SetupConfiguration()
+        {
+            // Define default configuration values
+            var defaultConfig = new Dictionary<string, object>
+            {
+                { "display", new Dictionary<string, object>
+                    {
+                        { "showStatsWindow", true },
+                        { "showPlayers", true },
+                        // { "showKillCount", true },
+                        // { "showDeathCount", true },
+                        { "showPlayTime", true },
+                        { "showEnemyDeaths", true },
+                        { "autoScale", true },
+                        { "uiScale", 1.0f },
+                        { "position", new Dictionary<string, object>
+                            {
+                                { "x", 10 },
+                                { "y", 10 }
+                            }
+                        }
+                    }
+                },
+                { "tracking", new Dictionary<string, object>
+                    {
+                        { "enabled", true },
+                        { "saveStatsToFile", true },
+                    }
+                },
+                // { "keybinds", new Dictionary<string, object>
+                //     {
+                //         { "toggleStats", "F1" },
+                //         { "resetStats", "F2" }
+                //     }
+                // }
+            };
+
+            // Load the configuration (this will create the YAML file if it doesn't exist)
+            Config.LoadModConfig(ModId, defaultConfig);
+            Logger.LogInfo("Configuration loaded");
+        }
+
         public override void Unload()
         {
             Logger.LogInfo("Unloading Stats Mod...");
-            Harmony.UnpatchID("com.StatsMod");
+
+            // Only unpatch if tracking was enabled and patches were applied
+            if (ModConfig.TrackingEnabled)
+            {
+                Harmony.UnpatchID("com.StatsMod");
+                Logger.LogInfo("Harmony patches removed.");
+            }
+            else
+            {
+                Logger.LogInfo("No patches to remove - tracking was disabled.");
+            }
+
             Instance = null;
         }
     }

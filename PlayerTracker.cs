@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using HarmonyLib;
 using Silk;
 using UnityEngine;
@@ -43,6 +44,7 @@ namespace StatsMod
             public int Kills { get; set; }
             public string PlayerName { get; set; }
             public DateTime JoinTime { get; set; }
+            public Color PlayerColor { get; set; }
 
             public PlayerData(ulong id, string name = "Player")
             {
@@ -51,6 +53,7 @@ namespace StatsMod
                 Kills = 0;
                 PlayerName = name;
                 JoinTime = DateTime.Now;
+                PlayerColor = Color.white;
             }
         }
 
@@ -72,13 +75,29 @@ namespace StatsMod
 
             ulong playerId = nextLocalPlayerId++;
 
-            string playerName = $"Player_{player.playerIndex + 1}";
+            string playerName = $"Player {player.playerIndex + 1}";
             PlayerData playerData = new PlayerData(playerId, playerName);
+
+            // Try to get the spider customizer and set the initial color
+            SpiderCustomizer customizer = player.GetComponentInChildren<SpiderCustomizer>();
+            if (customizer != null)
+            {
+                // Access the private _primaryColor field using reflection
+                var primaryColorField = typeof(SpiderCustomizer).GetField("_primaryColor", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (primaryColorField != null)
+                {
+                    Color primaryColor = (Color)primaryColorField.GetValue(customizer);
+                    playerData.PlayerColor = primaryColor;
+                    Logger.LogInfo($"Set initial color for player {playerId} to {primaryColor}");
+                }
+            }
 
             activePlayers[player] = playerData;
             playerIds[playerId] = player;
 
             RefreshPlayerCache();
+
+            UIManager.Instance?.OnPlayerJoined();
 
             Logger.LogInfo($"Registered player ID: {playerId}, Name: {playerName}, Index: {player.playerIndex}");
         }
@@ -96,6 +115,8 @@ namespace StatsMod
                 activePlayers.Remove(player);
 
                 RefreshPlayerCache();
+
+                UIManager.Instance?.OnPlayerLeft();
             }
         }
 
@@ -200,6 +221,38 @@ namespace StatsMod
             }
         }
 
+        public Dictionary<PlayerInput, PlayerData> GetActivePlayers()
+        {
+            return new Dictionary<PlayerInput, PlayerData>(activePlayers);
+        }
+
+        public void IncrementPlayerDeath(PlayerInput player)
+        {
+            if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
+            {
+                data.Deaths++;
+                Logger.LogInfo($"Incremented death for player ID: {data.PlayerId}, Total deaths: {data.Deaths}");
+            }
+        }
+
+        public void IncrementPlayerKill(PlayerInput player)
+        {
+            if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
+            {
+                data.Kills++;
+                Logger.LogInfo($"Incremented kill for player ID: {data.PlayerId}, Total kills: {data.Kills}");
+            }
+        }
+
+        public void UpdatePlayerColor(PlayerInput player, Color color)
+        {
+            if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
+            {
+                data.PlayerColor = color;
+                Logger.LogInfo($"Updated color for player ID: {data.PlayerId} to {color}");
+            }
+        }
+
         public static PlayerController[] GetCachedPlayerControllers()
         {
             lock (playerCacheLock)
@@ -252,7 +305,7 @@ namespace StatsMod
         {
             try
             {
-                PlayerTracker.Instance.RegisterPlayer(__instance);
+                StatsManager.Instance.RegisterPlayer(__instance);
             }
             catch (Exception ex)
             {
@@ -268,7 +321,7 @@ namespace StatsMod
         {
             try
             {
-                PlayerTracker.Instance.UnregisterPlayer(__instance);
+                StatsManager.Instance.UnregisterPlayer(__instance);
             }
             catch (Exception ex)
             {
@@ -284,7 +337,7 @@ namespace StatsMod
         {
             try
             {
-                PlayerTracker.Instance.RecordPlayerDeath(__instance);
+                StatsManager.Instance.RecordPlayerDeath(__instance);
             }
             catch (Exception ex)
             {
@@ -302,11 +355,37 @@ namespace StatsMod
         {
             try
             {
-                PlayerTracker.Instance.UndoPlayerDeath(__instance);
+                StatsManager.Instance.UndoPlayerDeath(__instance);
             }
             catch (Exception ex)
             {
-                Logger.LogError($"Error in SpiderHealthSystem.DisintegrateLegsAndDestroy patch: {ex.Message}");
+                Logger.LogError($"Error in SpiderHealthSystem.DisableDeathEffect patch: {ex.Message}");
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(SpiderCustomizer), "SetSpiderColor")]
+    public class SpiderCustomizerSetSpiderColorPatch
+    {
+        static void Postfix(SpiderCustomizer __instance)
+        {
+            try
+            {
+                PlayerInput playerInput = __instance.GetComponentInParent<PlayerInput>();
+                if (playerInput != null)
+                {
+                    // Access the private _primaryColor field using reflection
+                    var primaryColorField = typeof(SpiderCustomizer).GetField("_primaryColor", BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (primaryColorField != null)
+                    {
+                        Color primaryColor = (Color)primaryColorField.GetValue(__instance);
+                        StatsManager.Instance.UpdatePlayerColor(playerInput, primaryColor);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error in SpiderCustomizer.SetSpiderColor patch: {ex.Message}");
             }
         }
     }

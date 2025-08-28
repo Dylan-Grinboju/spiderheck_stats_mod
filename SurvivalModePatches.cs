@@ -16,20 +16,10 @@ namespace StatsMod
             try
             {
                 // Only track successful game starts
-                if (__result && DisplayStats.Instance != null)
+                if (__result)
                 {
-                    Logger.LogInfo("Survival mode started - timer tracking initiated");
-                    DisplayStats.Instance.StartSurvivalTimer();
-                    if (EnemiesTracker.Instance != null)
-                    {
-                        EnemiesTracker.Instance.ResetEnemiesKilled();
-                        Logger.LogInfo("Enemies killed count reset");
-                    }
-                    if (PlayerTracker.Instance != null)
-                    {
-                        PlayerTracker.Instance.ResetPlayerStats();
-                        Logger.LogInfo("Player deaths count reset");
-                    }
+                    StatsManager.Instance.StartSurvivalSession();
+                    Logger.LogInfo("Survival mode started via StatsManager");
                 }
             }
             catch (Exception ex)
@@ -47,17 +37,15 @@ namespace StatsMod
         {
             try
             {
-                // Use the public GameModeActive() method instead of accessing the private field
-                if (DisplayStats.Instance != null && __instance.GameModeActive())
+                if (__instance.GameModeActive())
                 {
-                    DisplayStats.Instance.StopSurvivalTimer();
-                    Logger.LogInfo($"Survival mode stopped, timer tracking completed");
+                    StatsManager.Instance.StopSurvivalSession();
+                    Logger.LogInfo("Survival mode stopped via StatsManager");
 
-                    // Automatically pull up the HUD with enlarged size when game ends
-                    DisplayStats.Instance.AutoPullHUD();
+                    // Automatically pull up the HUD when game ends
+                    UIManager.AutoPullHUD();
                     Logger.LogInfo("Stats HUD auto-pulled after survival mode ended");
                 }
-
             }
             catch (Exception ex)
             {
