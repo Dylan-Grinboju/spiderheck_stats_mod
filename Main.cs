@@ -61,6 +61,8 @@ namespace StatsMod
                         // { "showDeathCount", true },
                         { "showPlayTime", true },
                         { "showEnemyDeaths", true },
+                        { "autoScale", true },
+                        { "uiScale", 1.0f },
                         { "position", new Dictionary<string, object>
                             {
                                 { "x", 10 },

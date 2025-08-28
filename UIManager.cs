@@ -42,6 +42,69 @@ namespace StatsMod
         private Texture2D lightTexture;
         #endregion
 
+        #region UI Scaling
+        private static float _uiScaleFactor = 1.0f;
+        private static bool _scalingInitialized = false;
+
+        public static float UIScaleFactor
+        {
+            get
+            {
+                if (!_scalingInitialized) InitializeScaling();
+                return _uiScaleFactor;
+            }
+        }
+
+        private static void InitializeScaling()
+        {
+            if (ModConfig.AutoScale)
+            {
+                // Base resolution: 1920x1080
+                float baseWidth = 1920f;
+                float baseHeight = 1080f;
+
+                // Get current screen resolution
+                float currentWidth = Screen.width;
+                float currentHeight = Screen.height;
+
+                // Calculate scale based on the smaller dimension to maintain readability
+                float widthScale = currentWidth / baseWidth;
+                float heightScale = currentHeight / baseHeight;
+                float autoScale = Mathf.Min(widthScale, heightScale);
+
+                // Apply manual scale multiplier
+                _uiScaleFactor = autoScale * ModConfig.UIScale;
+
+                // Clamp to reasonable values
+                _uiScaleFactor = Mathf.Clamp(_uiScaleFactor, 0.5f, 3.0f);
+
+                Logger.LogInfo($"UI Auto-scaling initialized: Screen {currentWidth}x{currentHeight}, Scale factor: {_uiScaleFactor:F2}");
+            }
+            else
+            {
+                _uiScaleFactor = ModConfig.UIScale;
+                Logger.LogInfo($"UI Manual scaling: Scale factor: {_uiScaleFactor:F2}");
+            }
+
+            _scalingInitialized = true;
+        }
+
+        public static float ScaleValue(float value)
+        {
+            return value * UIScaleFactor;
+        }
+
+        public static int ScaleInt(int value)
+        {
+            return Mathf.RoundToInt(value * UIScaleFactor);
+        }
+
+        public static int ScaleFont(int baseFontSize)
+        {
+            return Mathf.RoundToInt(baseFontSize * UIScaleFactor);
+        }
+        #endregion
+
         #region Initialization
         public static void Initialize()
         {
@@ -193,7 +256,7 @@ namespace StatsMod
             return new GUIStyle(GUI.skin.window)
             {
                 normal = { background = backgroundTexture },
-                padding = new RectOffset(PADDING * 2, PADDING * 2, PADDING * 2, PADDING * 2)
+                padding = new RectOffset(ScaleInt(PADDING * 2), ScaleInt(PADDING * 2), ScaleInt(PADDING * 2), ScaleInt(PADDING * 2))
             };
         }
 
@@ -201,10 +264,10 @@ namespace StatsMod
         {
             return new GUIStyle(GUI.skin.label)
             {
-                fontSize = fontSize,
+                fontSize = ScaleFont(fontSize),
                 fontStyle = FontStyle.Bold,
                 normal = { textColor = Blue },
-                padding = new RectOffset(PADDING, 0, 4, 2)
+                padding = new RectOffset(ScaleInt(PADDING), 0, ScaleInt(4), ScaleInt(2))
             };
         }
 
@@ -212,9 +275,9 @@ namespace StatsMod
         {
             return new GUIStyle(GUI.skin.label)
             {
-                fontSize = fontSize,
+                fontSize = ScaleFont(fontSize),
                 normal = { textColor = Gray },
-                padding = new RectOffset(PADDING, 0, 2, 2)
+                padding = new RectOffset(ScaleInt(PADDING), 0, ScaleInt(2), ScaleInt(2))
             };
         }
 
@@ -222,10 +285,10 @@ namespace StatsMod
         {
             return new GUIStyle(GUI.skin.label)
             {
-                fontSize = fontSize,
+                fontSize = ScaleFont(fontSize),
                 fontStyle = FontStyle.Bold,
                 normal = { textColor = White },
-                padding = new RectOffset(0, PADDING, 2, 2)
+                padding = new RectOffset(0, ScaleInt(PADDING), ScaleInt(2), ScaleInt(2))
             };
         }
 
@@ -234,8 +297,8 @@ namespace StatsMod
             return new GUIStyle()
             {
                 normal = { background = backgroundTexture },
-                padding = new RectOffset(PADDING, PADDING, 4, 4),
-                margin = new RectOffset(2, 2, 2, 2)
+                padding = new RectOffset(ScaleInt(PADDING), ScaleInt(PADDING), ScaleInt(4), ScaleInt(4)),
+                margin = new RectOffset(ScaleInt(2), ScaleInt(2), ScaleInt(2), ScaleInt(2))
             };
         }
 
@@ -243,7 +306,7 @@ namespace StatsMod
         {
             return new GUIStyle(GUI.skin.label)
             {
-                fontSize = fontSize,
+                fontSize = ScaleFont(fontSize),
                 normal = { textColor = Red }
             };
         }
