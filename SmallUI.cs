@@ -50,6 +50,7 @@ namespace StatsMod
             windowRect = new Rect(xPos, yPos, WindowWidth, 100f);
             isDisplayVisibleAtAll = ModConfig.ShowStatsWindow;
             UpdateWindowSize();
+            isDisplayVisible = isDisplayVisibleAtAll;
 
             Logger.LogInfo("SmallUI initialized");
         }

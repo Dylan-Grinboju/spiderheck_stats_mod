@@ -33,12 +33,6 @@ namespace StatsMod
         // Keybind settings
         // public static string ToggleStatsKey => Config.GetModConfigValue<string>(ModId, "keybinds.toggleStats", "F1");
 
-        // Methods to update config values at runtime
-        public static void SetShowStats(bool value)
-        {
-            Config.SetModConfigValue(ModId, "display.showStats", value);
-        }
-
         public static void SetDisplayPosition(int x, int y)
         {
             // Validate the values before setting them
@@ -62,10 +56,11 @@ namespace StatsMod
                 Logger.LogWarning($"Position value {value} is negative, clamping to 0");
                 return 0;
             }
-            if (Screen.width < value)
+            if (Screen.width <= value)
             {
-                Logger.LogWarning($"Position value {value} exceeds screen width {Screen.width}, clamping to {Screen.width}");
-                return Screen.width;
+                int clamped = Math.Max(0, Screen.width - 10);
+                Logger.LogWarning($"Position value {value} exceeds screen width {Screen.width}, clamping to {clamped}");
+                return clamped;
             }
             return value;
         }
@@ -77,10 +72,11 @@ namespace StatsMod
                 Logger.LogWarning($"Position value {value} is negative, clamping to 0");
                 return 0;
             }
-            if (Screen.height < value)
+            if (Screen.height <= value)
             {
-                Logger.LogWarning($"Position value {value} exceeds screen height {Screen.height}, clamping to {Screen.height}");
-                return Screen.height;
+                int clamped = Math.Max(0, Screen.height - 10);
+                Logger.LogWarning($"Position value {value} exceeds screen height {Screen.height}, clamping to {clamped}");
+                return clamped;
             }
             return value;
         }

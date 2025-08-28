@@ -10,19 +10,8 @@ namespace StatsMod
 {
     public class StatsLogger
     {
-        private static StatsLogger _instance;
-        public static StatsLogger Instance
-        {
-            get
-            {
-                if (_instance == null)
-                {
-                    _instance = new StatsLogger();
-                    Logger.LogInfo("Stats logger created via singleton access");
-                }
-                return _instance;
-            }
-        }
+        private static readonly Lazy<StatsLogger> _lazy = new Lazy<StatsLogger>(() => new StatsLogger());
+        public static StatsLogger Instance => _lazy.Value;
 
         private readonly string logDirectory;
 
