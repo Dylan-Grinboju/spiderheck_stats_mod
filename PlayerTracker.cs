@@ -46,6 +46,14 @@ namespace StatsMod
             public DateTime JoinTime { get; set; }
             public Color PlayerColor { get; set; }
 
+            /// <summary>
+            /// Initializes a new PlayerData instance with the given local player ID and optional display name.
+            /// </summary>
+            /// <param name="id">Unique local player ID assigned by the tracker.</param>
+            /// <param name="name">Display name for the player. Defaults to "Player".</param>
+            /// <remarks>
+            /// The constructor initializes Deaths and Kills to 0, sets JoinTime to the current time, and sets PlayerColor to white.
+            /// </remarks>
             public PlayerData(ulong id, string name = "Player")
             {
                 PlayerId = id;
@@ -63,6 +71,18 @@ namespace StatsMod
         }
 
 
+        /// <summary>
+        /// Registers a PlayerInput with the tracker, creating and storing per-player data (ID, name, join time, stats)
+        /// and initializing the player's color if a SpiderCustomizer is present.
+        /// </summary>
+        /// <param name="player">The PlayerInput to register. If null or already registered, the method returns immediately.</param>
+        /// <remarks>
+        /// Side effects:
+        /// - Allocates a new local player ID and stores a PlayerData entry in the tracker.
+        /// - Attempts to read the SpiderCustomizer's private `_primaryColor` via reflection and sets PlayerData.PlayerColor when available.
+        /// - Refreshes the internal player controller cache and notifies the UI via UIManager.Instance.OnPlayerJoined().
+        /// - Logs registration details.
+        /// </remarks>
         public void RegisterPlayer(PlayerInput player)
         {
             if (player == null) return;
@@ -103,6 +123,16 @@ namespace StatsMod
         }
 
 
+        /// <summary>
+        /// Unregisters a player from the tracker, removing their stats and metadata.
+        /// </summary>
+        /// <param name="player">The PlayerInput instance to unregister. If null or not currently registered, the method is a no-op.</param>
+        /// <remarks>
+        /// Side effects:
+        /// - Removes the player from internal tracking dictionaries.
+        /// - Refreshes the cached player controller list.
+        /// - Invokes UIManager.Instance?.OnPlayerLeft() to notify the UI.
+        /// </remarks>
         public void UnregisterPlayer(PlayerInput player)
         {
             if (player == null) return;
@@ -212,6 +242,12 @@ namespace StatsMod
             return result;
         }
 
+        /// <summary>
+        /// Reset deaths and kills to zero for every player currently tracked by the manager.
+        /// </summary>
+        /// <remarks>
+        /// Preserves other player metadata (IDs, names, join times, colors); operates only on the in-memory active player statistics.
+        /// </remarks>
         public void ResetPlayerStats()
         {
             foreach (var entry in activePlayers)
@@ -221,11 +257,23 @@ namespace StatsMod
             }
         }
 
+        /// <summary>
+        /// Returns a shallow copy of the current mapping of active PlayerInput instances to their PlayerData.
+        /// </summary>
+        /// <returns>
+        /// A new Dictionary containing the same PlayerInput keys and references to the corresponding PlayerData objects.
+        /// Modifying the returned dictionary (adding/removing entries) does not affect the tracker’s internal state;
+        /// modifying the PlayerData instances themselves will affect the tracker since the copy is shallow.
+        /// </returns>
         public Dictionary<PlayerInput, PlayerData> GetActivePlayers()
         {
             return new Dictionary<PlayerInput, PlayerData>(activePlayers);
         }
 
+        /// <summary>
+        /// Increments the death counter for the specified player if that player is currently tracked.
+        /// </summary>
+        /// <param name="player">The PlayerInput whose tracked death count should be incremented; no action is taken if the player is null or not registered.</param>
         public void IncrementPlayerDeath(PlayerInput player)
         {
             if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
@@ -235,6 +283,10 @@ namespace StatsMod
             }
         }
 
+        /// <summary>
+        /// Increments the tracked kill count for the specified player.
+        /// </summary>
+        /// <param name="player">The PlayerInput whose tracked kill count should be incremented. If null or not currently tracked, the call is a no-op.</param>
         public void IncrementPlayerKill(PlayerInput player)
         {
             if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
@@ -244,6 +296,11 @@ namespace StatsMod
             }
         }
 
+        /// <summary>
+        /// Update the tracked visual color for a registered player.
+        /// </summary>
+        /// <param name="player">The PlayerInput identifying the player whose color should be updated. If null or not registered, the call is a no-op.</param>
+        /// <param name="color">The new Color to assign to the player's PlayerColor.</param>
         public void UpdatePlayerColor(PlayerInput player, Color color)
         {
             if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
@@ -253,6 +310,14 @@ namespace StatsMod
             }
         }
 
+        /// <summary>
+        /// Retrieves the current cached array of active PlayerController instances, refreshing the cache when stale.
+        /// </summary>
+        /// <remarks>
+        /// The cache is refreshed if it is empty or if more than <c>playerCacheRefreshInterval</c> seconds have elapsed
+        /// since the last update. Access is synchronized with <c>playerCacheLock</c>, so this method is safe to call concurrently.
+        /// </remarks>
+        /// <returns>An array of found <see cref="PlayerController"/> objects; never null (may be empty).</returns>
         public static PlayerController[] GetCachedPlayerControllers()
         {
             lock (playerCacheLock)
@@ -301,6 +366,10 @@ namespace StatsMod
     [HarmonyPatch(typeof(PlayerInput), "OnEnable")]
     public class PlayerInputEnablePatch
     {
+        /// <summary>
+        /// Harmony postfix for PlayerInput.OnEnable; registers the enabled PlayerInput with the StatsManager.
+        /// </summary>
+        /// <param name="__instance">The PlayerInput instance that was enabled.</param>
         static void Postfix(PlayerInput __instance)
         {
             try
@@ -317,6 +386,10 @@ namespace StatsMod
     [HarmonyPatch(typeof(PlayerInput), "OnDisable")]
     public class PlayerInputDisablePatch
     {
+        /// <summary>
+        /// Harmony Prefix for PlayerInput.OnDisable: unregisters the given player from the StatsManager when their input is disabled.
+        /// </summary>
+        /// <param name="__instance">The PlayerInput instance that is being disabled.</param>
         static void Prefix(PlayerInput __instance)
         {
             try
@@ -333,6 +406,10 @@ namespace StatsMod
     [HarmonyPatch(typeof(SpiderHealthSystem), "DisintegrateLegsAndDestroy")]
     public class SpiderHealthSystemDisintegrateLegsAndDestroyPatch
     {
+        /// <summary>
+        /// Harmony prefix called before SpiderHealthSystem.DisintegrateLegsAndDestroy that records a death for the player associated with the given spider instance.
+        /// </summary>
+        /// <param name="__instance">The SpiderHealthSystem instance whose destruction should be recorded as a player death.</param>
         static void Prefix(SpiderHealthSystem __instance)
         {
             try
@@ -351,6 +428,10 @@ namespace StatsMod
     [HarmonyPatch(typeof(SpiderHealthSystem), "DisableDeathEffect")]
     public class SpiderHealthSystemDisableDeathEffect
     {
+        /// <summary>
+        /// Harmony prefix for SpiderHealthSystem.DisableDeathEffect that attempts to undo a previously recorded player death.
+        /// </summary>
+        /// <param name="__instance">The SpiderHealthSystem instance whose death effect is being disabled; used to locate and update the associated player's death count via StatsManager.</param>
         static void Prefix(SpiderHealthSystem __instance)
         {
             try
@@ -367,6 +448,11 @@ namespace StatsMod
     [HarmonyPatch(typeof(SpiderCustomizer), "SetSpiderColor")]
     public class SpiderCustomizerSetSpiderColorPatch
     {
+        /// <summary>
+        /// Harmony postfix applied to SpiderCustomizer.SetSpiderColor; when a spider's color is set, find the owning PlayerInput,
+        /// read the spider's private `_primaryColor` field via reflection, and update that player's color in StatsManager.
+        /// </summary>
+        /// <param name="__instance">The SpiderCustomizer instance whose color was changed.</param>
         static void Postfix(SpiderCustomizer __instance)
         {
             try

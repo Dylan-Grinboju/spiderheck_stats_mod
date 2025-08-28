@@ -205,6 +205,12 @@ namespace StatsMod
             return PlayerTracker.FindPlayerInputByPlayerId(playerId);
         }
 
+        /// <summary>
+        /// If the specified target is damage-killable and this is the first recorded death for that instance, increments the given player's kill count.
+        /// </summary>
+        /// <param name="target">The enemy GameObject that was damaged; ignored if null.</param>
+        /// <param name="playerInput">The player who should receive credit for the kill; ignored if null.</param>
+        /// <param name="weaponName">Optional label for the damage source (defaults to "weapon"). Currently informational.</param>
         public static void TryRecordKill(GameObject target, PlayerInput playerInput, string weaponName = "weapon")
         {
             if (target == null || playerInput == null) return;
@@ -221,6 +227,10 @@ namespace StatsMod
     [HarmonyPatch(typeof(EnemyHealthSystem), "Explode")]
     class EnemyDeathCountPatch
     {
+        /// <summary>
+        /// Harmony postfix invoked after an EnemyHealthSystem explosion/death; increments the global enemy-killed counter.
+        /// </summary>
+        /// <param name="__instance">The EnemyHealthSystem instance that just exploded/was destroyed.</param>
         static void Postfix(EnemyHealthSystem __instance)
         {
             try

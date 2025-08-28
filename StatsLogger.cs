@@ -26,6 +26,14 @@ namespace StatsMod
 
         private readonly string logDirectory;
 
+        /// <summary>
+        /// Initializes the singleton StatsLogger by determining and preparing the on-disk log directory.
+        /// </summary>
+        /// <remarks>
+        /// Attempts to derive the game base directory from UnityEngine.Application.dataPath (falling back to Environment.CurrentDirectory),
+        /// sets the log directory to "{base}/Silk/Logs", and ensures the directory exists. On failure, falls back to the current directory.
+        /// Initialization progress and any errors are logged via the project's logging facility.
+        /// </remarks>
         private StatsLogger()
         {
             try
@@ -50,6 +58,14 @@ namespace StatsMod
 
             Logger.LogInfo($"Stats logger initialized. Log directory: {logDirectory}");
         }
+        /// <summary>
+        /// Writes a timestamped text file containing a formatted report of the provided game statistics.
+        /// </summary>
+        /// <param name="statsSnapshot">Snapshot of the game's statistics to be formatted and saved.</param>
+        /// <remarks>
+        /// The file is written into the logger's configured log directory with the name pattern
+        /// "Spiderheck_stats_yyyy-MM-dd_HH-mm-ss.txt". Any I/O or formatting errors are caught and logged; this method does not throw exceptions to callers.
+        /// </remarks>
         public void LogGameStats(GameStatsSnapshot statsSnapshot)
         {
             try
@@ -70,6 +86,11 @@ namespace StatsMod
             }
         }
 
+        /// <summary>
+        /// Formats a GameStatsSnapshot into a human-readable multi-line statistics report.
+        /// </summary>
+        /// <param name="statsSnapshot">Snapshot containing game duration, enemy totals, and per-player data used to populate the report sections.</param>
+        /// <returns>A single string containing the complete formatted statistics report (multiple lines separated by the environment newline).</returns>
         private string FormatGameStats(GameStatsSnapshot statsSnapshot)
         {
             var lines = new List<string>
@@ -130,6 +151,14 @@ namespace StatsMod
             return string.Join(Environment.NewLine, lines);
         }
 
+        /// <summary>
+        /// Formats a <see cref="TimeSpan"/> into a human-readable string.
+        /// </summary>
+        /// <param name="timeSpan">The time span to format.</param>
+        /// <returns>
+        /// A string in "HH:MM:SS" format, or "Xd HH:MM:SS" when the span contains one or more whole days.
+        /// Hours, minutes, and seconds are zero-padded to two digits; days are shown as an integer followed by 'd'.
+        /// </returns>
         private string FormatTimeSpan(TimeSpan timeSpan)
         {
             if (timeSpan.TotalDays >= 1)

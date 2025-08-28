@@ -33,12 +33,24 @@ namespace StatsMod
         // Keybind settings
         // public static string ToggleStatsKey => Config.GetModConfigValue<string>(ModId, "keybinds.toggleStats", "F1");
 
-        // Methods to update config values at runtime
+        /// <summary>
+        /// Sets whether the stats display is shown and persists the choice to the mod configuration.
+        /// </summary>
+        /// <param name="value">True to show the stats window; false to hide it. The setting is saved to the mod config key <c>display.showStats</c>.</param>
         public static void SetShowStats(bool value)
         {
             Config.SetModConfigValue(ModId, "display.showStats", value);
         }
 
+        /// <summary>
+        /// Update and persist the on-screen position of the stats display.
+        /// </summary>
+        /// <param name="x">Target X coordinate in pixels; will be clamped to [0, Screen.width] if out of range.</param>
+        /// <param name="y">Target Y coordinate in pixels; will be clamped to [0, Screen.height] if out of range.</param>
+        /// <remarks>
+        /// Validated coordinates are written to the mod configuration keys "display.position.x" and
+        /// "display.position.y". Out-of-range inputs are clamped and a warning is logged.
+        /// </remarks>
         public static void SetDisplayPosition(int x, int y)
         {
             // Validate the values before setting them
@@ -49,12 +61,20 @@ namespace StatsMod
             Config.SetModConfigValue(ModId, "display.position.y", y);
         }
 
+        /// <summary>
+        /// Enables or disables runtime tracking and persists the setting to the mod configuration.
+        /// </summary>
+        /// <param name="value">True to enable tracking; false to disable. Stored under config key "tracking.enabled".</param>
         public static void SetTrackingEnabled(bool value)
         {
             Config.SetModConfigValue(ModId, "tracking.enabled", value);
         }
 
-        // Validation methods to ensure config values are within acceptable ranges
+        /// <summary>
+        /// Clamp an X screen coordinate to the valid horizontal range [0, Screen.width].
+        /// </summary>
+        /// <param name="value">The requested X coordinate to validate.</param>
+        /// <returns>The input clamped to the range 0..Screen.width.</returns>
         private static int ValidatePositionX(int value)
         {
             if (value < 0)
@@ -70,6 +90,11 @@ namespace StatsMod
             return value;
         }
 
+        /// <summary>
+        /// Clamp a Y-coordinate to the valid vertical screen bounds.
+        /// </summary>
+        /// <param name="value">Desired Y position in pixels; may be outside the current screen height.</param>
+        /// <returns>The input value clamped to the range [0, Screen.height]. Logs a warning when clamping occurs.</returns>
         private static int ValidatePositionY(int value)
         {
             if (value < 0)
@@ -85,6 +110,11 @@ namespace StatsMod
             return value;
         }
 
+        /// <summary>
+        /// Validates and clamps a UI scale value to the supported range.
+        /// </summary>
+        /// <param name="value">Requested UI scale factor.</param>
+        /// <returns>The clamped UI scale within the range [0.5, 3.0]. Logs a warning if the input was out of range.</returns>
         private static float ValidateScale(float value)
         {
             if (value < 0.5f)

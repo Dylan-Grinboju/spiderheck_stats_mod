@@ -39,6 +39,12 @@ namespace StatsMod
         #endregion
 
         #region Initialization
+        /// <summary>
+        /// Initializes the BigUI component by reading the configuration to determine whether the stats window is allowed to be shown.
+        /// </summary>
+        /// <remarks>
+        /// Reads ModConfig.ShowStatsWindow and stores the result in <c>isDisplayVisibleAtAll</c>. Also emits an informational log entry.
+        /// </remarks>
         public void Initialize()
         {
             isDisplayVisibleAtAll = ModConfig.ShowStatsWindow;
@@ -47,21 +53,38 @@ namespace StatsMod
         #endregion
 
         #region Display Control
+        /// <summary>
+        /// Toggles the in-memory visibility state of the stats window.
+        /// </summary>
         public void ToggleDisplay()
         {
             isDisplayVisible = !isDisplayVisible;
         }
 
+        /// <summary>
+        /// Marks the stats window as visible. The window will actually be shown only if display is allowed by configuration (see <see cref="IsVisible"/>).
+        /// </summary>
         public void ShowDisplay()
         {
             isDisplayVisible = true;
         }
 
+        /// <summary>
+        /// Hides the stats window for the current session by setting the in-memory visible flag to false.
+        /// </summary>
+        /// <remarks>
+        /// This does not modify persistent configuration (e.g., ModConfig.ShowStatsWindow) or the overall allowance
+        /// for the UI to be displayed; it only toggles the runtime visibility state.
+        /// </remarks>
         public void HideDisplay()
         {
             isDisplayVisible = false;
         }
 
+        /// <summary>
+        /// Indicates whether the stats window should be shown (both globally allowed and currently toggled on).
+        /// </summary>
+        /// <returns>True if the UI is permitted to display by config and is currently toggled visible; otherwise false.</returns>
         public bool IsVisible()
         {
             return isDisplayVisibleAtAll && isDisplayVisible;
@@ -69,6 +92,12 @@ namespace StatsMod
         #endregion
 
         #region Style Management
+        /// <summary>
+        /// Lazily creates and configures the GUIStyle instances used by the UI (background, header, label, value, card, error).
+        /// </summary>
+        /// <remarks>
+        /// This method is idempotent — it returns immediately if styles have already been initialized. Styles are created via UIManager and the card style's padding is set using the scaled CardPadding value. Marks the styles as initialized when complete.
+        /// </remarks>
         private void InitializeStyles()
         {
             if (stylesInitialized) return;
@@ -91,6 +120,20 @@ namespace StatsMod
         #endregion
 
         #region GUI Drawing
+        /// <summary>
+        /// Renders the statistics window using Unity IMGUI when the UI is enabled.
+        /// </summary>
+        /// <remarks>
+        /// Only draws when both the global allow flag and the local visibility flag are true.
+        /// The method ensures styles are initialized, computes the dynamic content height, and
+        /// lays out a centered background box with padded content. It queries the current
+        /// StatsSnapshot and conditionally renders the Survival, Enemy, and Player sections
+        /// according to ModConfig:
+        /// - If both ShowPlayTime and ShowEnemyDeaths are enabled, Survival and Enemy stats
+        ///   are shown side-by-side in two columns.
+        /// - If only one is enabled, that section is shown full-width.
+        /// - Player stats are rendered below when ShowPlayers is enabled.
+        /// </remarks>
         private void OnGUI()
         {
             if (!isDisplayVisibleAtAll || !isDisplayVisible) return;
@@ -152,6 +195,16 @@ namespace StatsMod
             GUILayout.EndArea();
         }
 
+        /// <summary>
+        /// Recalculates and updates <c>Total_Height</c> to match the currently enabled UI sections and active players.
+        /// </summary>
+        /// <remarks>
+        /// Adds the scaled survival/enemy section height (when either <c>ModConfig.ShowPlayTime</c> or
+        /// <c>ModConfig.ShowEnemyDeaths</c> is enabled) and the player section height (when
+        /// <c>ModConfig.ShowPlayers</c> is enabled). The player section uses a base scaled height plus one
+        /// row per active player obtained from <c>StatsManager.Instance.GetStatsSnapshot()</c>, with row
+        /// heights scaled via <c>PlayerRowHeight</c>.
+        /// </remarks>
         private void CalculateContentHeight()
         {
             float totalHeight = 0f;
@@ -175,6 +228,10 @@ namespace StatsMod
             Total_Height = totalHeight;
         }
 
+        /// <summary>
+        /// Renders the "Survival Mode" card into the current GUILayout area, showing either the active session timer or the last game duration (or "No games yet") depending on whether survival mode is active.
+        /// </summary>
+        /// <param name="statsSnapshot">Snapshot of current statistics used to determine survival activity and durations.</param>
         private void DrawSurvivalModeStats(GameStatsSnapshot statsSnapshot)
         {
             GUILayout.BeginVertical(cardStyle);
@@ -197,6 +254,10 @@ namespace StatsMod
             GUILayout.EndVertical();
         }
 
+        /// <summary>
+        /// Renders the "Enemy Statistics" card showing the total enemies killed.
+        /// </summary>
+        /// <param name="statsSnapshot">The snapshot containing enemy statistics (expects <c>EnemiesKilled</c>); may be null or incomplete — rendering failures are caught and shown as an error label.</param>
         private void DrawEnemyStats(GameStatsSnapshot statsSnapshot)
         {
             GUILayout.BeginVertical(cardStyle);
@@ -219,6 +280,14 @@ namespace StatsMod
             GUILayout.EndVertical();
         }
 
+        /// <summary>
+        /// Renders the "Player Statistics" card showing each active player's name, deaths, and kills.
+        /// </summary>
+        /// <param name="statsSnapshot">Snapshot containing ActivePlayers and their per-player stats used to populate the rows.</param>
+        /// <remarks>
+        /// If no players are connected a "No players connected" message is shown. Any exception thrown while rendering
+        /// is caught: an error label is displayed and the error is logged.
+        /// </remarks>
         private void DrawPlayerStats(GameStatsSnapshot statsSnapshot)
         {
             GUILayout.BeginVertical(cardStyle);
@@ -270,6 +339,11 @@ namespace StatsMod
         #endregion
 
         #region Utility Methods
+        /// <summary>
+        /// Formats a TimeSpan as a zero-padded hours:minutes:seconds string (HH:MM:SS).
+        /// </summary>
+        /// <param name="timeSpan">The TimeSpan to format.</param>
+        /// <returns>A string representing the timespan in "HH:MM:SS" format.</returns>
         private string FormatTimeSpan(TimeSpan timeSpan)
         {
             return $"{timeSpan.Hours:00}:{timeSpan.Minutes:00}:{timeSpan.Seconds:00}";
@@ -277,11 +351,20 @@ namespace StatsMod
         #endregion
 
         #region Event Handling
+        /// <summary>
+        /// Recalculates the UI content height when a player joins so the window layout accounts for the new player row.
+        /// </summary>
         public void OnPlayerJoined()
         {
             CalculateContentHeight();
         }
 
+        /// <summary>
+        /// Notifies the UI that a player has left and recalculates the window's content height.
+        /// </summary>
+        /// <remarks>
+        /// Call this when a player disconnects so the layout updates to reflect the reduced player list.
+        /// </remarks>
         public void OnPlayerLeft()
         {
             CalculateContentHeight();

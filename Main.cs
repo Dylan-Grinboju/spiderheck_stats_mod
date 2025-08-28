@@ -1,4 +1,4 @@
-﻿using Silk;
+using Silk;
 using Logger = Silk.Logger;
 using HarmonyLib;
 using UnityEngine;
@@ -14,7 +14,14 @@ namespace StatsMod
         public static StatsMod Instance { get; private set; }
         public const string ModId = "Stats_Mod";
 
-        // Called by Silk when Unity loads this mod
+        /// <summary>
+        /// Entry point called by Silk when Unity loads the mod; initializes configuration, optional tracking subsystems, and Harmony patches.
+        /// </summary>
+        /// <remarks>
+        /// This method sets the singleton Instance, ensures the mod configuration exists (via SetupConfiguration), and only proceeds with runtime initialization if ModConfig.TrackingEnabled is true.
+        /// When enabled it: ensures PlayerTracker is created, initializes the UI manager, creates a Harmony instance ("com.StatsMod") and applies all patches, then logs each patched method.
+        /// If tracking is disabled, the method returns early and skips subsystem initialization and patching.
+        /// </remarks>
         public override void Initialize()
         {
             Instance = this;
@@ -48,6 +55,13 @@ namespace StatsMod
             Logger.LogInfo("Harmony patches applied.");
         }
 
+        /// <summary>
+        /// Creates and loads the mod's default configuration values (display and tracking sections), ensuring a config file exists.
+        /// </summary>
+        /// <remarks>
+        /// Constructs a nested default configuration dictionary (display options like window visibility, UI scale and position; and tracking options)
+        /// and passes it to <c>Config.LoadModConfig(ModId, defaultConfig)</c>, which will create the YAML config file if absent.
+        /// </remarks>
         private void SetupConfiguration()
         {
             // Define default configuration values
@@ -90,6 +104,13 @@ namespace StatsMod
             Logger.LogInfo("Configuration loaded");
         }
 
+        /// <summary>
+        /// Unloads the mod: removes Harmony patches if tracking was enabled and clears the singleton instance.
+        /// </summary>
+        /// <remarks>
+        /// If ModConfig.TrackingEnabled is true, Harmony.UnpatchID("com.StatsMod") is called to remove applied patches.
+        /// The method always resets <c>Instance</c> to <c>null</c>.
+        /// </remarks>
         public override void Unload()
         {
             Logger.LogInfo("Unloading Stats Mod...");
