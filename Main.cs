@@ -57,8 +57,8 @@ namespace StatsMod
                     {
                         { "showStatsWindow", true },
                         { "showPlayers", true },
-                        { "showKillCount", true },
-                        { "showDeathCount", true },
+                        // { "showKillCount", true },
+                        // { "showDeathCount", true },
                         { "showPlayTime", true },
                         { "showEnemyDeaths", true },
                         { "position", new Dictionary<string, object>

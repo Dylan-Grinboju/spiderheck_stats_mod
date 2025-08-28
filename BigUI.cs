@@ -13,6 +13,7 @@ namespace StatsMod
 
         private const float PLAYER_ROW_HEIGHT = 40f;
         private const float SURVIVAL_SECTION_HEIGHT = 100f;
+        private float Total_Height = 0f;
         #endregion
 
         #region UI State
@@ -92,8 +93,8 @@ namespace StatsMod
 
             // Calculate background rect with dynamic height based on content
             float marginX = Screen.width * 0.2f;
-            float contentHeight = CalculateContentHeight();
-            float backgroundHeight = Mathf.Min(contentHeight + 80f, Screen.height * 0.8f); // Add padding and cap at 80% of screen
+            CalculateContentHeight();
+            float backgroundHeight = Mathf.Min(Total_Height + 80f, Screen.height * 0.8f); // Add padding and cap at 80% of screen
             float backgroundY = (Screen.height - backgroundHeight) * 0.5f; // Center vertically
 
             Rect backgroundRect = new Rect(marginX, backgroundY, Screen.width - (marginX * 2), backgroundHeight);
@@ -145,7 +146,7 @@ namespace StatsMod
             GUILayout.EndArea();
         }
 
-        private float CalculateContentHeight()
+        private void CalculateContentHeight()
         {
             float totalHeight = 0f;
 
@@ -165,7 +166,7 @@ namespace StatsMod
                 totalHeight += playerSectionHeight;
             }
 
-            return totalHeight;
+            Total_Height = totalHeight;
         }
 
         private void DrawSurvivalModeStats(GameStatsSnapshot statsSnapshot)
@@ -272,12 +273,12 @@ namespace StatsMod
         #region Event Handling
         public void OnPlayerJoined()
         {
-            // No longer need to update cached height since we calculate dynamically
+            CalculateContentHeight();
         }
 
         public void OnPlayerLeft()
         {
-            // No longer need to update cached height since we calculate dynamically
+            CalculateContentHeight();
         }
         #endregion
     }

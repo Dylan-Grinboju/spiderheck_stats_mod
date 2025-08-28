@@ -276,6 +276,7 @@ namespace StatsMod
         public static void AutoPullHUD()
         {
             Instance?.ShowBigUI();
+            Instance?.HideSmallUI();
         }
 
         public static void HideHUD()
