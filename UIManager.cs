@@ -341,11 +341,6 @@ namespace StatsMod
             Instance?.ShowBigUI();
             Instance?.HideSmallUI();
         }
-
-        public static void HideHUD()
-        {
-            Instance?.HideSmallUI();
-        }
         #endregion
     }
 }

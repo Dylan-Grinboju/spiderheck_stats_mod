@@ -9,19 +9,8 @@ namespace StatsMod
 {
     public class StatsManager
     {
-        private static StatsManager _instance;
-        public static StatsManager Instance
-        {
-            get
-            {
-                if (_instance == null)
-                {
-                    _instance = new StatsManager();
-                    Logger.LogInfo("Stats manager created via singleton access");
-                }
-                return _instance;
-            }
-        }
+        private static readonly Lazy<StatsManager> _lazy = new Lazy<StatsManager>(() => new StatsManager());
+        public static StatsManager Instance => _lazy.Value;
 
         private PlayerTracker playerTracker;
         private EnemiesTracker enemiesTracker;
@@ -148,7 +137,7 @@ namespace StatsMod
                 IsSurvivalActive = isSurvivalActive,
                 CurrentSessionTime = GetCurrentSessionTime(),
                 LastGameDuration = lastGameDuration,
-                ActivePlayers = GetActivePlayers(),
+                ActivePlayers = new Dictionary<PlayerInput, PlayerTracker.PlayerData>(GetActivePlayers()),
                 EnemiesKilled = GetEnemiesKilled()
             };
         }
