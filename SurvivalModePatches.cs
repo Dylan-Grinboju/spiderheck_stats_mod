@@ -42,12 +42,9 @@ namespace StatsMod
                     StatsManager.Instance.StopSurvivalSession();
                     Logger.LogInfo("Survival mode stopped via StatsManager");
 
-                    // Automatically pull up the HUD with enlarged size when game ends
-                    if (DisplayStats.Instance != null)
-                    {
-                        DisplayStats.Instance.AutoPullHUD();
-                        Logger.LogInfo("Stats HUD auto-pulled after survival mode ended");
-                    }
+                    // Automatically pull up the HUD when game ends
+                    UIManager.AutoPullHUD();
+                    Logger.LogInfo("Stats HUD auto-pulled after survival mode ended");
                 }
             }
             catch (Exception ex)

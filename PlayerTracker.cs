@@ -75,7 +75,7 @@ namespace StatsMod
 
             ulong playerId = nextLocalPlayerId++;
 
-            string playerName = $"Player_{player.playerIndex + 1}";
+            string playerName = $"Player {player.playerIndex + 1}";
             PlayerData playerData = new PlayerData(playerId, playerName);
 
             // Try to get the spider customizer and set the initial color
@@ -97,7 +97,7 @@ namespace StatsMod
 
             RefreshPlayerCache();
 
-            DisplayStats.Instance?.OnPlayerJoined();
+            UIManager.Instance?.OnPlayerJoined();
 
             Logger.LogInfo($"Registered player ID: {playerId}, Name: {playerName}, Index: {player.playerIndex}");
         }
@@ -116,7 +116,7 @@ namespace StatsMod
 
                 RefreshPlayerCache();
 
-                DisplayStats.Instance?.OnPlayerLeft();
+                UIManager.Instance?.OnPlayerLeft();
             }
         }
 

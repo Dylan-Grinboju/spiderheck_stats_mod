@@ -33,8 +33,8 @@ namespace StatsMod
 
             var tracker = PlayerTracker.Instance;
             Logger.LogInfo("Player tracker initialized");
-            DisplayStats.Initialize();
-            Logger.LogInfo("Player stats display initialized");
+            UIManager.Initialize();
+            Logger.LogInfo("UI Manager initialized");
 
             Harmony harmony = new Harmony("com.StatsMod");
             harmony.PatchAll();
@@ -55,12 +55,12 @@ namespace StatsMod
             {
                 { "display", new Dictionary<string, object>
                     {
-                        { "ShowStatsWindow", true },
-                        { "ShowPlayers", true },
-                        { "ShowKillCount", true },
-                        { "ShowDeathCount", true },
-                        { "ShowPlayTime", true },
-                        { "ShowEnemyDeaths", true },
+                        { "showStatsWindow", true },
+                        { "showPlayers", true },
+                        { "showKillCount", true },
+                        { "showDeathCount", true },
+                        { "showPlayTime", true },
+                        { "showEnemyDeaths", true },
                         { "position", new Dictionary<string, object>
                             {
                                 { "x", 10 },
