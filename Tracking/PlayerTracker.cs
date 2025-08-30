@@ -249,7 +249,6 @@ namespace StatsMod
             if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
             {
                 data.PlayerColor = color;
-                Logger.LogInfo($"Updated color for player ID: {data.PlayerId} to {color}");
             }
         }
 

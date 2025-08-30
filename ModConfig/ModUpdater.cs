@@ -9,7 +9,7 @@ namespace StatsMod
     public static class ModUpdater
     {
         private const string ModId = StatsMod.ModId;
-        private const string CurrentVersion = "0.1.2";
+        private const string CurrentVersion = "1.2";
 
         private static string LatestVersionUrl = "https://raw.githubusercontent.com/Dylan-Grinboju/spiderheck_stats_mod/main/version.txt";
         private static string DownloadUrl = "https://github.com/Dylan-Grinboju/spiderheck_stats_mod/releases/tag/v{0}";
@@ -71,7 +71,7 @@ namespace StatsMod
             Logger.LogInfo($"Download URL: {downloadUrl}");
 
             Announcer.TwoOptionsPopup(
-                $"Stats Mod v{latestVersion} is available!\n\nCurrent version: {CurrentVersion}\nLatest version: {latestVersion}\n\nWould you like to open the download page?",
+                $"Stats Mod v{latestVersion} is available!\nCurrent version: {CurrentVersion}\nWould you like to open the download page?",
                 "Yes", "No",
                 () =>
                 {
@@ -85,10 +85,9 @@ namespace StatsMod
                         });
 
                         Announcer.InformationPopup(
-                            $"Opening download page for Stats Mod v{latestVersion}.\n\n" +
                             "To update:\n" +
                             "1. Download the new StatsMod.dll\n" +
-                            "2. Replace the old file in your mods folder\n" +
+                            "2. Replace the old file in your <Game_Path>/Silk/Mods folder\n" +
                             "3. Restart SpiderHeck"
                         );
                     }
