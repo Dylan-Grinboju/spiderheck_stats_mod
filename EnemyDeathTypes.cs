@@ -150,6 +150,32 @@ namespace StatsMod
                 Logger.LogError("Enemy is null, cannot check if it will die to damage.");
                 return false;
             }
+
+            EnemyHealthSystem enemyHealthSystem = enemy.GetComponent<EnemyHealthSystem>();
+            if (enemyHealthSystem == null)
+            {
+                enemyHealthSystem = enemy.GetComponentInParent<EnemyHealthSystem>();
+            }
+
+            if (enemyHealthSystem != null)
+            {
+                var immuneTimeField = AccessTools.Field(typeof(EnemyHealthSystem), "_immuneTime");
+                if (immuneTimeField != null)
+                {
+                    float immuneTime = (float)immuneTimeField.GetValue(enemyHealthSystem);
+                    if (Time.time < immuneTime)
+                    {
+                        //currently immune
+                        return false;
+                    }
+                }
+                if (enemyHealthSystem.shield != null && enemyHealthSystem.shield.activeInHierarchy)
+                {
+                    //has shield
+                    return false;
+                }
+
+            }
             RollerBrain rollerBrain = enemy.GetComponentInParent<RollerBrain>();
             if (rollerBrain != null)
             {
