@@ -15,7 +15,6 @@ namespace StatsMod
         {
             try
             {
-                // Only track successful game starts
                 if (__result)
                 {
                     StatsManager.Instance.StartSurvivalSession();
@@ -42,7 +41,6 @@ namespace StatsMod
                     StatsManager.Instance.StopSurvivalSession();
                     Logger.LogInfo("Survival mode stopped via StatsManager");
 
-                    // Automatically pull up the HUD when game ends
                     UIManager.AutoPullHUD();
                     Logger.LogInfo("Stats HUD auto-pulled after survival mode ended");
                 }
