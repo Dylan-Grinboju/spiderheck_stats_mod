@@ -4,6 +4,7 @@ using HarmonyLib;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace StatsMod
 {
@@ -22,6 +23,13 @@ namespace StatsMod
 
             // Initialize configuration with default values first
             SetupConfiguration();
+
+            // Check for updates asynchronously
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(5000);
+                await ModUpdater.CheckForUpdatesAsync();
+            });
 
             // Check if tracking is enabled before initializing mod components
             if (!ModConfig.TrackingEnabled)
@@ -57,8 +65,6 @@ namespace StatsMod
                     {
                         { "showStatsWindow", true },
                         { "showPlayers", true },
-                        // { "showKillCount", true },
-                        // { "showDeathCount", true },
                         { "showPlayTime", true },
                         { "showEnemyDeaths", true },
                         { "autoScale", true },
@@ -77,12 +83,13 @@ namespace StatsMod
                         { "saveStatsToFile", true },
                     }
                 },
-                // { "keybinds", new Dictionary<string, object>
-                //     {
-                //         { "toggleStats", "F1" },
-                //         { "resetStats", "F2" }
-                //     }
-                // }
+                { "updater", new Dictionary<string, object>
+                    {
+                        { "checkForUpdates", true },
+                        { "latestVersionUrl", "https://raw.githubusercontent.com/Dylan-Grinboju/spiderheck_stats_mod/main/version.txt" },
+                        { "downloadUrl", "https://github.com/Dylan-Grinboju/spiderheck_stats_mod/releases/download/v{0}/StatsMod.dll" }
+                    }
+                },
             };
 
             // Load the configuration (this will create the YAML file if it doesn't exist)

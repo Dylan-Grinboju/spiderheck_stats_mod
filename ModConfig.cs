@@ -14,8 +14,6 @@ namespace StatsMod
         // Display settings
         public static bool ShowStatsWindow => Config.GetModConfigValue<bool>(ModId, "display.showStatsWindow", true);
         public static bool ShowPlayers => Config.GetModConfigValue<bool>(ModId, "display.showPlayers", true);
-        // public static bool ShowKillCount => Config.GetModConfigValue<bool>(ModId, "display.showKillCount", true);
-        // public static bool ShowDeathCount => Config.GetModConfigValue<bool>(ModId, "display.showDeathCount", true);
         public static bool ShowPlayTime => Config.GetModConfigValue<bool>(ModId, "display.showPlayTime", true);
         public static bool ShowEnemyDeaths => Config.GetModConfigValue<bool>(ModId, "display.showEnemyDeaths", true);
 
@@ -30,8 +28,8 @@ namespace StatsMod
         public static bool TrackingEnabled => Config.GetModConfigValue<bool>(ModId, "tracking.enabled", true);
         public static bool SaveStatsToFile => Config.GetModConfigValue<bool>(ModId, "tracking.saveStatsToFile", true);
 
-        // Keybind settings
-        // public static string ToggleStatsKey => Config.GetModConfigValue<string>(ModId, "keybinds.toggleStats", "F1");
+        // Updater settings
+        public static bool CheckForUpdates => Config.GetModConfigValue<bool>(ModId, "updater.checkForUpdates", true);
 
         // Methods to update config values at runtime
         public static void SetShowStats(bool value)

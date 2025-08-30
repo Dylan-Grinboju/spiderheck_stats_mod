@@ -40,6 +40,8 @@ display:
 tracking:
   enabled: true
   saveStatsToFile: true
+updater:
+  checkForUpdates: true
 ```
 After every change to the file, you need to relaunch the game for it to take effect. If you enter an incorrect value, for example 5 to a boolean field, the mod will throw a bunch of errors at you. You can change it back or just delete the file and it will be created again with the next game launch. 
 Some explanation of the fields:
@@ -57,6 +59,15 @@ Some explanation of the fields:
 `enabled`: If false, the mod will not track any stats. This is as if the mod is not installed at all.
 
 `saveStatsToFile`: If true, the stats will be saved to a local txt file.
+
+### Updater Configuration:
+
+`checkForUpdates`: If true, the mod will automatically check for updates when the game starts.
+
+## Automatic Updates
+When you launch the game, the mod will check if there is a newer version available and prompt you to update if there is.
+
+You can disable update checking by setting `checkForUpdates: false` in your configuration file.
 
 ## Notes and disclaimers
 - Stats reset when starting a new game. After the game ending you can return to the lobby and the overlay will show the last game's stats
