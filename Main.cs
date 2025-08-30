@@ -85,9 +85,7 @@ namespace StatsMod
                 },
                 { "updater", new Dictionary<string, object>
                     {
-                        { "checkForUpdates", true },
-                        { "latestVersionUrl", "https://raw.githubusercontent.com/Dylan-Grinboju/spiderheck_stats_mod/main/version.txt" },
-                        { "downloadUrl", "https://github.com/Dylan-Grinboju/spiderheck_stats_mod/releases/download/v{0}/StatsMod.dll" }
+                        { "checkForUpdates", true }
                     }
                 },
             };

@@ -11,10 +11,8 @@ namespace StatsMod
         private const string ModId = StatsMod.ModId;
         private const string CurrentVersion = "0.1.2";
 
-        private static string LatestVersionUrl => Config.GetModConfigValue<string>(ModId, "updater.latestVersionUrl",
-            "https://raw.githubusercontent.com/Dylan-Grinboju/spiderheck_stats_mod/main/version.txt");
-        private static string DownloadUrl => Config.GetModConfigValue<string>(ModId, "updater.downloadUrl",
-            "https://github.com/Dylan-Grinboju/spiderheck_stats_mod/releases/download/v{0}/StatsMod.dll");
+        private static string LatestVersionUrl = "https://raw.githubusercontent.com/Dylan-Grinboju/spiderheck_stats_mod/main/version.txt";
+        private static string DownloadUrl = "https://github.com/Dylan-Grinboju/spiderheck_stats_mod/releases/tag/v{0}";
         private static bool CheckForUpdates => Config.GetModConfigValue<bool>(ModId, "updater.checkForUpdates", true);
 
         public static async Task CheckForUpdatesAsync()
