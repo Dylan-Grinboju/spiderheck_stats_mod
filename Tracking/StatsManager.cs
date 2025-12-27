@@ -46,6 +46,7 @@ namespace StatsMod
 
             playerTracker.ResetPlayerStats();
             enemiesTracker.ResetEnemiesKilled();
+            playerTracker.StartAllAliveTimers();
 
             Logger.LogInfo($"Survival session started");
         }
@@ -58,6 +59,8 @@ namespace StatsMod
                 return;
             }
 
+            playerTracker.StopAllAliveTimers();
+            
             TimeSpan sessionTime = DateTime.Now - survivalStartTime;
             lastGameDuration = sessionTime;
             isSurvivalActive = false;
@@ -128,6 +131,11 @@ namespace StatsMod
         public void UndoPlayerDeath(SpiderHealthSystem spiderHealth)
         {
             playerTracker.UndoPlayerDeath(spiderHealth);
+        }
+
+        public void RecordPlayerRespawn(PlayerController playerController)
+        {
+            playerTracker.RecordPlayerRespawn(playerController);
         }
 
         public GameStatsSnapshot GetStatsSnapshot()

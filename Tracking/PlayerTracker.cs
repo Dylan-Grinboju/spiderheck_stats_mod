@@ -45,6 +45,8 @@ namespace StatsMod
             public string PlayerName { get; set; }
             public DateTime JoinTime { get; set; }
             public Color PlayerColor { get; set; }
+            public DateTime? CurrentAliveStartTime { get; set; }
+            public TimeSpan TotalAliveTime { get; set; }
 
             public PlayerData(ulong id, string name = "Player")
             {
@@ -54,6 +56,17 @@ namespace StatsMod
                 PlayerName = name;
                 JoinTime = DateTime.Now;
                 PlayerColor = Color.white;
+                CurrentAliveStartTime = null;
+                TotalAliveTime = TimeSpan.Zero;
+            }
+
+            public TimeSpan GetCurrentAliveTime()
+            {
+                if (CurrentAliveStartTime.HasValue)
+                {
+                    return TotalAliveTime + (DateTime.Now - CurrentAliveStartTime.Value);
+                }
+                return TotalAliveTime;
             }
         }
 
@@ -69,7 +82,6 @@ namespace StatsMod
 
             if (activePlayers.ContainsKey(player))
             {
-                Logger.LogInfo($"Player already registered: {player.playerIndex}");
                 return;
             }
 
@@ -88,7 +100,6 @@ namespace StatsMod
                 {
                     Color primaryColor = (Color)primaryColorField.GetValue(customizer);
                     playerData.PlayerColor = primaryColor;
-                    Logger.LogInfo($"Set initial color for player {playerId} to {primaryColor}");
                 }
             }
 
@@ -99,7 +110,10 @@ namespace StatsMod
 
             UIManager.Instance?.OnPlayerJoined();
 
-            Logger.LogInfo($"Registered player ID: {playerId}, Name: {playerName}, Index: {player.playerIndex}");
+            if (StatsManager.Instance.IsSurvivalActive)
+            {
+                StartAliveTimer(player);
+            }
         }
 
 
@@ -109,8 +123,6 @@ namespace StatsMod
 
             if (activePlayers.TryGetValue(player, out PlayerData playerData))
             {
-                Logger.LogInfo($"Unregistering player ID: {playerData.PlayerId}, Deaths: {playerData.Deaths}");
-
                 playerIds.Remove(playerData.PlayerId);
                 activePlayers.Remove(player);
 
@@ -122,7 +134,11 @@ namespace StatsMod
 
         public void RecordPlayerDeath(SpiderHealthSystem spiderHealth)
         {
-            if (spiderHealth == null) return;
+            if (spiderHealth == null)
+            {
+                Logger.LogWarning("RecordPlayerDeath called with null spiderHealth");
+                return;
+            }
 
             try
             {
@@ -131,11 +147,19 @@ namespace StatsMod
                 {
                     playerInput = spiderHealth.rootObject.GetComponentInParent<PlayerInput>();
                 }
+                else
+                {
+                    Logger.LogWarning("SpiderHealthSystem has null rootObject");
+                }
 
                 if (playerInput != null && activePlayers.TryGetValue(playerInput, out PlayerData data))
                 {
                     data.Deaths++;
-                    Logger.LogInfo($"Recorded death for player ID: {data.PlayerId}, Total deaths: {data.Deaths}");
+                    StopAliveTimer(data);
+                }
+                else
+                {
+                    Logger.LogWarning($"Could not find player data for death event");
                 }
             }
             catch (Exception ex)
@@ -146,7 +170,11 @@ namespace StatsMod
 
         public void UndoPlayerDeath(SpiderHealthSystem spiderHealth)
         {
-            if (spiderHealth == null) return;
+            if (spiderHealth == null)
+            {
+                Logger.LogWarning("UndoPlayerDeath called with null spiderHealth");
+                return;
+            }
 
             try
             {
@@ -159,12 +187,12 @@ namespace StatsMod
                 if (playerInput != null && activePlayers.TryGetValue(playerInput, out PlayerData data))
                 {
                     data.Deaths--;
-                    Logger.LogInfo($"Undo Recorded death for player ID: {data.PlayerId}, Total deaths: {data.Deaths}");
+                    StartAliveTimer(playerInput);
                 }
             }
             catch (Exception ex)
             {
-                Logger.LogError($"Error recording player death: {ex.Message}");
+                Logger.LogError($"Error undoing player death: {ex.Message}");
             }
         }
 
@@ -177,7 +205,6 @@ namespace StatsMod
                 if (activePlayers.TryGetValue(playerInput, out PlayerData data))
                 {
                     data.Kills++;
-                    Logger.LogInfo($"Recorded kill for player ID: {data.PlayerId}, Total kills: {data.Kills}");
                 }
             }
             catch (Exception ex)
@@ -231,7 +258,6 @@ namespace StatsMod
             if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
             {
                 data.Deaths++;
-                Logger.LogInfo($"Incremented death for player ID: {data.PlayerId}, Total deaths: {data.Deaths}");
             }
         }
 
@@ -240,7 +266,6 @@ namespace StatsMod
             if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
             {
                 data.Kills++;
-                Logger.LogInfo($"Incremented kill for player ID: {data.PlayerId}, Total kills: {data.Kills}");
             }
         }
 
@@ -293,6 +318,83 @@ namespace StatsMod
             {
                 cachedPlayerControllers = null;
                 lastPlayerCacheUpdate = 0f;
+            }
+        }
+
+        public void StartAliveTimer(PlayerInput playerInput)
+        {
+            if (playerInput != null && activePlayers.TryGetValue(playerInput, out PlayerData data))
+            {
+                if (data.CurrentAliveStartTime.HasValue)
+                {
+                    return;
+                }
+                data.CurrentAliveStartTime = DateTime.Now;
+            }
+            else
+            {
+                Logger.LogError($"Failed to start alive timer - player not found or null");
+            }
+        }
+
+        public void StartAllAliveTimers()
+        {
+            foreach (var entry in activePlayers)
+            {
+                if (!entry.Value.CurrentAliveStartTime.HasValue)
+                {
+                    entry.Value.CurrentAliveStartTime = DateTime.Now;
+                    entry.Value.TotalAliveTime = TimeSpan.Zero;
+                }
+            }
+        }
+
+        public void StopAllAliveTimers()
+        {
+            foreach (var entry in activePlayers)
+            {
+                if (entry.Value.CurrentAliveStartTime.HasValue)
+                {
+                    TimeSpan aliveSession = DateTime.Now - entry.Value.CurrentAliveStartTime.Value;
+                    entry.Value.TotalAliveTime += aliveSession;
+                    entry.Value.CurrentAliveStartTime = null;
+                }
+            }
+        }
+
+        private void StopAliveTimer(PlayerData data)
+        {
+            if (data.CurrentAliveStartTime.HasValue)
+            {
+                TimeSpan aliveSession = DateTime.Now - data.CurrentAliveStartTime.Value;
+                data.TotalAliveTime += aliveSession;
+                data.CurrentAliveStartTime = null;
+            }
+        }
+
+        public void RecordPlayerRespawn(PlayerController playerController)
+        {
+            if (playerController == null)
+            {
+                Logger.LogWarning("RecordPlayerRespawn called with null playerController");
+                return;
+            }
+
+            try
+            {
+                PlayerInput playerInput = playerController.GetComponentInParent<PlayerInput>();
+                if (playerInput != null)
+                {
+                    StartAliveTimer(playerInput);
+                }
+                else
+                {
+                    Logger.LogError($"Could not find PlayerInput for respawn event");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error recording player respawn: {ex.Message}");
             }
         }
     }
@@ -385,6 +487,25 @@ namespace StatsMod
             catch (Exception ex)
             {
                 Logger.LogError($"Error in SpiderCustomizer.SetSpiderColor patch: {ex.Message}");
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(PlayerController), "SpawnCharacter", new Type[] { typeof(Vector3), typeof(Quaternion) })]
+    public class PlayerControllerSpawnCharacterPatch
+    {
+        static void Postfix(PlayerController __instance)
+        {
+            try
+            {
+                if (StatsManager.Instance.IsSurvivalActive)
+                {
+                    StatsManager.Instance.RecordPlayerRespawn(__instance);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error in PlayerController.SpawnCharacter patch: {ex.Message}");
             }
         }
     }

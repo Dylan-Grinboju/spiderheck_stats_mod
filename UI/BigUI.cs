@@ -229,7 +229,8 @@ namespace StatsMod
                     GUILayout.BeginHorizontal();
                     GUILayout.Label("Player", headerStyle, GUILayout.Width(UIManager.ScaleValue(180)));
                     GUILayout.Label("Deaths", headerStyle, GUILayout.Width(UIManager.ScaleValue(150)));
-                    GUILayout.Label("Kills", headerStyle, GUILayout.Width(UIManager.ScaleValue(120)));
+                    GUILayout.Label("Kills", headerStyle, GUILayout.Width(UIManager.ScaleValue(90)));
+                    GUILayout.Label("Alive Time", headerStyle, GUILayout.Width(UIManager.ScaleValue(150)));
                     GUILayout.EndHorizontal();
 
                     GUILayout.Space(10);
@@ -248,7 +249,10 @@ namespace StatsMod
                         GUILayout.Label(playerData.Deaths.ToString(), deathsStyle, GUILayout.Width(UIManager.ScaleValue(140)));
 
                         var killsStyle = new GUIStyle(valueStyle) { normal = { textColor = playerData.Kills > 0 ? UIManager.Green : UIManager.White } };
-                        GUILayout.Label(playerData.Kills.ToString(), killsStyle, GUILayout.Width(UIManager.ScaleValue(120)));
+                        GUILayout.Label(playerData.Kills.ToString(), killsStyle, GUILayout.Width(UIManager.ScaleValue(90)));
+
+                        var aliveTimeStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.White } };
+                        GUILayout.Label(FormatTimeSpan(playerData.GetCurrentAliveTime()), aliveTimeStyle, GUILayout.Width(UIManager.ScaleValue(150)));
                         GUILayout.EndHorizontal();
 
                         GUILayout.Space(15);
