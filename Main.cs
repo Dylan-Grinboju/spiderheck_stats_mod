@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Reflection;
 
 namespace StatsMod
 {
@@ -14,6 +15,21 @@ namespace StatsMod
     {
         public static StatsMod Instance { get; private set; }
         public const string ModId = "Stats_Mod";
+        
+        // Get version from assembly at runtime
+        private static string _version;
+        public static string Version
+        {
+            get
+            {
+                if (_version == null)
+                {
+                    var version = Assembly.GetExecutingAssembly().GetName().Version;
+                    _version = $"{version.Major}.{version.Minor}.{version.Build}";
+                }
+                return _version;
+            }
+        }
 
         // Called by Silk when Unity loads this mod
         public override void Initialize()

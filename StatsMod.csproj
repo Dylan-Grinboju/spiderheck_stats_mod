@@ -6,10 +6,15 @@
     <Title>Stats Mod</Title>
 
     <!-- Version -->
-    <Version>1.3.1</Version>
+    <Version>1.4.0</Version>
+    <AssemblyVersion>$(Version)</AssemblyVersion>
+    <FileVersion>$(Version)</FileVersion>
 
     <!-- Description -->
     <Description>Statistics tracking mod for Spiderheck - compatible with Silk 0.6.1</Description>
+    
+    <!-- Copy version.txt to output directory -->
+    <EnableDefaultItems>true</EnableDefaultItems>
 
     <!-- Author -->
     <Authors>Dylan</Authors>
@@ -168,6 +173,13 @@
     <HintPath>./lib/UnityEngine.TextRenderingModule.dll</HintPath>
   </Reference>
 </ItemGroup>
+
+  <!-- Auto-generate version.txt before build -->
+  <Target Name="GenerateVersionFile" BeforeTargets="BeforeBuild">
+    <WriteLinesToFile File="$(MSBuildProjectDirectory)\version.txt" Lines="$(Version)" Overwrite="true" />
+    <Message Text="Generated version.txt with version $(Version)" Importance="high" />
+  </Target>
+
 </Project>
 
 

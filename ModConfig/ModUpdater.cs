@@ -9,7 +9,7 @@ namespace StatsMod
     public static class ModUpdater
     {
         private const string ModId = StatsMod.ModId;
-        private const string CurrentVersion = "1.3.1";
+        private static string CurrentVersion => StatsMod.Version;
 
         private static string LatestVersionUrl = "https://raw.githubusercontent.com/Dylan-Grinboju/spiderheck_stats_mod/main/version.txt";
         private static string DownloadUrl = "https://github.com/Dylan-Grinboju/spiderheck_stats_mod/releases/tag/v{0}";
