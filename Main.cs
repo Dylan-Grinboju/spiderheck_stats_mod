@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace StatsMod
 {
     // SilkMod Attribute with the format: name, authors, mod version, silk version, and identifier
-    [SilkMod("Stats Mod", new string[] { "Dylan" }, "1.3.0", "0.6.1", "Stats_Mod", 1)]
+    [SilkMod("Stats Mod", new string[] { "Dylan" }, "1.3.1", "0.6.1", "Stats_Mod", 1)]
     public class StatsMod : SilkMod
     {
         public static StatsMod Instance { get; private set; }
