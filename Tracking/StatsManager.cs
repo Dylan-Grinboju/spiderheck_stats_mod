@@ -93,6 +93,11 @@ namespace StatsMod
             playerTracker.IncrementPlayerKill(player);
         }
 
+        public void IncrementFriendlyKill(PlayerInput player)
+        {
+            playerTracker.IncrementFriendlyKill(player);
+        }
+
         public void UpdatePlayerColor(PlayerInput player, Color color)
         {
             playerTracker.UpdatePlayerColor(player, color);

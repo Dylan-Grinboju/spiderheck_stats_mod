@@ -240,6 +240,41 @@ namespace StatsMod
                 StatsManager.Instance.IncrementPlayerKill(playerInput);
             }
         }
+
+        public static void TryRecordPlayerKill(GameObject target, PlayerInput attackerPlayerInput)
+        {
+            if (target == null || attackerPlayerInput == null) return;
+
+            // Check if target is a player by looking for SpiderHealthSystem
+            SpiderHealthSystem spiderHealth = target.GetComponent<SpiderHealthSystem>();
+            if (spiderHealth == null)
+            {
+                spiderHealth = target.GetComponentInParent<SpiderHealthSystem>();
+            }
+
+            if (spiderHealth != null && spiderHealth.rootObject != null)
+            {
+                PlayerInput victimPlayerInput = spiderHealth.rootObject.GetComponentInParent<PlayerInput>();
+
+                // Only count as friendly kill if victim is a different player (not self-kill)
+                if (victimPlayerInput != null && victimPlayerInput != attackerPlayerInput)
+                {
+                    // Check if the victim will die from this hit
+                    var immuneTimeField = AccessTools.Field(typeof(SpiderHealthSystem), "_immuneTime");
+                    if (immuneTimeField != null)
+                    {
+                        float immuneTime = (float)immuneTimeField.GetValue(spiderHealth);
+                        if (Time.time < immuneTime)
+                        {
+                            // Currently immune, won't die
+                            return;
+                        }
+                    }
+
+                    StatsManager.Instance.IncrementFriendlyKill(attackerPlayerInput);
+                }
+            }
+        }
     }
 
 
@@ -276,6 +311,7 @@ namespace StatsMod
                 {
                     PlayerInput playerInput = __instance.ignoreWeapon.owner.healthSystem.GetComponentInParent<PlayerInput>();
                     EnemyDeathHelper.TryRecordKill(other, playerInput, "shotgun");
+                    EnemyDeathHelper.TryRecordPlayerKill(other, playerInput);
                 }
             }
             catch (System.Exception ex)
@@ -300,6 +336,7 @@ namespace StatsMod
                 {
                     PlayerInput ownerPlayer = FindOwnerPlayerFromIgnoreList(__instance.ignore.ToArray());
                     EnemyDeathHelper.TryRecordKill(hit.transform.gameObject, ownerPlayer, "railgun");
+                    EnemyDeathHelper.TryRecordPlayerKill(hit.transform.gameObject, ownerPlayer);
                 }
             }
             catch (System.Exception ex)
@@ -376,6 +413,7 @@ namespace StatsMod
                     if (component != null)
                     {
                         EnemyDeathHelper.TryRecordKill(hit.transform.gameObject, ownerPlayer, "DeathCube");
+                        EnemyDeathHelper.TryRecordPlayerKill(hit.transform.gameObject, ownerPlayer);
                     }
                 }
             }
@@ -427,6 +465,7 @@ namespace StatsMod
                     if (component != null)
                     {
                         EnemyDeathHelper.TryRecordKill(hit.transform.gameObject, ownerPlayer, "DeathRay");
+                        EnemyDeathHelper.TryRecordPlayerKill(hit.transform.gameObject, ownerPlayer);
                     }
                 }
             }
@@ -479,6 +518,7 @@ namespace StatsMod
                 {
                     PlayerInput ownerPlayer = __instance.owner.GetComponentInParent<PlayerInput>();
                     EnemyDeathHelper.TryRecordKill(other.gameObject, ownerPlayer, "EnergyBall");
+                    EnemyDeathHelper.TryRecordPlayerKill(other.gameObject, ownerPlayer);
                 }
             }
             catch (System.Exception ex)
@@ -507,6 +547,7 @@ namespace StatsMod
                     {
                         PlayerInput playerInput = parentWeapon.owner.healthSystem.GetComponentInParent<PlayerInput>();
                         EnemyDeathHelper.TryRecordKill(other.gameObject, playerInput, "sword");
+                        EnemyDeathHelper.TryRecordPlayerKill(other.gameObject, playerInput);
                     }
                 }
             }
@@ -538,6 +579,7 @@ namespace StatsMod
                 {
                     PlayerInput ownerPlayer = __instance.owner.healthSystem.GetComponentInParent<PlayerInput>();
                     EnemyDeathHelper.TryRecordKill(target, ownerPlayer, "KhepriStaff");
+                    EnemyDeathHelper.TryRecordPlayerKill(target, ownerPlayer);
                 }
             }
             catch (System.Exception ex)
@@ -559,6 +601,7 @@ namespace StatsMod
                 {
                     PlayerInput ownerPlayer = __instance.owner.GetComponentInParent<PlayerInput>();
                     EnemyDeathHelper.TryRecordKill(hit.collider.gameObject, ownerPlayer, "LaserCannon");
+                    EnemyDeathHelper.TryRecordPlayerKill(hit.collider.gameObject, ownerPlayer);
                 }
             }
             catch (System.Exception ex)
@@ -593,6 +636,7 @@ namespace StatsMod
                     {
                         PlayerInput ownerPlayer = __instance.owner.GetComponentInParent<PlayerInput>();
                         EnemyDeathHelper.TryRecordKill(hit.collider.gameObject, ownerPlayer, "LaserCube");
+                        EnemyDeathHelper.TryRecordPlayerKill(hit.collider.gameObject, ownerPlayer);
                     }
                 }
             }
@@ -627,6 +671,7 @@ namespace StatsMod
                     }
 
                     EnemyDeathHelper.TryRecordKill(other.gameObject, ownerPlayer, "SawDisc");
+                    EnemyDeathHelper.TryRecordPlayerKill(other.gameObject, ownerPlayer);
                 }
             }
             catch (System.Exception ex)
@@ -751,6 +796,7 @@ namespace StatsMod
                     if (distance <= deathRadius)
                     {
                         EnemyDeathHelper.TryRecordKill(collider2D.gameObject, ownerPlayer, "afterlife explosion");
+                        EnemyDeathHelper.TryRecordPlayerKill(collider2D.gameObject, ownerPlayer);
                     }
                 }
             }
@@ -785,6 +831,7 @@ namespace StatsMod
                     {
                         PlayerInput ownerPlayer = EnemyDeathHelper.FindPlayerInputByPlayerId(fields.explosionOwnerId);
                         EnemyDeathHelper.TryRecordKill(collider2D.gameObject, ownerPlayer, "explosion");
+                        EnemyDeathHelper.TryRecordPlayerKill(collider2D.gameObject, ownerPlayer);
                     }
                 }
             }

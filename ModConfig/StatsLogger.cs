@@ -85,9 +85,11 @@ namespace StatsMod
 
                 int totalKills = statsSnapshot.ActivePlayers.Sum(p => p.Value.Kills);
                 int totalDeaths = statsSnapshot.ActivePlayers.Sum(p => p.Value.Deaths);
+                int totalFriendlyKills = statsSnapshot.ActivePlayers.Sum(p => p.Value.FriendlyKills);
 
                 lines.Add($"  Total Players: {statsSnapshot.ActivePlayers.Count}");
                 lines.Add($"  Total Player Kills: {totalKills}");
+                lines.Add($"  Total Friendly Kills (PvP): {totalFriendlyKills}");
                 lines.Add($"  Total Player Deaths: {totalDeaths}");
                 lines.Add("");
 
@@ -102,6 +104,7 @@ namespace StatsMod
                     lines.Add($"    Player ID: {playerData.PlayerId}");
                     lines.Add($"    Color: R={playerData.PlayerColor.r:F2}, G={playerData.PlayerColor.g:F2}, B={playerData.PlayerColor.b:F2}, A={playerData.PlayerColor.a:F2}");
                     lines.Add($"    Kills: {playerData.Kills}");
+                    lines.Add($"    Friendly Kills (PvP): {playerData.FriendlyKills}");
                     lines.Add($"    Deaths: {playerData.Deaths}");
                     lines.Add($"    Alive Time: {FormatTimeSpan(playerData.GetCurrentAliveTime())}");
                     lines.Add("");

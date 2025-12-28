@@ -34,6 +34,7 @@ namespace StatsMod
         public static readonly Color DarkGray = new Color(0.18f, 0.18f, 0.18f, 0.95f);
         public static readonly Color MediumGray = new Color(0.25f, 0.25f, 0.25f, 0.95f);
         public static readonly Color LightGray = new Color(0.35f, 0.35f, 0.35f, 0.95f);
+        public static readonly Color Orange = new Color(1f, 0.647f, 0f, 1f);
         #endregion
 
         #region Shared Textures

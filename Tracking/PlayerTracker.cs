@@ -42,6 +42,7 @@ namespace StatsMod
             public ulong PlayerId { get; set; }
             public int Deaths { get; set; }
             public int Kills { get; set; }
+            public int FriendlyKills { get; set; }
             public string PlayerName { get; set; }
             public DateTime JoinTime { get; set; }
             public Color PlayerColor { get; set; }
@@ -53,6 +54,7 @@ namespace StatsMod
                 PlayerId = id;
                 Deaths = 0;
                 Kills = 0;
+                FriendlyKills = 0;
                 PlayerName = name;
                 JoinTime = DateTime.Now;
                 PlayerColor = Color.white;
@@ -202,6 +204,7 @@ namespace StatsMod
             {
                 entry.Value.Deaths = 0;
                 entry.Value.Kills = 0;
+                entry.Value.FriendlyKills = 0;
             }
         }
 
@@ -215,6 +218,14 @@ namespace StatsMod
             if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
             {
                 data.Kills++;
+            }
+        }
+
+        public void IncrementFriendlyKill(PlayerInput player)
+        {
+            if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
+            {
+                data.FriendlyKills++;
             }
         }
 
