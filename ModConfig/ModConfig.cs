@@ -41,11 +41,6 @@ namespace StatsMod
             Config.SetModConfigValue(ModId, "display.position.y", y);
         }
 
-        public static void SetTrackingEnabled(bool value)
-        {
-            Config.SetModConfigValue(ModId, "tracking.enabled", value);
-        }
-
         // Validation methods to ensure config values are within acceptable ranges
         private static int ValidatePositionX(int value)
         {
