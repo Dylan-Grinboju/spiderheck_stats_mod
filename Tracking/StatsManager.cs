@@ -20,11 +20,6 @@ namespace StatsMod
         private TimeSpan lastGameDuration;
 
         public bool IsSurvivalActive => isSurvivalActive;
-        public DateTime SurvivalStartTime => survivalStartTime;
-        public TimeSpan LastGameDuration => lastGameDuration;
-
-        public PlayerTracker PlayerTracker => playerTracker;
-        public EnemiesTracker EnemiesTracker => enemiesTracker;
 
         private StatsManager()
         {
@@ -60,7 +55,7 @@ namespace StatsMod
             }
 
             playerTracker.StopAllAliveTimers();
-            
+
             TimeSpan sessionTime = DateTime.Now - survivalStartTime;
             lastGameDuration = sessionTime;
             isSurvivalActive = false;
@@ -83,16 +78,6 @@ namespace StatsMod
             return DateTime.Now - survivalStartTime;
         }
 
-        public Dictionary<PlayerInput, PlayerTracker.PlayerData> GetActivePlayers()
-        {
-            return playerTracker.GetActivePlayers();
-        }
-
-        public int GetEnemiesKilled()
-        {
-            return enemiesTracker.GetEnemiesKilled();
-        }
-
         public void RegisterPlayer(PlayerInput player)
         {
             playerTracker.RegisterPlayer(player);
@@ -101,11 +86,6 @@ namespace StatsMod
         public void UnregisterPlayer(PlayerInput player)
         {
             playerTracker.UnregisterPlayer(player);
-        }
-
-        public void IncrementPlayerDeath(PlayerInput player)
-        {
-            playerTracker.IncrementPlayerDeath(player);
         }
 
         public void IncrementPlayerKill(PlayerInput player)
@@ -145,8 +125,8 @@ namespace StatsMod
                 IsSurvivalActive = isSurvivalActive,
                 CurrentSessionTime = GetCurrentSessionTime(),
                 LastGameDuration = lastGameDuration,
-                ActivePlayers = new Dictionary<PlayerInput, PlayerTracker.PlayerData>(GetActivePlayers()),
-                EnemiesKilled = GetEnemiesKilled()
+                ActivePlayers = new Dictionary<PlayerInput, PlayerTracker.PlayerData>(playerTracker.GetActivePlayers()),
+                EnemiesKilled = enemiesTracker.EnemiesKilled
             };
         }
 
@@ -161,10 +141,7 @@ namespace StatsMod
         public bool IsSurvivalActive { get; set; }
         public TimeSpan CurrentSessionTime { get; set; }
         public TimeSpan LastGameDuration { get; set; }
-        public int TotalGamesPlayed { get; set; }
         public Dictionary<PlayerInput, PlayerTracker.PlayerData> ActivePlayers { get; set; }
-        public int TotalPlayerDeaths { get; set; }
-        public int TotalPlayerKills { get; set; }
         public int EnemiesKilled { get; set; }
     }
 }

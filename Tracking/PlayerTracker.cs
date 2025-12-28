@@ -196,49 +196,6 @@ namespace StatsMod
             }
         }
 
-        public void RecordPlayerKill(PlayerInput playerInput)
-        {
-            if (playerInput == null) return;
-
-            try
-            {
-                if (activePlayers.TryGetValue(playerInput, out PlayerData data))
-                {
-                    data.Kills++;
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"Error recording player kill: {ex.Message}");
-            }
-        }
-
-        //record player kill via his ID
-        public void RecordPlayerKill(ulong playerId)
-        {
-            if (playerIds.TryGetValue(playerId, out PlayerInput playerInput))
-            {
-                RecordPlayerKill(playerInput);
-            }
-            else
-            {
-                Logger.LogError($"Player ID {playerId} not found in active players.");
-            }
-        }
-
-        public List<(string playerName, int deaths, int kills, ulong playerId)> GetPlayerStatsList()
-        {
-            List<(string playerName, int deaths, int kills, ulong playerId)> result = new List<(string playerName, int deaths, int kills, ulong playerId)>();
-
-            foreach (var entry in activePlayers)
-            {
-                PlayerData player = entry.Value;
-                result.Add((player.PlayerName, player.Deaths, player.Kills, player.PlayerId));
-            }
-
-            return result;
-        }
-
         public void ResetPlayerStats()
         {
             foreach (var entry in activePlayers)
@@ -251,14 +208,6 @@ namespace StatsMod
         public Dictionary<PlayerInput, PlayerData> GetActivePlayers()
         {
             return new Dictionary<PlayerInput, PlayerData>(activePlayers);
-        }
-
-        public void IncrementPlayerDeath(PlayerInput player)
-        {
-            if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
-            {
-                data.Deaths++;
-            }
         }
 
         public void IncrementPlayerKill(PlayerInput player)

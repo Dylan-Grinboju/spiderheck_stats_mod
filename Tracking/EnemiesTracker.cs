@@ -48,11 +48,6 @@ namespace StatsMod
             EnemiesKilled = 0;
         }
 
-        public int GetEnemiesKilled()
-        {
-            return EnemiesKilled;
-        }
-
     }
 
 }
