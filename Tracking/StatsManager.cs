@@ -98,6 +98,21 @@ namespace StatsMod
             playerTracker.IncrementFriendlyKill(player);
         }
 
+        public void IncrementEnemyShieldsTakenDown(PlayerInput player)
+        {
+            playerTracker.IncrementEnemyShieldsTakenDown(player);
+        }
+
+        public void IncrementFriendlyShieldsHit(PlayerInput player)
+        {
+            playerTracker.IncrementFriendlyShieldsHit(player);
+        }
+
+        public void IncrementShieldsLost(PlayerInput player)
+        {
+            playerTracker.IncrementShieldsLost(player);
+        }
+
         public void UpdatePlayerColor(PlayerInput player, Color color)
         {
             playerTracker.UpdatePlayerColor(player, color);

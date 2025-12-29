@@ -43,6 +43,9 @@ namespace StatsMod
             public int Deaths { get; set; }
             public int Kills { get; set; }
             public int FriendlyKills { get; set; }
+            public int EnemyShieldsTakenDown { get; set; }
+            public int FriendlyShieldsHit { get; set; }
+            public int ShieldsLost { get; set; }
             public string PlayerName { get; set; }
             public DateTime JoinTime { get; set; }
             public Color PlayerColor { get; set; }
@@ -55,6 +58,9 @@ namespace StatsMod
                 Deaths = 0;
                 Kills = 0;
                 FriendlyKills = 0;
+                EnemyShieldsTakenDown = 0;
+                FriendlyShieldsHit = 0;
+                ShieldsLost = 0;
                 PlayerName = name;
                 JoinTime = DateTime.Now;
                 PlayerColor = Color.white;
@@ -205,6 +211,9 @@ namespace StatsMod
                 entry.Value.Deaths = 0;
                 entry.Value.Kills = 0;
                 entry.Value.FriendlyKills = 0;
+                entry.Value.EnemyShieldsTakenDown = 0;
+                entry.Value.FriendlyShieldsHit = 0;
+                entry.Value.ShieldsLost = 0;
             }
         }
 
@@ -226,6 +235,30 @@ namespace StatsMod
             if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
             {
                 data.FriendlyKills++;
+            }
+        }
+
+        public void IncrementEnemyShieldsTakenDown(PlayerInput player)
+        {
+            if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
+            {
+                data.EnemyShieldsTakenDown++;
+            }
+        }
+
+        public void IncrementFriendlyShieldsHit(PlayerInput player)
+        {
+            if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
+            {
+                data.FriendlyShieldsHit++;
+            }
+        }
+
+        public void IncrementShieldsLost(PlayerInput player)
+        {
+            if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
+            {
+                data.ShieldsLost++;
             }
         }
 
@@ -466,6 +499,29 @@ namespace StatsMod
             catch (Exception ex)
             {
                 Logger.LogError($"Error in PlayerController.SpawnCharacter patch: {ex.Message}");
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(SpiderHealthSystem), "BreakShield")]
+    class PlayerShieldBreakPatch
+    {
+        static void Prefix(SpiderHealthSystem __instance)
+        {
+            try
+            {
+                if (__instance.rootObject != null)
+                {
+                    PlayerInput victimPlayerInput = __instance.rootObject.GetComponentInParent<PlayerInput>();
+                    if (victimPlayerInput != null)
+                    {
+                        StatsManager.Instance.IncrementShieldsLost(victimPlayerInput);
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Logger.LogError($"Error tracking player shield loss: {ex.Message}");
             }
         }
     }
