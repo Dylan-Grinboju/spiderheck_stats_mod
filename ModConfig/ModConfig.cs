@@ -23,6 +23,7 @@ namespace StatsMod
         // UI Scaling settings
         public static bool AutoScale => Config.GetModConfigValue<bool>(ModId, "display.autoScale", true);
         public static float UIScale => ValidateScale(Config.GetModConfigValue<float>(ModId, "display.uiScale", 1.0f));
+        public static float BigUIOpacity => ValidateOpacity(Config.GetModConfigValue<float>(ModId, "display.bigUIOpacity", 100f));
 
         // Tracking settings
         public static bool TrackingEnabled => Config.GetModConfigValue<bool>(ModId, "tracking.enabled", true);
@@ -85,6 +86,21 @@ namespace StatsMod
             {
                 Logger.LogWarning($"UI Scale value {value} is too large, clamping to 3.0");
                 return 3.0f;
+            }
+            return value;
+        }
+
+        private static float ValidateOpacity(float value)
+        {
+            if (value < 0f)
+            {
+                Logger.LogWarning($"BigUI Opacity value {value} is too small, clamping to 0");
+                return 0f;
+            }
+            if (value > 100f)
+            {
+                Logger.LogWarning($"BigUI Opacity value {value} is too large, clamping to 100");
+                return 100f;
             }
             return value;
         }

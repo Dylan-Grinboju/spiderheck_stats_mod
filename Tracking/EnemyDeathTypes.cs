@@ -78,25 +78,27 @@ namespace StatsMod
 
             if (enemyBrain != null)
             {
+                Logger.LogDebug($"Target {target.name} is an enemy of type {enemyBrain.name}");
                 //roller strut special case
                 RollerBrain rollerBrain = enemyBrain.GetComponentInParent<RollerBrain>();
                 if (rollerBrain != null)
                 {
+                    Logger.LogDebug($"Target {target.name} is part of RollerBrain {rollerBrain.gameObject.name}, checking strut death handling");
                     if (!WillRollerStrutKillCauseRollerBrainDeath(rollerBrain))
                         return;
                 }
-                else if (!namesOfEnemiesThatCanDie.Contains(target.gameObject.name))
-                    return;
 
                 int enemyId = enemyBrain.gameObject.GetInstanceID();
 
                 if (IsFirstTimeKill(target, enemyId, recentlyKilledEnemies, ref lastEnemiesCleanupTime, recentlyKilledLock, "enemy"))
                 {
+                    Logger.LogInfo($"Recording kill for player {player.name}, target:{target.name}");
                     StatsManager.Instance.IncrementPlayerKill(player);
                 }
                 return;
             }
 
+            // not an enemy, check if it's a player
             // Find the SpiderHealthSystem component in the player or its parents
             SpiderHealthSystem spiderHealth = target.GetComponent<SpiderHealthSystem>();
             if (spiderHealth == null)
@@ -116,6 +118,7 @@ namespace StatsMod
             int playerId = spiderHealth.gameObject.GetInstanceID();
             if (IsFirstTimeKill(target, playerId, recentlyKilledPlayers, ref lastPlayersCleanupTime, recentlyKilledPlayersLock, "player"))
             {
+                Logger.LogInfo($"Recording friendly kill for player {playerId}, name:{target.name}");
                 StatsManager.Instance.IncrementFriendlyKill(player);
             }
 
@@ -164,16 +167,16 @@ namespace StatsMod
             }
         }
 
-        private static readonly string[] namesOfEnemiesThatCanDie = new string[]
+        private static readonly string[] namesOfTargetsThatCanDie = new string[]
         {
             "Wasp(Clone)",
             "Wasp Shielded(Clone)",
             "PowerWasp Variant(Clone)",
             "PowerWasp Variant Shield(Clone)",
-            //no need as they are checked separately
-            // "Strut1",
-            // "Strut2",
-            // "Strut3",
+            "Strut1",
+            "Strut2",
+            "Strut3",
+            "Roller(Clone)",
             "Whisp(Clone)",
             "PowerWhisp Variant(Clone)",
             "MeleeWhisp(Clone)",
@@ -183,6 +186,8 @@ namespace StatsMod
             "Shielded Hornet_Shaman Variant(Clone)", //not confirmed
             "Hornet Variant(Clone)", //darth maul
             "Shielded Hornet Variant(Clone)",
+            "Player(Clone)", //player
+            "Wasp Friendly(Clone)", //from the perk only
         };
 
         public static void RegisterDiscOwner(GameObject discProjectile, PlayerInput owner)
@@ -320,10 +325,10 @@ namespace StatsMod
             {
                 // Target is a player
                 PlayerInput victimPlayerInput = spiderHealth.rootObject.GetComponentInParent<PlayerInput>();
-
                 if (victimPlayerInput != null && victimPlayerInput != playerInput)
                 {
                     // Track friendly shield hit
+                    Logger.LogDebug($"Recording shield hit on player {victimPlayerInput.name} by player {playerInput.name}");
                     StatsManager.Instance.IncrementFriendlyShieldsHit(playerInput);
                 }
             }
@@ -339,6 +344,7 @@ namespace StatsMod
 
                 if (strutComponent == null)
                 {
+                    Logger.LogDebug($"Recording shield hit on enemy {target.name} by player {playerInput.name}");
                     StatsManager.Instance.IncrementEnemyShieldsTakenDown(playerInput);
                 }
             }
@@ -347,9 +353,19 @@ namespace StatsMod
         public static void RecordHit(GameObject target, PlayerInput playerInput)
         {
             if (target == null || playerInput == null) return;
+            string targetName = target.GetComponentInParent<SpiderHealthSystem>() != null
+                ? target.transform.root.name
+                : target.gameObject.name;
+            if (!namesOfTargetsThatCanDie.Contains(targetName))
+            {
+                Logger.LogDebug($"Target {target.gameObject.name} is not in the list of trackable death types, ignoring hit");
+                return;
+            }
+            Logger.LogDebug($"Recording hit on target {target.name} by player {playerInput.name}");
 
             if (IsTargetImmune(target))
             {
+                Logger.LogDebug($"Target {target.name} is currently immune, not recording hit");
                 return;
             }
 

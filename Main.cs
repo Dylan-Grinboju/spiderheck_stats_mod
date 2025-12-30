@@ -15,7 +15,7 @@ namespace StatsMod
     {
         public static StatsMod Instance { get; private set; }
         public const string ModId = "Stats_Mod";
-        
+
         // Get version from assembly at runtime
         private static string _version;
         public static string Version
@@ -85,6 +85,7 @@ namespace StatsMod
                         { "showEnemyDeaths", true },
                         { "autoScale", true },
                         { "uiScale", 1.0f },
+                        { "bigUIOpacity", 10f },
                         { "position", new Dictionary<string, object>
                             {
                                 { "x", 10 },

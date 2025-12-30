@@ -25,7 +25,6 @@ namespace StatsMod
         #region UI State
         private bool isDisplayVisible = false;
         private bool isDisplayVisibleAtAll = true;
-
         #endregion
 
         #region GUI Styles
@@ -97,6 +96,10 @@ namespace StatsMod
 
             InitializeStyles();
 
+            Color originalColor = GUI.color;
+            float opacity = ModConfig.BigUIOpacity / 100f;
+            GUI.color = new Color(originalColor.r, originalColor.g, originalColor.b, opacity);
+
             // Calculate background rect with dynamic height based on content
             float marginX = Screen.width * 0.2f;
             CalculateContentHeight();
@@ -150,6 +153,8 @@ namespace StatsMod
             }
 
             GUILayout.EndArea();
+
+            GUI.color = originalColor;
         }
 
         private void CalculateContentHeight()
