@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Reflection;
+using StatsMod.Cheats;
 
 namespace StatsMod
 {
@@ -70,6 +71,9 @@ namespace StatsMod
             }
 
             Logger.LogInfo("Harmony patches applied.");
+
+            // Initialize cheat manager for testing
+            CheatManager.Initialize();
         }
 
         private void SetupConfiguration()

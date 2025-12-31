@@ -181,7 +181,8 @@ namespace StatsMod
             "PowerWhisp Variant(Clone)",
             "MeleeWhisp(Clone)",
             "PowerMeleeWhisp Variant(Clone)",
-            "Head", //butterfly
+            "Khepri (Clone)", //butterfly
+            "PowerKhepri Variant(Clone)", //butterfly
             "Hornet_Shaman Variant(Clone)", //black hole
             "Shielded Hornet_Shaman Variant(Clone)", //not confirmed
             "Hornet Variant(Clone)", //darth maul
