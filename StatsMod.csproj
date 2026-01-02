@@ -38,6 +38,11 @@
     <PackageReference Include="SilkLoader" Version="0.6.1" />
   </ItemGroup>
 
+  <!-- Exclude Sourcecode folder from compilation (decompiled game source for reference only) -->
+  <ItemGroup>
+    <Compile Remove="Sourcecode\**\*.cs" />
+  </ItemGroup>
+
   <!-- Assembly References -->
   <ItemGroup>
     <Reference Include="GdkUtilities">

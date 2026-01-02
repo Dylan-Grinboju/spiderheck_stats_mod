@@ -73,7 +73,14 @@ namespace StatsMod
             Logger.LogInfo("Harmony patches applied.");
 
             // Initialize cheat manager for testing
-            CheatManager.Initialize();
+            try
+            {
+                CheatManager.Initialize();
+            }
+            catch (System.Exception ex)
+            {
+                Logger.LogError($"Error initializing CheatManager: {ex.Message}");
+            }
         }
 
         private void SetupConfiguration()
