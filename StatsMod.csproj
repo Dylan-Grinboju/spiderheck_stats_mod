@@ -11,7 +11,7 @@
     <FileVersion>$(Version)</FileVersion>
 
     <!-- Description -->
-    <Description>Statistics tracking mod for Spiderheck - compatible with Silk 0.6.1</Description>
+    <Description>Statistics tracking mod for Spiderheck - compatible with Silk 0.7.0</Description>
     
     <!-- Copy version.txt to output directory -->
     <EnableDefaultItems>true</EnableDefaultItems>
@@ -25,21 +25,25 @@
     <Product>Stats Mod</Product>
     <AssemblyTitle>Spiderheck Stats Mod</AssemblyTitle>
 
-    <!-- You wont need to change this stuff -->
-
     <!-- Output Type -->
     <OutputType>library</OutputType>
 
     <!-- Target Framework -->
     <TargetFramework>net472</TargetFramework>
 
-    <!-- Prevent copying dependency DLLs to output -->
-    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <!-- Prevent copying dependency DLLs to output
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies> -->
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="SilkLoader" Version="0.6.1" />
-  </ItemGroup>
+  <PackageReference Include="ILRepack" Version="2.0.34">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="SilkLoader" Version="0.7.0" />
+    <PackageReference Include="ILRepack.Lib.MSBuild.Task" Version="2.0.34.2" />  
+    <PackageReference Include="MonoMod.Backports" Version="1.1.2" />
+    </ItemGroup>
 
   <!-- Exclude Sourcecode folder from compilation (decompiled game source for reference only) -->
   <ItemGroup>

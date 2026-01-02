@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Target Name="ILRepackMerge" AfterTargets="Build">
+      <PropertyGroup>
+      <ILRepackExe>$(NuGetPackageRoot)ilrepack\2.0.34\tools\ILRepack.exe</ILRepackExe>
+      <OutputPath>$(MSBuildThisFileDirectory)bin\$(Configuration)\$(TargetFramework)</OutputPath>
+    </PropertyGroup>
+
+    <Message Text="Merging all dependencies into StatsMod.dll..." Importance="High" />
+
+    <Exec Command="&quot;$(ILRepackExe)&quot; /out:&quot;$(OutputPath)\StatsMod.dll&quot; &quot;$(OutputPath)\StatsMod.dll&quot; &quot;$(OutputPath)\MonoMod.Backports.dll&quot; &quot;$(OutputPath)\MonoMod.ILHelpers.dll&quot; &quot;$(OutputPath)\MonoMod.Utils.dll&quot; &quot;$(OutputPath)\MonoMod.Core.dll&quot; &quot;$(OutputPath)\MonoMod.RuntimeDetour.dll&quot; &quot;$(OutputPath)\MonoMod.Iced.dll&quot; &quot;$(OutputPath)\Mono.Cecil.dll&quot; &quot;$(OutputPath)\Mono.Cecil.Rocks.dll&quot; &quot;$(OutputPath)\Mono.Cecil.Mdb.dll&quot; &quot;$(OutputPath)\Mono.Cecil.Pdb.dll&quot; /lib:&quot;$(OutputPath)&quot; /internalize" />
+
+    <Message Text="Successfully merged all dependencies into StatsMod.dll" Importance="High" />
+  </Target>
+</Project>
