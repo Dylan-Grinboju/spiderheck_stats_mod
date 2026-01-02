@@ -32,6 +32,9 @@
 
     <!-- Target Framework -->
     <TargetFramework>net472</TargetFramework>
+
+    <!-- Prevent copying dependency DLLs to output -->
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>

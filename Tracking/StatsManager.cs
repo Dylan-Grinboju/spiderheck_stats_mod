@@ -18,6 +18,9 @@ namespace StatsMod
         private bool isSurvivalActive = false;
         private DateTime survivalStartTime;
         private TimeSpan lastGameDuration;
+        
+        private bool isPaused = false;
+        private DateTime pauseStartTime;
 
         public bool IsSurvivalActive => isSurvivalActive;
 
@@ -75,7 +78,29 @@ namespace StatsMod
             if (!isSurvivalActive)
                 return TimeSpan.Zero;
 
-            return DateTime.Now - survivalStartTime;
+            DateTime endTime = isPaused ? pauseStartTime : DateTime.Now;
+            return endTime - survivalStartTime;
+        }
+
+        public void PauseTimers()
+        {
+            if (isPaused || !isSurvivalActive)
+                return;
+
+            isPaused = true;
+            pauseStartTime = DateTime.Now;
+            playerTracker.PauseTimers();
+        }
+
+        public void ResumeTimers()
+        {
+            if (!isPaused || !isSurvivalActive)
+                return;
+
+            TimeSpan pausedDuration = DateTime.Now - pauseStartTime;
+            survivalStartTime = survivalStartTime.Add(pausedDuration);
+            isPaused = false;
+            playerTracker.ResumeTimers();
         }
 
         public void RegisterPlayer(PlayerInput player)

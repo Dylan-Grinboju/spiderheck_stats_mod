@@ -37,6 +37,8 @@ namespace StatsMod
         private static float playerCacheRefreshInterval = 60f; // Refresh every 60 seconds
         private static readonly object playerCacheLock = new object();
 
+        private bool isPaused = false;
+
         public class PlayerData
         {
             public ulong PlayerId { get; set; }
@@ -51,6 +53,7 @@ namespace StatsMod
             public Color PlayerColor { get; set; }
             public DateTime? CurrentAliveStartTime { get; set; }
             public TimeSpan TotalAliveTime { get; set; }
+            public bool WasAliveWhenPaused { get; set; }
 
             public PlayerData(ulong id, string name = "Player")
             {
@@ -66,6 +69,7 @@ namespace StatsMod
                 PlayerColor = Color.white;
                 CurrentAliveStartTime = null;
                 TotalAliveTime = TimeSpan.Zero;
+                WasAliveWhenPaused = false;
             }
 
             public TimeSpan GetCurrentAliveTime()
@@ -117,11 +121,6 @@ namespace StatsMod
             RefreshPlayerCache();
 
             UIManager.Instance?.OnPlayerJoined();
-
-            if (StatsManager.Instance.IsSurvivalActive)
-            {
-                StartAliveTimer(player);
-            }
         }
 
 
@@ -351,6 +350,44 @@ namespace StatsMod
                     TimeSpan aliveSession = DateTime.Now - entry.Value.CurrentAliveStartTime.Value;
                     entry.Value.TotalAliveTime += aliveSession;
                     entry.Value.CurrentAliveStartTime = null;
+                }
+            }
+        }
+
+        public void PauseTimers()
+        {
+            if (isPaused)
+                return;
+
+            isPaused = true;
+            foreach (var entry in activePlayers)
+            {
+                if (entry.Value.CurrentAliveStartTime.HasValue)
+                {
+                    TimeSpan aliveSession = DateTime.Now - entry.Value.CurrentAliveStartTime.Value;
+                    entry.Value.TotalAliveTime += aliveSession;
+                    entry.Value.CurrentAliveStartTime = null;
+                    entry.Value.WasAliveWhenPaused = true;
+                }
+                else
+                {
+                    entry.Value.WasAliveWhenPaused = false;
+                }
+            }
+        }
+
+        public void ResumeTimers()
+        {
+            if (!isPaused)
+                return;
+
+            isPaused = false;
+            foreach (var entry in activePlayers)
+            {
+                if (entry.Value.WasAliveWhenPaused)
+                {
+                    entry.Value.CurrentAliveStartTime = DateTime.Now;
+                    entry.Value.WasAliveWhenPaused = false;
                 }
             }
         }

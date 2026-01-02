@@ -61,6 +61,12 @@ namespace StatsMod
             UIManager.Initialize();
             Logger.LogInfo("UI Manager initialized");
 
+            // Initialize pause tracker
+            GameObject pauseTrackerObj = new GameObject("PauseTracker");
+            pauseTrackerObj.AddComponent<PauseTracker>();
+            GameObject.DontDestroyOnLoad(pauseTrackerObj);
+            Logger.LogInfo("Pause tracker initialized");
+
             Harmony harmony = new Harmony("com.StatsMod");
             harmony.PatchAll();
 

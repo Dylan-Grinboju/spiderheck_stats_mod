@@ -86,11 +86,17 @@ namespace StatsMod
                 int totalKills = statsSnapshot.ActivePlayers.Sum(p => p.Value.Kills);
                 int totalDeaths = statsSnapshot.ActivePlayers.Sum(p => p.Value.Deaths);
                 int totalFriendlyKills = statsSnapshot.ActivePlayers.Sum(p => p.Value.FriendlyKills);
+                int totalEnemyShieldsTakenDown = statsSnapshot.ActivePlayers.Sum(p => p.Value.EnemyShieldsTakenDown);
+                int totalFriendlyShieldsHit = statsSnapshot.ActivePlayers.Sum(p => p.Value.FriendlyShieldsHit);
+                int totalShieldsLost = statsSnapshot.ActivePlayers.Sum(p => p.Value.ShieldsLost);
 
                 lines.Add($"  Total Players: {statsSnapshot.ActivePlayers.Count}");
                 lines.Add($"  Total Player Kills: {totalKills}");
                 lines.Add($"  Total Friendly Kills (PvP): {totalFriendlyKills}");
                 lines.Add($"  Total Player Deaths: {totalDeaths}");
+                lines.Add($"  Total Enemy Shields Taken Down: {totalEnemyShieldsTakenDown}");
+                lines.Add($"  Total Friendly Shields Hit: {totalFriendlyShieldsHit}");
+                lines.Add($"  Total Shields Lost: {totalShieldsLost}");
                 lines.Add("");
 
                 lines.Add("  Individual Player Performance:");
@@ -106,6 +112,9 @@ namespace StatsMod
                     lines.Add($"    Kills: {playerData.Kills}");
                     lines.Add($"    Friendly Kills (PvP): {playerData.FriendlyKills}");
                     lines.Add($"    Deaths: {playerData.Deaths}");
+                    lines.Add($"    Enemy Shields Taken Down: {playerData.EnemyShieldsTakenDown}");
+                    lines.Add($"    Friendly Shields Hit: {playerData.FriendlyShieldsHit}");
+                    lines.Add($"    Shields Lost: {playerData.ShieldsLost}");
                     lines.Add($"    Alive Time: {FormatTimeSpan(playerData.GetCurrentAliveTime())}");
                     lines.Add("");
                 }

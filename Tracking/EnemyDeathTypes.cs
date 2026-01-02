@@ -1,12 +1,8 @@
 using UnityEngine;
-using Silk;
+using UnityEngine.InputSystem;
 using Logger = Silk.Logger;
 using HarmonyLib;
-using System;
 using Interfaces;
-using UnityEngine.InputSystem;
-using System.Collections.Generic;
-using System.Linq;
 using Unity.Netcode;
 
 
@@ -14,22 +10,6 @@ namespace StatsMod
 {
     public static class EnemyDeathHelper
     {
-        private static float cleanupInterval = 10f; // Clean up 10 seconds after nobody acquires the lock
-        private static HashSet<int> recentlyKilledEnemies = new HashSet<int>();
-        private static float lastEnemiesCleanupTime = 0f;
-        private static readonly object recentlyKilledLock = new object();
-        private static HashSet<int> recentlyKilledPlayers = new HashSet<int>();
-        private static float lastPlayersCleanupTime = 0f;
-        private static readonly object recentlyKilledPlayersLock = new object();
-
-        private static Dictionary<int, int> rollerBrainHealthTracker = new Dictionary<int, int>();
-        private static readonly object rollerBrainLock = new object();
-
-        // Dictionary to track disc projectiles and their owners
-        private static Dictionary<int, PlayerInput> discOwnerTracker = new Dictionary<int, PlayerInput>();
-        private static readonly object discOwnerLock = new object();
-
-        // Cached reflection fields to avoid expensive lookups
         private static System.Reflection.PropertyInfo _isHostProperty;
         public static System.Reflection.PropertyInfo IsHostProperty
         {
@@ -40,348 +20,8 @@ namespace StatsMod
                 return _isHostProperty;
             }
         }
-
-        private static bool IsFirstTimeKill(GameObject target, int instanceId, HashSet<int> recentlyKilledSet, ref float lastCleanupTime, object lockObject, string entityType)
-        {
-
-            lock (lockObject)
-            {
-                float currentTime = Time.time;
-                if (currentTime - lastCleanupTime > cleanupInterval)
-                {
-                    recentlyKilledSet.Clear();
-                }
-                lastCleanupTime = currentTime;
-
-                if (recentlyKilledSet.Contains(instanceId))
-                {
-                    return false;
-                }
-
-                recentlyKilledSet.Add(instanceId);
-                Logger.LogInfo($"Recording kill for {entityType} {instanceId}, name:{target.name} at time {Time.time}");
-                return true;
-            }
-        }
-
-        public static void TryRecordKill(GameObject target, PlayerInput player)
-        {
-            if (target == null) return;
-
-            // Find the EnemyBrain component in the enemy or its parents
-            //Using EnemyBrain is helps with the Roller Strut - it has only one
-            EnemyBrain enemyBrain = target.GetComponent<EnemyBrain>();
-            if (enemyBrain == null)
-            {
-                enemyBrain = target.GetComponentInParent<EnemyBrain>();
-            }
-
-            if (enemyBrain != null)
-            {
-                Logger.LogDebug($"Target {target.name} is an enemy of type {enemyBrain.name}");
-                //roller strut special case
-                RollerBrain rollerBrain = enemyBrain.GetComponentInParent<RollerBrain>();
-                if (rollerBrain != null)
-                {
-                    Logger.LogDebug($"Target {target.name} is part of RollerBrain {rollerBrain.gameObject.name}, checking strut death handling");
-                    if (!WillRollerStrutKillCauseRollerBrainDeath(rollerBrain))
-                        return;
-                }
-
-                int enemyId = enemyBrain.gameObject.GetInstanceID();
-
-                if (IsFirstTimeKill(target, enemyId, recentlyKilledEnemies, ref lastEnemiesCleanupTime, recentlyKilledLock, "enemy"))
-                {
-                    Logger.LogInfo($"Recording kill for player {player.name}, target:{target.name}");
-                    StatsManager.Instance.IncrementPlayerKill(player);
-                }
-                return;
-            }
-
-            // not an enemy, check if it's a player
-            // Find the SpiderHealthSystem component in the player or its parents
-            SpiderHealthSystem spiderHealth = target.GetComponent<SpiderHealthSystem>();
-            if (spiderHealth == null)
-            {
-                spiderHealth = target.GetComponentInParent<SpiderHealthSystem>();
-            }
-
-            if (spiderHealth == null)
-            {
-                Logger.LogError($"Could not find SpiderHealthSystem or EnemyBrain for target {target.name}");
-                return;
-            }
-
-            // don't count suicides
-            if (spiderHealth.gameObject == player.gameObject)
-                return;
-            int playerId = spiderHealth.gameObject.GetInstanceID();
-            if (IsFirstTimeKill(target, playerId, recentlyKilledPlayers, ref lastPlayersCleanupTime, recentlyKilledPlayersLock, "player"))
-            {
-                Logger.LogInfo($"Recording friendly kill for player {playerId}, name:{target.name}");
-                StatsManager.Instance.IncrementFriendlyKill(player);
-            }
-
-        }
-
-        public static bool WillRollerStrutKillCauseRollerBrainDeath(RollerBrain rollerBrain)
-        {
-            // Use the rollerBrain's GameObject ID for tracking
-            int rollerBrainId = rollerBrain.gameObject.GetInstanceID();
-
-            lock (rollerBrainLock)
-            {
-                // Check if we've seen this brain before
-                if (!rollerBrainHealthTracker.ContainsKey(rollerBrainId))
-                {
-                    // First time seeing this brain - get its actual health from the game
-                    int currentAliveStrutCount = 0;
-                    if (rollerBrain.struts != null)
-                    {
-                        for (int i = 0; i < rollerBrain.struts.transform.childCount; i++)
-                        {
-                            if (rollerBrain.struts.transform.GetChild(i).gameObject.activeSelf)
-                            {
-                                currentAliveStrutCount++;
-                            }
-                        }
-                    }
-                    // Initialize with current alive strut count
-                    rollerBrainHealthTracker[rollerBrainId] = currentAliveStrutCount - 1;
-                }
-                else
-                {
-                    // We've seen this strut before - decrement its tracked health
-                    rollerBrainHealthTracker[rollerBrainId]--;
-                }
-
-                // Check if this will cause the main enemy to die
-                bool willCauseMainDeath = rollerBrainHealthTracker[rollerBrainId] < rollerBrain.minStrutCount;
-                // Clean up the tracker if the main enemy will die
-                if (willCauseMainDeath)
-                {
-                    rollerBrainHealthTracker.Remove(rollerBrainId);
-                }
-
-                return willCauseMainDeath;
-            }
-        }
-
-        private static readonly string[] namesOfTargetsThatCanDie = new string[]
-        {
-            "Wasp(Clone)",
-            "Wasp Shielded(Clone)",
-            "PowerWasp Variant(Clone)",
-            "PowerWasp Variant Shield(Clone)",
-            "Strut1",
-            "Strut2",
-            "Strut3",
-            "Roller(Clone)",
-            "Whisp(Clone)",
-            "PowerWhisp Variant(Clone)",
-            "MeleeWhisp(Clone)",
-            "PowerMeleeWhisp Variant(Clone)",
-            "Khepri (Clone)", //butterfly
-            "PowerKhepri Variant(Clone)", //butterfly
-            "Hornet_Shaman Variant(Clone)", //black hole
-            "Shielded Hornet_Shaman Variant(Clone)", //not confirmed
-            "Hornet Variant(Clone)", //darth maul
-            "Shielded Hornet Variant(Clone)",
-            "Player(Clone)", //player
-            "Wasp Friendly(Clone)", //from the perk only
-        };
-
-        public static void RegisterDiscOwner(GameObject discProjectile, PlayerInput owner)
-        {
-            if (discProjectile == null || owner == null) return;
-
-            int discId = discProjectile.GetInstanceID();
-            lock (discOwnerLock)
-            {
-                discOwnerTracker[discId] = owner;
-                Logger.LogInfo($"Registered disc owner for disc {discId}, owner: {owner.name}");
-            }
-        }
-
-        public static PlayerInput GetDiscOwner(GameObject discProjectile)
-        {
-            if (discProjectile == null) return null;
-
-            int discId = discProjectile.GetInstanceID();
-            lock (discOwnerLock)
-            {
-                if (discOwnerTracker.TryGetValue(discId, out PlayerInput owner))
-                {
-                    return owner;
-                }
-            }
-            return null;
-        }
-
-        public static void CleanupDiscOwner(GameObject discProjectile)
-        {
-            if (discProjectile == null) return;
-
-            int discId = discProjectile.GetInstanceID();
-            lock (discOwnerLock)
-            {
-                if (discOwnerTracker.Remove(discId))
-                {
-                    Logger.LogInfo($"Cleaned up disc owner for disc {discId}");
-                }
-            }
-        }
-
-        public static PlayerInput FindPlayerInputByPlayerId(ulong playerId)
-        {
-            // Delegate to the cached version in PlayerTracker
-            return PlayerTracker.FindPlayerInputByPlayerId(playerId);
-        }
-
-        public static bool IsTargetImmune(GameObject target)
-        {
-            if (target == null) return false;
-
-            // Check for enemy immunity
-            EnemyHealthSystem enemyHealthSystem = target.GetComponent<EnemyHealthSystem>();
-            if (enemyHealthSystem == null)
-            {
-                enemyHealthSystem = target.GetComponentInParent<EnemyHealthSystem>();
-            }
-
-            if (enemyHealthSystem != null)
-            {
-                var immuneTimeField = AccessTools.Field(typeof(EnemyHealthSystem), "_immuneTime");
-                if (immuneTimeField != null)
-                {
-                    float immuneTime = (float)immuneTimeField.GetValue(enemyHealthSystem);
-                    if (Time.time < immuneTime)
-                    {
-                        return true; // Currently immune
-                    }
-                }
-            }
-
-            // Check for player immunity
-            SpiderHealthSystem spiderHealthSystem = target.GetComponent<SpiderHealthSystem>();
-            if (spiderHealthSystem == null)
-            {
-                spiderHealthSystem = target.GetComponentInParent<SpiderHealthSystem>();
-            }
-
-            if (spiderHealthSystem != null)
-            {
-                var immuneTimeField = AccessTools.Field(typeof(SpiderHealthSystem), "_immuneTime");
-                if (immuneTimeField != null)
-                {
-                    float immuneTime = (float)immuneTimeField.GetValue(spiderHealthSystem);
-                    if (Time.time < immuneTime)
-                    {
-                        return true; // Currently immune
-                    }
-                }
-            }
-
-            return false;
-        }
-        public static bool HasActiveShield(GameObject target)
-        {
-            if (target == null) return false;
-
-            EnemyHealthSystem enemyHealthSystem = target.GetComponent<EnemyHealthSystem>();
-            if (enemyHealthSystem == null)
-            {
-                enemyHealthSystem = target.GetComponentInParent<EnemyHealthSystem>();
-            }
-
-            if (enemyHealthSystem != null)
-            {
-                return enemyHealthSystem.shield != null && enemyHealthSystem.shield.activeInHierarchy;
-            }
-
-            SpiderHealthSystem spiderHealthSystem = target.GetComponent<SpiderHealthSystem>();
-            if (spiderHealthSystem == null)
-            {
-                spiderHealthSystem = target.GetComponentInParent<SpiderHealthSystem>();
-            }
-
-            if (spiderHealthSystem != null)
-            {
-                return spiderHealthSystem.HasShield();
-            }
-
-            return false;
-        }
-
-        public static void RecordShieldHit(GameObject target, PlayerInput playerInput)
-        {
-            if (target == null || playerInput == null) return;
-            SpiderHealthSystem spiderHealth = target.GetComponent<SpiderHealthSystem>();
-            if (spiderHealth == null)
-            {
-                spiderHealth = target.GetComponentInParent<SpiderHealthSystem>();
-            }
-
-            if (spiderHealth != null && spiderHealth.rootObject != null)
-            {
-                // Target is a player
-                PlayerInput victimPlayerInput = spiderHealth.rootObject.GetComponentInParent<PlayerInput>();
-                if (victimPlayerInput != null && victimPlayerInput != playerInput)
-                {
-                    // Track friendly shield hit
-                    Logger.LogDebug($"Recording shield hit on player {victimPlayerInput.name} by player {playerInput.name}");
-                    StatsManager.Instance.IncrementFriendlyShieldsHit(playerInput);
-                }
-            }
-            else
-            {
-                // Target is an enemy
-                // Exclude RollerStrut enemies, they are problematic with shields
-                RollerStrut strutComponent = target.GetComponent<RollerStrut>();
-                if (strutComponent == null)
-                {
-                    strutComponent = target.GetComponentInParent<RollerStrut>();
-                }
-
-                if (strutComponent == null)
-                {
-                    Logger.LogDebug($"Recording shield hit on enemy {target.name} by player {playerInput.name}");
-                    StatsManager.Instance.IncrementEnemyShieldsTakenDown(playerInput);
-                }
-            }
-        }
-
-        public static void RecordHit(GameObject target, PlayerInput playerInput)
-        {
-            if (target == null || playerInput == null) return;
-            string targetName = target.GetComponentInParent<SpiderHealthSystem>() != null
-                ? target.transform.root.name
-                : target.gameObject.name;
-            if (!namesOfTargetsThatCanDie.Contains(targetName))
-            {
-                Logger.LogDebug($"Target {target.gameObject.name} is not in the list of trackable death types, ignoring hit");
-                return;
-            }
-            Logger.LogDebug($"Recording hit on target {target.name} by player {playerInput.name}");
-
-            if (IsTargetImmune(target))
-            {
-                Logger.LogDebug($"Target {target.name} is currently immune, not recording hit");
-                return;
-            }
-
-            if (HasActiveShield(target))
-            {
-                RecordShieldHit(target, playerInput);
-                return;
-            }
-            // Will die - record the kill
-            TryRecordKill(target, playerInput);
-        }
     }
 
-
-    //death function of an enemy, no matter the cause (even lava)
     [HarmonyPatch(typeof(EnemyHealthSystem), "Explode")]
     class EnemyDeathCountPatch
     {
@@ -413,7 +53,7 @@ namespace StatsMod
                 if (component != null)
                 {
                     PlayerInput playerInput = __instance.ignoreWeapon.owner.healthSystem.GetComponentInParent<PlayerInput>();
-                    EnemyDeathHelper.RecordHit(other, playerInput);
+                    HitLogic.RecordHit(other, playerInput);
                 }
             }
             catch (System.Exception ex)
@@ -437,7 +77,7 @@ namespace StatsMod
                 if (component != null)
                 {
                     PlayerInput ownerPlayer = FindOwnerPlayerFromIgnoreList(__instance.ignore.ToArray());
-                    EnemyDeathHelper.RecordHit(hit.transform.gameObject, ownerPlayer);
+                    HitLogic.RecordHit(hit.transform.gameObject, ownerPlayer);
                 }
             }
             catch (System.Exception ex)
@@ -513,7 +153,7 @@ namespace StatsMod
                     IDamageable component = hit.transform.GetComponent<IDamageable>();
                     if (component != null)
                     {
-                        EnemyDeathHelper.RecordHit(hit.transform.gameObject, ownerPlayer);
+                        HitLogic.RecordHit(hit.transform.gameObject, ownerPlayer);
                     }
                 }
             }
@@ -564,7 +204,7 @@ namespace StatsMod
                     IDamageable component = hit.transform.GetComponent<IDamageable>();
                     if (component != null)
                     {
-                        EnemyDeathHelper.RecordHit(hit.transform.gameObject, ownerPlayer);
+                        HitLogic.RecordHit(hit.transform.gameObject, ownerPlayer);
                     }
                 }
             }
@@ -616,7 +256,7 @@ namespace StatsMod
                 if (isDamageable)
                 {
                     PlayerInput ownerPlayer = __instance.owner.GetComponentInParent<PlayerInput>();
-                    EnemyDeathHelper.RecordHit(other.gameObject, ownerPlayer);
+                    HitLogic.RecordHit(other.gameObject, ownerPlayer);
                 }
             }
             catch (System.Exception ex)
@@ -644,7 +284,7 @@ namespace StatsMod
                     if (parentWeapon != null && parentWeapon.owner != null)
                     {
                         PlayerInput playerInput = parentWeapon.owner.healthSystem.GetComponentInParent<PlayerInput>();
-                        EnemyDeathHelper.RecordHit(other.gameObject, playerInput);
+                        HitLogic.RecordHit(other.gameObject, playerInput);
                     }
                 }
             }
@@ -675,7 +315,7 @@ namespace StatsMod
                 if (willCallDamage)
                 {
                     PlayerInput ownerPlayer = __instance.owner.healthSystem.GetComponentInParent<PlayerInput>();
-                    EnemyDeathHelper.RecordHit(target, ownerPlayer);
+                    HitLogic.RecordHit(target, ownerPlayer);
                 }
             }
             catch (System.Exception ex)
@@ -696,7 +336,7 @@ namespace StatsMod
                 if (damageable != null)
                 {
                     PlayerInput ownerPlayer = __instance.owner.GetComponentInParent<PlayerInput>();
-                    EnemyDeathHelper.RecordHit(hit.collider.gameObject, ownerPlayer);
+                    HitLogic.RecordHit(hit.collider.gameObject, ownerPlayer);
                 }
             }
             catch (System.Exception ex)
@@ -730,7 +370,7 @@ namespace StatsMod
                     if (component != null)
                     {
                         PlayerInput ownerPlayer = __instance.owner.GetComponentInParent<PlayerInput>();
-                        EnemyDeathHelper.RecordHit(hit.collider.gameObject, ownerPlayer);
+                        HitLogic.RecordHit(hit.collider.gameObject, ownerPlayer);
                     }
                 }
             }
@@ -756,7 +396,7 @@ namespace StatsMod
                 if (willCallDamage)
                 {
                     // First try to get the owner from disc tracking
-                    PlayerInput ownerPlayer = EnemyDeathHelper.GetDiscOwner(__instance.gameObject);
+                    PlayerInput ownerPlayer = HitLogic.GetDiscOwner(__instance.gameObject);
 
                     // Fallback to getting from parent (may not work for projectiles)
                     if (ownerPlayer == null)
@@ -764,7 +404,7 @@ namespace StatsMod
                         ownerPlayer = __instance.GetComponentInParent<PlayerInput>();
                     }
 
-                    EnemyDeathHelper.RecordHit(other.gameObject, ownerPlayer);
+                    HitLogic.RecordHit(other.gameObject, ownerPlayer);
                 }
             }
             catch (System.Exception ex)
@@ -798,7 +438,7 @@ namespace StatsMod
 
                 // **THIS IS OUR ADDITION** - Track the disc owner
                 PlayerInput ownerPlayer = __instance.owner.healthSystem.GetComponentInParent<PlayerInput>();
-                EnemyDeathHelper.RegisterDiscOwner(gameObject, ownerPlayer);
+                HitLogic.RegisterDiscOwner(gameObject, ownerPlayer);
 
                 // Reset phase effect and visual elements
                 __instance.discPhaseEffect.ResetEffect();
@@ -841,7 +481,7 @@ namespace StatsMod
             try
             {
                 // Clean up the disc owner tracking when the disc is about to be destroyed
-                EnemyDeathHelper.CleanupDiscOwner(__instance.gameObject);
+                HitLogic.CleanupDiscOwner(__instance.gameObject);
             }
             catch (System.Exception ex)
             {
@@ -888,7 +528,7 @@ namespace StatsMod
 
                     if (distance <= deathRadius)
                     {
-                        EnemyDeathHelper.RecordHit(collider2D.gameObject, ownerPlayer);
+                        HitLogic.RecordHit(collider2D.gameObject, ownerPlayer);
                     }
                 }
             }
@@ -921,8 +561,8 @@ namespace StatsMod
 
                     if (WillCallExplosionDamage(__instance.transform.position, collider2D, fields))
                     {
-                        PlayerInput ownerPlayer = EnemyDeathHelper.FindPlayerInputByPlayerId(fields.explosionOwnerId);
-                        EnemyDeathHelper.RecordHit(collider2D.gameObject, ownerPlayer);
+                        PlayerInput ownerPlayer = HitLogic.FindPlayerInputByPlayerId(fields.explosionOwnerId);
+                        HitLogic.RecordHit(collider2D.gameObject, ownerPlayer);
                     }
                 }
             }
