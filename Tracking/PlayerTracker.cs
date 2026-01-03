@@ -61,6 +61,7 @@ namespace StatsMod
             public TimeSpan AirborneTime { get; set; }
             public DateTime? CurrentAirborneStartTime { get; set; }
             public bool WasAirborneWhenPaused { get; set; }
+            public float HighestPoint { get; set; }
 
             public PlayerData(ulong id, string name = "Player")
             {
@@ -84,6 +85,7 @@ namespace StatsMod
                 AirborneTime = TimeSpan.Zero;
                 CurrentAirborneStartTime = null;
                 WasAirborneWhenPaused = false;
+                HighestPoint = 0f;
             }
 
             public TimeSpan GetCurrentAliveTime()
@@ -250,6 +252,7 @@ namespace StatsMod
                 entry.Value.WebSwingTime = TimeSpan.Zero;
                 entry.Value.AirborneTime = TimeSpan.Zero;
                 entry.Value.TotalAliveTime = TimeSpan.Zero;
+                entry.Value.HighestPoint = 0f;
             }
         }
 
@@ -361,6 +364,22 @@ namespace StatsMod
             if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
             {
                 data.PlayerColor = color;
+            }
+        }
+
+        public void UpdateHighestPoint(PlayerInput player)
+        {
+            if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
+            {
+                SpiderController spider = player.GetComponentInChildren<SpiderController>();
+                if (spider != null && spider.bodyRigidbody2D != null)
+                {
+                    float currentY = spider.bodyRigidbody2D.position.y;
+                    if (currentY > data.HighestPoint)
+                    {
+                        data.HighestPoint = currentY;
+                    }
+                }
             }
         }
 
@@ -787,6 +806,8 @@ namespace StatsMod
 
                 PlayerInput playerInput = spider.GetComponentInParent<PlayerInput>();
                 if (playerInput == null) return;
+
+                StatsManager.Instance.UpdateHighestPoint(playerInput);
 
                 if (!__instance.grounded)
                 {

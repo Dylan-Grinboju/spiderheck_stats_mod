@@ -119,6 +119,7 @@ namespace StatsMod
                     lines.Add($"    Web Swings: {playerData.WebSwings}");
                     lines.Add($"    Time Swinging: {FormatTimeSpan(playerData.GetCurrentWebSwingTime())}");
                     lines.Add($"    Time Airborne: {FormatTimeSpan(playerData.GetCurrentAirborneTime())}");
+                    lines.Add($"    Highest Point: {playerData.HighestPoint:F1}m");
                     lines.Add("");
                 }
             }

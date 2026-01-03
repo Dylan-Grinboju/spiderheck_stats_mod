@@ -171,6 +171,11 @@ namespace StatsMod
             playerTracker.UpdatePlayerColor(player, color);
         }
 
+        public void UpdateHighestPoint(PlayerInput player)
+        {
+            playerTracker.UpdateHighestPoint(player);
+        }
+
         public void IncrementEnemyKilled()
         {
             enemiesTracker.IncrementEnemiesKilled();
