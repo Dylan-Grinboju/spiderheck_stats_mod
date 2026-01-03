@@ -32,6 +32,25 @@ namespace StatsMod
         // Updater settings
         public static bool CheckForUpdates => Config.GetModConfigValue<bool>(ModId, "updater.checkForUpdates", true);
 
+        // Titles settings
+        public static bool TitlesEnabled => Config.GetModConfigValue<bool>(ModId, "titles.enabled", true);
+        public static float TitlesRevealDelaySeconds => ValidateTitlesRevealDelay(Config.GetModConfigValue<float>(ModId, "titles.revealDelaySeconds", 2.0f));
+
+        private static float ValidateTitlesRevealDelay(float value)
+        {
+            if (value < 0f)
+            {
+                Logger.LogWarning($"Titles reveal delay {value} is too small, clamping to 0");
+                return 0f;
+            }
+            if (value > 10f)
+            {
+                Logger.LogWarning($"Titles reveal delay {value} is too large, clamping to 10");
+                return 10f;
+            }
+            return value;
+        }
+
         public static void SetDisplayPosition(int x, int y)
         {
             // Validate the values before setting them

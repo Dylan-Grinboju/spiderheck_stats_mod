@@ -3,6 +3,7 @@ using Silk;
 using Logger = Silk.Logger;
 using System;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 
 namespace StatsMod
@@ -40,14 +41,36 @@ namespace StatsMod
                 {
                     StatsManager.Instance.StopSurvivalSession();
                     Logger.LogInfo("Survival mode stopped via StatsManager");
-
-                    UIManager.AutoPullHUD();
-                    Logger.LogInfo("Stats HUD auto-pulled after survival mode ended");
                 }
             }
             catch (Exception ex)
             {
                 Logger.LogError($"Error in SurvivalMode.StopGameMode patch: {ex.Message}");
+            }
+        }
+    }
+
+    // Patch to detect when players return to lobby (vs restarting/continuing)
+    [HarmonyPatch(typeof(LobbyController), "OnSceneLoaded")]
+    public class LobbySceneLoadedPatch
+    {
+        static void Postfix(Scene scene, LoadSceneMode mode)
+        {
+            try
+            {
+                if (scene.name.Equals("Lobby"))
+                {
+                    // Check if we have pending titles from a finished game
+                    if (StatsManager.Instance.HasPendingTitles)
+                    {
+                        Logger.LogInfo("Returned to lobby with pending titles, showing TitlesUI");
+                        UIManager.AutoShowTitles();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error in LobbyController.OnSceneLoaded patch: {ex.Message}");
             }
         }
     }

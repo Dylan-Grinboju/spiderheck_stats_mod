@@ -22,7 +22,12 @@ namespace StatsMod
         private bool isPaused = false;
         private DateTime pauseStartTime;
 
+        private bool hasPendingTitles = false;
+        private List<TitleEntry> lastGameTitles = new List<TitleEntry>();
+
         public bool IsSurvivalActive => isSurvivalActive;
+        public bool HasPendingTitles => hasPendingTitles;
+        public List<TitleEntry> LastGameTitles => new List<TitleEntry>(lastGameTitles);
 
         private StatsManager()
         {
@@ -46,6 +51,11 @@ namespace StatsMod
             enemiesTracker.ResetEnemiesKilled();
             playerTracker.StartAllAliveTimers();
 
+            // Clear pending titles from previous game
+            hasPendingTitles = false;
+            lastGameTitles.Clear();
+            UIManager.ClearTitlesForNewGame();
+
             Logger.LogInfo($"Survival session started");
         }
 
@@ -67,6 +77,15 @@ namespace StatsMod
             isPaused = false;
 
             GameStatsSnapshot statsSnapshot = GetStatsSnapshot();
+
+            // Calculate titles for this game
+            UIManager.CalculateAndStoreTitles(statsSnapshot);
+            var titlesUI = UIManager.Instance?.GetTitlesUI();
+            if (titlesUI != null)
+            {
+                lastGameTitles = titlesUI.GetCurrentTitles();
+                hasPendingTitles = lastGameTitles.Count > 0;
+            }
 
             if (ModConfig.SaveStatsToFile)
             {
@@ -221,5 +240,6 @@ namespace StatsMod
         public TimeSpan LastGameDuration { get; set; }
         public Dictionary<PlayerInput, PlayerTracker.PlayerData> ActivePlayers { get; set; }
         public int EnemiesKilled { get; set; }
+        public List<TitleEntry> Titles { get; set; }
     }
 }

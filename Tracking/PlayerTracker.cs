@@ -62,6 +62,7 @@ namespace StatsMod
             public DateTime? CurrentAirborneStartTime { get; set; }
             public bool WasAirborneWhenPaused { get; set; }
             public float HighestPoint { get; set; }
+            public Color SecondaryColor { get; set; }
 
             public PlayerData(ulong id, string name = "Player")
             {
@@ -86,6 +87,7 @@ namespace StatsMod
                 CurrentAirborneStartTime = null;
                 WasAirborneWhenPaused = false;
                 HighestPoint = 0f;
+                SecondaryColor = Color.white;
             }
 
             public TimeSpan GetCurrentAliveTime()
@@ -136,16 +138,21 @@ namespace StatsMod
             string playerName = $"Player {player.playerIndex + 1}";
             PlayerData playerData = new PlayerData(playerId, playerName);
 
-            // Try to get the spider customizer and set the initial color
+            // Try to get the spider customizer and set the initial colors
             SpiderCustomizer customizer = player.GetComponentInChildren<SpiderCustomizer>();
             if (customizer != null)
             {
-                // Access the private _primaryColor field using reflection
                 var primaryColorField = typeof(SpiderCustomizer).GetField("_primaryColor", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 if (primaryColorField != null)
                 {
                     Color primaryColor = (Color)primaryColorField.GetValue(customizer);
                     playerData.PlayerColor = primaryColor;
+                }
+                var secondaryColorField = typeof(SpiderCustomizer).GetField("_secondaryColor", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (secondaryColorField != null)
+                {
+                    Color secondaryColor = (Color)secondaryColorField.GetValue(customizer);
+                    playerData.SecondaryColor = secondaryColor;
                 }
             }
 

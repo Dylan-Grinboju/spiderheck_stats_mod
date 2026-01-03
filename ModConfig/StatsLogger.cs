@@ -129,6 +129,17 @@ namespace StatsMod
                 lines.Add("");
             }
 
+            // Add titles section
+            if (statsSnapshot.Titles != null && statsSnapshot.Titles.Count > 0)
+            {
+                lines.Add("TITLES AWARDED:");
+                foreach (var title in statsSnapshot.Titles)
+                {
+                    lines.Add($"  {title.TitleName}: {title.PlayerName}");
+                }
+                lines.Add("");
+            }
+
             lines.Add("=".PadRight(60, '='));
             lines.Add("End of Statistics Report");
             lines.Add("=".PadRight(60, '='));

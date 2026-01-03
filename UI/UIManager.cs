@@ -15,6 +15,7 @@ namespace StatsMod
         #region UI Components
         private SmallUI smallUI;
         private BigUI bigUI;
+        private TitlesUI titlesUI;
         #endregion
 
         #region Shared Constants
@@ -134,6 +135,11 @@ namespace StatsMod
             bigUIObj.transform.SetParent(transform);
             bigUI = bigUIObj.AddComponent<BigUI>();
             bigUI.Initialize();
+
+            GameObject titlesUIObj = new GameObject("TitlesUI");
+            titlesUIObj.transform.SetParent(transform);
+            titlesUI = titlesUIObj.AddComponent<TitlesUI>();
+            titlesUI.Initialize();
         }
         #endregion
 
@@ -152,12 +158,18 @@ namespace StatsMod
             {
                 HandleF2Press();
             }
+
+            if (keyboard.f3Key.wasPressedThisFrame)
+            {
+                HandleF3Press();
+            }
         }
 
         private void HandleF1Press()
         {
             bool isSmallVisible = smallUI != null && smallUI.IsVisible();
             HideBigUI();
+            HideTitlesUI();
             if (isSmallVisible)
             {
                 HideSmallUI();
@@ -167,10 +179,12 @@ namespace StatsMod
                 ShowSmallUI();
             }
         }
+
         private void HandleF2Press()
         {
             bool isBigVisible = bigUI != null && bigUI.IsVisible();
             HideSmallUI();
+            HideTitlesUI();
             if (isBigVisible)
             {
                 HideBigUI();
@@ -178,6 +192,34 @@ namespace StatsMod
             else
             {
                 ShowBigUI();
+            }
+        }
+
+        private void HandleF3Press()
+        {
+            // If currently animating, skip the animation
+            if (titlesUI != null && titlesUI.IsAnimating())
+            {
+                titlesUI.SkipAnimation();
+                return;
+            }
+
+            // If in a game, clear titles and show empty titles screen
+            if (StatsManager.Instance.IsSurvivalActive)
+            {
+                titlesUI?.ClearTitlesForNewGame();
+            }
+
+            bool isTitlesVisible = titlesUI != null && titlesUI.IsVisible();
+            HideSmallUI();
+            HideBigUI();
+            if (isTitlesVisible)
+            {
+                HideTitlesUI();
+            }
+            else
+            {
+                ShowTitlesUIWithoutAnimation();
             }
         }
 
@@ -227,6 +269,35 @@ namespace StatsMod
             {
                 bigUI.HideDisplay();
             }
+        }
+
+        public void ShowTitlesUI()
+        {
+            if (titlesUI != null)
+            {
+                titlesUI.ShowDisplay();
+            }
+        }
+
+        public void ShowTitlesUIWithoutAnimation()
+        {
+            if (titlesUI != null)
+            {
+                titlesUI.ShowDisplayWithoutAnimation();
+            }
+        }
+
+        public void HideTitlesUI()
+        {
+            if (titlesUI != null)
+            {
+                titlesUI.HideDisplay();
+            }
+        }
+
+        public TitlesUI GetTitlesUI()
+        {
+            return titlesUI;
         }
         #endregion
 
@@ -341,6 +412,25 @@ namespace StatsMod
         {
             Instance?.ShowBigUI();
             Instance?.HideSmallUI();
+            Instance?.HideTitlesUI();
+        }
+
+        public static void AutoShowTitles()
+        {
+            if (!ModConfig.TitlesEnabled) return;
+            Instance?.HideSmallUI();
+            Instance?.HideBigUI();
+            Instance?.ShowTitlesUI();
+        }
+
+        public static void CalculateAndStoreTitles(GameStatsSnapshot snapshot)
+        {
+            Instance?.titlesUI?.CalculateTitles(snapshot);
+        }
+
+        public static void ClearTitlesForNewGame()
+        {
+            Instance?.titlesUI?.ClearTitlesForNewGame();
         }
         #endregion
     }
