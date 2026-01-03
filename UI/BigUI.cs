@@ -13,8 +13,8 @@ namespace StatsMod
         public float BASE_PLAYER_ROW_HEIGHT = 40f;
         public float BASE_SURVIVAL_SECTION_HEIGHT = 100f;
         public float BASE_CONTENT_PADDING = 40f;
-        public float BASE_MARGIN_PERCENT = 0.2f;
-        public float BASE_MAX_HEIGHT_PERCENT = 0.8f;
+        public float BASE_MARGIN_PERCENT = 0.15f;
+        public float BASE_MAX_HEIGHT_PERCENT = 0.9f;
         public float BASE_BACKGROUND_PADDING = 80f;
         #endregion
 
@@ -22,12 +22,12 @@ namespace StatsMod
         public float COL_WIDTH_PLAYER_NAME = 120f;
         public float COL_WIDTH_DEATHS = 90f;
         public float COL_WIDTH_KILLS = 70f;
-        public float COL_WIDTH_PVP = 60f;
+        public float COL_WIDTH_PVP = 110f;
         public float COL_WIDTH_ENEMY_SHIELDS = 120f;
         public float COL_WIDTH_PLAYER_SHIELDS = 100f;
         public float COL_WIDTH_SHIELDS_LOST = 100f;
         public float COL_WIDTH_ALIVE_TIME = 120f;
-        public float COL_WIDTH_INDENT = 10f;
+        public float COL_WIDTH_INDENT = 30f;
         #endregion
 
         #region Text Labels
@@ -125,6 +125,7 @@ namespace StatsMod
             };
 
             headerStyle = UIManager.Instance.CreateHeaderStyle(UIManager.BIG_HEADER_SIZE);
+            headerStyle.alignment = TextAnchor.MiddleCenter;
             labelStyle = UIManager.Instance.CreateLabelStyle(UIManager.BIG_LABEL_SIZE);
             valueStyle = UIManager.Instance.CreateValueStyle(UIManager.BIG_LABEL_SIZE);
             cardStyle = UIManager.Instance.CreateCardStyle(UIManager.Instance.GetMediumTexture());
@@ -296,29 +297,28 @@ namespace StatsMod
                         var playerData = playerEntry.Value;
 
                         GUILayout.BeginHorizontal();
-                        var playerNameStyle = new GUIStyle(valueStyle) { normal = { textColor = playerData.PlayerColor } };
+                        var playerNameStyle = new GUIStyle(valueStyle) { normal = { textColor = playerData.PlayerColor }, alignment = TextAnchor.MiddleCenter };
                         GUILayout.Label(playerData.PlayerName, playerNameStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_PLAYER_NAME)));
-                        GUILayout.Label("", valueStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_INDENT)));
 
-                        var deathsStyle = new GUIStyle(valueStyle) { normal = { textColor = playerData.Deaths > 0 ? UIManager.Red : UIManager.White } };
+                        var deathsStyle = new GUIStyle(valueStyle) { normal = { textColor = playerData.Deaths > 0 ? UIManager.Red : UIManager.White }, alignment = TextAnchor.MiddleCenter };
                         GUILayout.Label(playerData.Deaths.ToString(), deathsStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_DEATHS)));
 
-                        var killsStyle = new GUIStyle(valueStyle) { normal = { textColor = playerData.Kills > 0 ? UIManager.Green : UIManager.White } };
+                        var killsStyle = new GUIStyle(valueStyle) { normal = { textColor = playerData.Kills > 0 ? UIManager.Green : UIManager.White }, alignment = TextAnchor.MiddleCenter };
                         GUILayout.Label(playerData.Kills.ToString(), killsStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_KILLS)));
 
-                        var friendlyKillsStyle = new GUIStyle(valueStyle) { normal = { textColor = playerData.FriendlyKills > 0 ? UIManager.Orange : UIManager.White } };
+                        var friendlyKillsStyle = new GUIStyle(valueStyle) { normal = { textColor = playerData.FriendlyKills > 0 ? UIManager.Orange : UIManager.White }, alignment = TextAnchor.MiddleCenter };
                         GUILayout.Label(playerData.FriendlyKills.ToString(), friendlyKillsStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_PVP)));
 
-                        var enemyShieldsStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.White } };
+                        var enemyShieldsStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.White }, alignment = TextAnchor.MiddleCenter };
                         GUILayout.Label(playerData.EnemyShieldsTakenDown.ToString(), enemyShieldsStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_SHIELDS)));
 
-                        var friendlyShieldsStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.White } };
+                        var friendlyShieldsStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.White }, alignment = TextAnchor.MiddleCenter };
                         GUILayout.Label(playerData.FriendlyShieldsHit.ToString(), friendlyShieldsStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_PLAYER_SHIELDS)));
 
-                        var shieldsLostStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.White } };
+                        var shieldsLostStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.White }, alignment = TextAnchor.MiddleCenter };
                         GUILayout.Label(playerData.ShieldsLost.ToString(), shieldsLostStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_SHIELDS_LOST)));
 
-                        var aliveTimeStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.White } };
+                        var aliveTimeStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.White }, alignment = TextAnchor.MiddleCenter };
                         GUILayout.Label(FormatTimeSpan(playerData.GetCurrentAliveTime()), aliveTimeStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ALIVE_TIME)));
                         GUILayout.EndHorizontal();
 

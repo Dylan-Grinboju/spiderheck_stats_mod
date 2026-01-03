@@ -56,8 +56,6 @@ namespace StatsMod
             }
 
 
-            var tracker = PlayerTracker.Instance;
-            Logger.LogInfo("Player tracker initialized");
             UIManager.Initialize();
             Logger.LogInfo("UI Manager initialized");
 
