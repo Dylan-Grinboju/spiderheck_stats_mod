@@ -102,7 +102,7 @@ namespace StatsMod
                         { "showEnemyDeaths", true },
                         { "autoScale", true },
                         { "uiScale", 1.0f },
-                        { "bigUIOpacity", 10f },
+                        { "bigUIOpacity", 100f },
                         { "position", new Dictionary<string, object>
                             {
                                 { "x", 10 },
