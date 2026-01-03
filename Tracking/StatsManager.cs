@@ -59,10 +59,12 @@ namespace StatsMod
 
             playerTracker.StopAllAliveTimers();
             playerTracker.StopAllWebSwingTimers();
+            playerTracker.StopAllAirborneTimers();
 
             TimeSpan sessionTime = DateTime.Now - survivalStartTime;
             lastGameDuration = sessionTime;
             isSurvivalActive = false;
+            isPaused = false;
 
             GameStatsSnapshot statsSnapshot = GetStatsSnapshot();
 
@@ -152,6 +154,16 @@ namespace StatsMod
         public void StopWebSwingTimer(PlayerInput player)
         {
             playerTracker.StopWebSwingTimer(player);
+        }
+
+        public void StartAirborneTimer(PlayerInput player)
+        {
+            playerTracker.StartAirborneTimer(player);
+        }
+
+        public void StopAirborneTimer(PlayerInput player)
+        {
+            playerTracker.StopAirborneTimer(player);
         }
 
         public void UpdatePlayerColor(PlayerInput player, Color color)

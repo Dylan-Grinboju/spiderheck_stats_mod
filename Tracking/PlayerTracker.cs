@@ -58,6 +58,9 @@ namespace StatsMod
             public TimeSpan WebSwingTime { get; set; }
             public DateTime? CurrentWebSwingStartTime { get; set; }
             public bool WasSwingingWhenPaused { get; set; }
+            public TimeSpan AirborneTime { get; set; }
+            public DateTime? CurrentAirborneStartTime { get; set; }
+            public bool WasAirborneWhenPaused { get; set; }
 
             public PlayerData(ulong id, string name = "Player")
             {
@@ -78,6 +81,9 @@ namespace StatsMod
                 WebSwingTime = TimeSpan.Zero;
                 CurrentWebSwingStartTime = null;
                 WasSwingingWhenPaused = false;
+                AirborneTime = TimeSpan.Zero;
+                CurrentAirborneStartTime = null;
+                WasAirborneWhenPaused = false;
             }
 
             public TimeSpan GetCurrentAliveTime()
@@ -96,6 +102,15 @@ namespace StatsMod
                     return WebSwingTime + (DateTime.Now - CurrentWebSwingStartTime.Value);
                 }
                 return WebSwingTime;
+            }
+
+            public TimeSpan GetCurrentAirborneTime()
+            {
+                if (CurrentAirborneStartTime.HasValue)
+                {
+                    return AirborneTime + (DateTime.Now - CurrentAirborneStartTime.Value);
+                }
+                return AirborneTime;
             }
         }
 
@@ -233,6 +248,8 @@ namespace StatsMod
                 entry.Value.ShieldsLost = 0;
                 entry.Value.WebSwings = 0;
                 entry.Value.WebSwingTime = TimeSpan.Zero;
+                entry.Value.AirborneTime = TimeSpan.Zero;
+                entry.Value.TotalAliveTime = TimeSpan.Zero;
             }
         }
 
@@ -310,6 +327,31 @@ namespace StatsMod
                     TimeSpan swingSession = DateTime.Now - data.CurrentWebSwingStartTime.Value;
                     data.WebSwingTime += swingSession;
                     data.CurrentWebSwingStartTime = null;
+                }
+            }
+        }
+
+        public void StartAirborneTimer(PlayerInput player)
+        {
+            if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
+            {
+                if (data.CurrentAirborneStartTime.HasValue)
+                {
+                    return;
+                }
+                data.CurrentAirborneStartTime = DateTime.Now;
+            }
+        }
+
+        public void StopAirborneTimer(PlayerInput player)
+        {
+            if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
+            {
+                if (data.CurrentAirborneStartTime.HasValue)
+                {
+                    TimeSpan airborneSession = DateTime.Now - data.CurrentAirborneStartTime.Value;
+                    data.AirborneTime += airborneSession;
+                    data.CurrentAirborneStartTime = null;
                 }
             }
         }
@@ -420,6 +462,19 @@ namespace StatsMod
             }
         }
 
+        public void StopAllAirborneTimers()
+        {
+            foreach (var entry in activePlayers)
+            {
+                if (entry.Value.CurrentAirborneStartTime.HasValue)
+                {
+                    TimeSpan airborneSession = DateTime.Now - entry.Value.CurrentAirborneStartTime.Value;
+                    entry.Value.AirborneTime += airborneSession;
+                    entry.Value.CurrentAirborneStartTime = null;
+                }
+            }
+        }
+
         public void PauseTimers()
         {
             if (isPaused)
@@ -451,6 +506,18 @@ namespace StatsMod
                 {
                     entry.Value.WasSwingingWhenPaused = false;
                 }
+
+                if (entry.Value.CurrentAirborneStartTime.HasValue)
+                {
+                    TimeSpan airborneSession = DateTime.Now - entry.Value.CurrentAirborneStartTime.Value;
+                    entry.Value.AirborneTime += airborneSession;
+                    entry.Value.CurrentAirborneStartTime = null;
+                    entry.Value.WasAirborneWhenPaused = true;
+                }
+                else
+                {
+                    entry.Value.WasAirborneWhenPaused = false;
+                }
             }
         }
 
@@ -472,6 +539,12 @@ namespace StatsMod
                 {
                     entry.Value.CurrentWebSwingStartTime = DateTime.Now;
                     entry.Value.WasSwingingWhenPaused = false;
+                }
+
+                if (entry.Value.WasAirborneWhenPaused)
+                {
+                    entry.Value.CurrentAirborneStartTime = DateTime.Now;
+                    entry.Value.WasAirborneWhenPaused = false;
                 }
             }
         }
@@ -695,6 +768,38 @@ namespace StatsMod
             catch (Exception ex)
             {
                 Logger.LogError($"Error stopping web swing timer: {ex.Message}");
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(Stabilizer), "FixedUpdate")]
+    public class StabilizerFixedUpdatePatch
+    {
+        static void Postfix(Stabilizer __instance)
+        {
+            try
+            {
+                if (!StatsManager.Instance.IsSurvivalActive)
+                    return;
+
+                SpiderController spider = __instance.GetComponentInParent<SpiderController>();
+                if (spider == null) return;
+
+                PlayerInput playerInput = spider.GetComponentInParent<PlayerInput>();
+                if (playerInput == null) return;
+
+                if (!__instance.grounded)
+                {
+                    StatsManager.Instance.StartAirborneTimer(playerInput);
+                }
+                else
+                {
+                    StatsManager.Instance.StopAirborneTimer(playerInput);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error tracking airborne time: {ex.Message}");
             }
         }
     }

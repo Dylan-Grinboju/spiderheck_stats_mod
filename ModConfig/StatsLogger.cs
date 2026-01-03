@@ -118,6 +118,7 @@ namespace StatsMod
                     lines.Add($"    Alive Time: {FormatTimeSpan(playerData.GetCurrentAliveTime())}");
                     lines.Add($"    Web Swings: {playerData.WebSwings}");
                     lines.Add($"    Time Swinging: {FormatTimeSpan(playerData.GetCurrentWebSwingTime())}");
+                    lines.Add($"    Time Airborne: {FormatTimeSpan(playerData.GetCurrentAirborneTime())}");
                     lines.Add("");
                 }
             }
