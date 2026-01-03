@@ -18,7 +18,7 @@ namespace StatsMod
         private bool isSurvivalActive = false;
         private DateTime survivalStartTime;
         private TimeSpan lastGameDuration;
-        
+
         private bool isPaused = false;
         private DateTime pauseStartTime;
 
@@ -58,6 +58,7 @@ namespace StatsMod
             }
 
             playerTracker.StopAllAliveTimers();
+            playerTracker.StopAllWebSwingTimers();
 
             TimeSpan sessionTime = DateTime.Now - survivalStartTime;
             lastGameDuration = sessionTime;
@@ -136,6 +137,21 @@ namespace StatsMod
         public void IncrementShieldsLost(PlayerInput player)
         {
             playerTracker.IncrementShieldsLost(player);
+        }
+
+        public void IncrementWebSwings(PlayerInput player)
+        {
+            playerTracker.IncrementWebSwings(player);
+        }
+
+        public void StartWebSwingTimer(PlayerInput player)
+        {
+            playerTracker.StartWebSwingTimer(player);
+        }
+
+        public void StopWebSwingTimer(PlayerInput player)
+        {
+            playerTracker.StopWebSwingTimer(player);
         }
 
         public void UpdatePlayerColor(PlayerInput player, Color color)

@@ -54,6 +54,10 @@ namespace StatsMod
             public DateTime? CurrentAliveStartTime { get; set; }
             public TimeSpan TotalAliveTime { get; set; }
             public bool WasAliveWhenPaused { get; set; }
+            public int WebSwings { get; set; }
+            public TimeSpan WebSwingTime { get; set; }
+            public DateTime? CurrentWebSwingStartTime { get; set; }
+            public bool WasSwingingWhenPaused { get; set; }
 
             public PlayerData(ulong id, string name = "Player")
             {
@@ -70,6 +74,10 @@ namespace StatsMod
                 CurrentAliveStartTime = null;
                 TotalAliveTime = TimeSpan.Zero;
                 WasAliveWhenPaused = false;
+                WebSwings = 0;
+                WebSwingTime = TimeSpan.Zero;
+                CurrentWebSwingStartTime = null;
+                WasSwingingWhenPaused = false;
             }
 
             public TimeSpan GetCurrentAliveTime()
@@ -79,6 +87,15 @@ namespace StatsMod
                     return TotalAliveTime + (DateTime.Now - CurrentAliveStartTime.Value);
                 }
                 return TotalAliveTime;
+            }
+
+            public TimeSpan GetCurrentWebSwingTime()
+            {
+                if (CurrentWebSwingStartTime.HasValue)
+                {
+                    return WebSwingTime + (DateTime.Now - CurrentWebSwingStartTime.Value);
+                }
+                return WebSwingTime;
             }
         }
 
@@ -163,6 +180,7 @@ namespace StatsMod
                 {
                     data.Deaths++;
                     StopAliveTimer(data);
+                    StopWebSwingTimer(playerInput);
                 }
                 else
                 {
@@ -213,6 +231,8 @@ namespace StatsMod
                 entry.Value.EnemyShieldsTakenDown = 0;
                 entry.Value.FriendlyShieldsHit = 0;
                 entry.Value.ShieldsLost = 0;
+                entry.Value.WebSwings = 0;
+                entry.Value.WebSwingTime = TimeSpan.Zero;
             }
         }
 
@@ -258,6 +278,39 @@ namespace StatsMod
             if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
             {
                 data.ShieldsLost++;
+            }
+        }
+
+        public void IncrementWebSwings(PlayerInput player)
+        {
+            if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
+            {
+                data.WebSwings++;
+            }
+        }
+
+        public void StartWebSwingTimer(PlayerInput player)
+        {
+            if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
+            {
+                if (data.CurrentWebSwingStartTime.HasValue)
+                {
+                    return;
+                }
+                data.CurrentWebSwingStartTime = DateTime.Now;
+            }
+        }
+
+        public void StopWebSwingTimer(PlayerInput player)
+        {
+            if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
+            {
+                if (data.CurrentWebSwingStartTime.HasValue)
+                {
+                    TimeSpan swingSession = DateTime.Now - data.CurrentWebSwingStartTime.Value;
+                    data.WebSwingTime += swingSession;
+                    data.CurrentWebSwingStartTime = null;
+                }
             }
         }
 
@@ -354,6 +407,19 @@ namespace StatsMod
             }
         }
 
+        public void StopAllWebSwingTimers()
+        {
+            foreach (var entry in activePlayers)
+            {
+                if (entry.Value.CurrentWebSwingStartTime.HasValue)
+                {
+                    TimeSpan swingSession = DateTime.Now - entry.Value.CurrentWebSwingStartTime.Value;
+                    entry.Value.WebSwingTime += swingSession;
+                    entry.Value.CurrentWebSwingStartTime = null;
+                }
+            }
+        }
+
         public void PauseTimers()
         {
             if (isPaused)
@@ -373,6 +439,18 @@ namespace StatsMod
                 {
                     entry.Value.WasAliveWhenPaused = false;
                 }
+
+                if (entry.Value.CurrentWebSwingStartTime.HasValue)
+                {
+                    TimeSpan swingSession = DateTime.Now - entry.Value.CurrentWebSwingStartTime.Value;
+                    entry.Value.WebSwingTime += swingSession;
+                    entry.Value.CurrentWebSwingStartTime = null;
+                    entry.Value.WasSwingingWhenPaused = true;
+                }
+                else
+                {
+                    entry.Value.WasSwingingWhenPaused = false;
+                }
             }
         }
 
@@ -388,6 +466,12 @@ namespace StatsMod
                 {
                     entry.Value.CurrentAliveStartTime = DateTime.Now;
                     entry.Value.WasAliveWhenPaused = false;
+                }
+
+                if (entry.Value.WasSwingingWhenPaused)
+                {
+                    entry.Value.CurrentWebSwingStartTime = DateTime.Now;
+                    entry.Value.WasSwingingWhenPaused = false;
                 }
             }
         }
@@ -559,6 +643,58 @@ namespace StatsMod
             catch (System.Exception ex)
             {
                 Logger.LogError($"Error tracking player shield loss: {ex.Message}");
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(WebMaker), "ShootWeb")]
+    public class WebMakerShootWebPatch
+    {
+        static void Postfix(WebMaker __instance, GameObject ___target)
+        {
+            try
+            {
+                if (___target == null)
+                {
+                    return;
+                }
+
+                if (__instance.spiderController != null && StatsManager.Instance.IsSurvivalActive)
+                {
+                    PlayerInput playerInput = __instance.spiderController.GetComponentInParent<PlayerInput>();
+                    if (playerInput != null)
+                    {
+                        StatsManager.Instance.IncrementWebSwings(playerInput);
+                        StatsManager.Instance.StartWebSwingTimer(playerInput);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error tracking web swing: {ex.Message}");
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(WebMaker), "DisconnectWeb")]
+    public class WebMakerDisconnectWebPatch
+    {
+        static void Prefix(WebMaker __instance)
+        {
+            try
+            {
+                if (__instance.spiderController != null)
+                {
+                    PlayerInput playerInput = __instance.spiderController.GetComponentInParent<PlayerInput>();
+                    if (playerInput != null)
+                    {
+                        StatsManager.Instance.StopWebSwingTimer(playerInput);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error stopping web swing timer: {ex.Message}");
             }
         }
     }

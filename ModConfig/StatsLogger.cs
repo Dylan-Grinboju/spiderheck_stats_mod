@@ -116,6 +116,8 @@ namespace StatsMod
                     lines.Add($"    Friendly Shields Hit: {playerData.FriendlyShieldsHit}");
                     lines.Add($"    Shields Lost: {playerData.ShieldsLost}");
                     lines.Add($"    Alive Time: {FormatTimeSpan(playerData.GetCurrentAliveTime())}");
+                    lines.Add($"    Web Swings: {playerData.WebSwings}");
+                    lines.Add($"    Time Swinging: {FormatTimeSpan(playerData.GetCurrentWebSwingTime())}");
                     lines.Add("");
                 }
             }
