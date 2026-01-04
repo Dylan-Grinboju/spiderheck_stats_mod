@@ -48,6 +48,8 @@ namespace StatsMod
             public int EnemyShieldsTakenDown { get; set; }
             public int FriendlyShieldsHit { get; set; }
             public int ShieldsLost { get; set; }
+            public int KillStreak { get; set; }
+            public int MaxKillStreak { get; set; }
             public string PlayerName { get; set; }
             public DateTime JoinTime { get; set; }
             public Color PlayerColor { get; set; }
@@ -73,6 +75,8 @@ namespace StatsMod
                 EnemyShieldsTakenDown = 0;
                 FriendlyShieldsHit = 0;
                 ShieldsLost = 0;
+                KillStreak = 0;
+                MaxKillStreak = 0;
                 PlayerName = name;
                 JoinTime = DateTime.Now;
                 PlayerColor = Color.white;
@@ -203,6 +207,7 @@ namespace StatsMod
                 if (playerInput != null && activePlayers.TryGetValue(playerInput, out PlayerData data))
                 {
                     data.Deaths++;
+                    data.KillStreak = 0;
                     StopAliveTimer(data);
                     StopWebSwingTimer(playerInput);
                 }
@@ -258,6 +263,8 @@ namespace StatsMod
                 entry.Value.WebSwings = 0;
                 entry.Value.WebSwingTime = TimeSpan.Zero;
                 entry.Value.AirborneTime = TimeSpan.Zero;
+                entry.Value.KillStreak = 0;
+                entry.Value.MaxKillStreak = 0;
                 entry.Value.TotalAliveTime = TimeSpan.Zero;
                 entry.Value.HighestPoint = 0f;
             }
@@ -273,6 +280,11 @@ namespace StatsMod
             if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
             {
                 data.Kills++;
+                data.KillStreak++;
+                if (data.KillStreak > data.MaxKillStreak)
+                {
+                    data.MaxKillStreak = data.KillStreak;
+                }
             }
         }
 

@@ -110,6 +110,7 @@ namespace StatsMod
                     lines.Add($"    Player ID: {playerData.PlayerId}");
                     lines.Add($"    Color: R={playerData.PlayerColor.r:F2}, G={playerData.PlayerColor.g:F2}, B={playerData.PlayerColor.b:F2}, A={playerData.PlayerColor.a:F2}");
                     lines.Add($"    Kills: {playerData.Kills}");
+                    lines.Add($"    Max Kill Streak: {playerData.MaxKillStreak}");
                     lines.Add($"    Friendly Kills (PvP): {playerData.FriendlyKills}");
                     lines.Add($"    Deaths: {playerData.Deaths}");
                     lines.Add($"    Enemy Shields Taken Down: {playerData.EnemyShieldsTakenDown}");
