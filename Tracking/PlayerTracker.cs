@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using Silk;
@@ -65,6 +66,7 @@ namespace StatsMod
             public bool WasAirborneWhenPaused { get; set; }
             public float HighestPoint { get; set; }
             public Color SecondaryColor { get; set; }
+            public Dictionary<string, int> WeaponHits { get; set; }
 
             public PlayerData(ulong id, string name = "Player")
             {
@@ -92,6 +94,20 @@ namespace StatsMod
                 WasAirborneWhenPaused = false;
                 HighestPoint = 0f;
                 SecondaryColor = Color.white;
+                WeaponHits = new Dictionary<string, int>
+                {
+                    { "Shotgun", 0 },
+                    { "RailShot", 0 },
+                    { "DeathCube", 0 },
+                    { "DeathRay", 0 },
+                    { "EnergyBall", 0 },
+                    { "Particle Blade", 0 },
+                    { "KhepriStaff", 0 },
+                    { "Laser Cannon", 0 },
+                    { "Laser Cube", 0 },
+                    { "SawDisc", 0 },
+                    { "Explosions", 0 }
+                };
             }
 
             public TimeSpan GetCurrentAliveTime()
@@ -267,6 +283,10 @@ namespace StatsMod
                 entry.Value.MaxKillStreak = 0;
                 entry.Value.TotalAliveTime = TimeSpan.Zero;
                 entry.Value.HighestPoint = 0f;
+                foreach (var weaponKey in entry.Value.WeaponHits.Keys.ToList())
+                {
+                    entry.Value.WeaponHits[weaponKey] = 0;
+                }
             }
         }
 
@@ -317,6 +337,21 @@ namespace StatsMod
             if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
             {
                 data.ShieldsLost++;
+            }
+        }
+
+        public void IncrementWeaponHit(PlayerInput player, string weaponName)
+        {
+            if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
+            {
+                if (data.WeaponHits.ContainsKey(weaponName))
+                {
+                    data.WeaponHits[weaponName]++;
+                }
+                else
+                {
+                    Logger.LogError($"Unknown weapon name: {weaponName}. This weapon is not pre-populated in WeaponHits dictionary.");
+                }
             }
         }
 

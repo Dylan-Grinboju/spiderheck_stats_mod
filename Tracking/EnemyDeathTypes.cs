@@ -53,7 +53,7 @@ namespace StatsMod
                 if (component != null)
                 {
                     PlayerInput playerInput = __instance.ignoreWeapon.owner.healthSystem.GetComponentInParent<PlayerInput>();
-                    HitLogic.RecordHit(other, playerInput);
+                    HitLogic.RecordHit(other, playerInput, "Shotgun");
                 }
             }
             catch (System.Exception ex)
@@ -77,7 +77,7 @@ namespace StatsMod
                 if (component != null)
                 {
                     PlayerInput ownerPlayer = FindOwnerPlayerFromIgnoreList(__instance.ignore.ToArray());
-                    HitLogic.RecordHit(hit.transform.gameObject, ownerPlayer);
+                    HitLogic.RecordHit(hit.transform.gameObject, ownerPlayer, "RailShot");
                 }
             }
             catch (System.Exception ex)
@@ -153,7 +153,7 @@ namespace StatsMod
                     IDamageable component = hit.transform.GetComponent<IDamageable>();
                     if (component != null)
                     {
-                        HitLogic.RecordHit(hit.transform.gameObject, ownerPlayer);
+                        HitLogic.RecordHit(hit.transform.gameObject, ownerPlayer, "DeathCube");
                     }
                 }
             }
@@ -204,7 +204,7 @@ namespace StatsMod
                     IDamageable component = hit.transform.GetComponent<IDamageable>();
                     if (component != null)
                     {
-                        HitLogic.RecordHit(hit.transform.gameObject, ownerPlayer);
+                        HitLogic.RecordHit(hit.transform.gameObject, ownerPlayer, "DeathRay");
                     }
                 }
             }
@@ -256,7 +256,7 @@ namespace StatsMod
                 if (isDamageable)
                 {
                     PlayerInput ownerPlayer = __instance.owner.GetComponentInParent<PlayerInput>();
-                    HitLogic.RecordHit(other.gameObject, ownerPlayer);
+                    HitLogic.RecordHit(other.gameObject, ownerPlayer, "EnergyBall");
                 }
             }
             catch (System.Exception ex)
@@ -284,7 +284,7 @@ namespace StatsMod
                     if (parentWeapon != null && parentWeapon.owner != null)
                     {
                         PlayerInput playerInput = parentWeapon.owner.healthSystem.GetComponentInParent<PlayerInput>();
-                        HitLogic.RecordHit(other.gameObject, playerInput);
+                        HitLogic.RecordHit(other.gameObject, playerInput, "Particle Blade");
                     }
                 }
             }
@@ -308,14 +308,14 @@ namespace StatsMod
                 IDamageable component = target.GetComponent<IDamageable>();
                 if (component == null) return;
 
-                bool willCallDamage = (target.layer == LayerMask.NameToLayer("Enemy") ||
+                bool willCallDamage = target.layer == LayerMask.NameToLayer("Enemy") ||
                                      target.layer == LayerMask.NameToLayer("EnemyWeapon") ||
-                                     target.CompareTag("PlayerRigidbody"));
+                                     target.CompareTag("PlayerRigidbody");
 
                 if (willCallDamage)
                 {
                     PlayerInput ownerPlayer = __instance.owner.healthSystem.GetComponentInParent<PlayerInput>();
-                    HitLogic.RecordHit(target, ownerPlayer);
+                    HitLogic.RecordHit(target, ownerPlayer, "KhepriStaff");
                 }
             }
             catch (System.Exception ex)
@@ -336,7 +336,7 @@ namespace StatsMod
                 if (damageable != null)
                 {
                     PlayerInput ownerPlayer = __instance.owner.GetComponentInParent<PlayerInput>();
-                    HitLogic.RecordHit(hit.collider.gameObject, ownerPlayer);
+                    HitLogic.RecordHit(hit.collider.gameObject, ownerPlayer, "Laser Cannon");
                 }
             }
             catch (System.Exception ex)
@@ -370,7 +370,7 @@ namespace StatsMod
                     if (component != null)
                     {
                         PlayerInput ownerPlayer = __instance.owner.GetComponentInParent<PlayerInput>();
-                        HitLogic.RecordHit(hit.collider.gameObject, ownerPlayer);
+                        HitLogic.RecordHit(hit.collider.gameObject, ownerPlayer, "Laser Cube");
                     }
                 }
             }
@@ -404,7 +404,7 @@ namespace StatsMod
                         ownerPlayer = __instance.GetComponentInParent<PlayerInput>();
                     }
 
-                    HitLogic.RecordHit(other.gameObject, ownerPlayer);
+                    HitLogic.RecordHit(other.gameObject, ownerPlayer, "SawDisc");
                 }
             }
             catch (System.Exception ex)
@@ -528,7 +528,7 @@ namespace StatsMod
 
                     if (distance <= deathRadius)
                     {
-                        HitLogic.RecordHit(collider2D.gameObject, ownerPlayer);
+                        HitLogic.RecordHit(collider2D.gameObject, ownerPlayer, "Explosions");
                     }
                 }
             }
@@ -562,7 +562,7 @@ namespace StatsMod
                     if (WillCallExplosionDamage(__instance.transform.position, collider2D, fields))
                     {
                         PlayerInput ownerPlayer = HitLogic.FindPlayerInputByPlayerId(fields.explosionOwnerId);
-                        HitLogic.RecordHit(collider2D.gameObject, ownerPlayer);
+                        HitLogic.RecordHit(collider2D.gameObject, ownerPlayer, "Explosions");
                     }
                 }
             }

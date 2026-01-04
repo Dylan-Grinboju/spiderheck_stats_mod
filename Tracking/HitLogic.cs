@@ -71,7 +71,7 @@ namespace StatsMod
             }
         }
 
-        public static void TryRecordKill(GameObject target, PlayerInput player)
+        public static void TryRecordKill(GameObject target, PlayerInput player, string weaponName)
         {
             if (target == null) return;
 
@@ -97,7 +97,7 @@ namespace StatsMod
                 if (IsFirstTimeKill(target, enemyId, recentlyKilledEnemies, ref lastEnemiesCleanupTime, recentlyKilledLock, "enemy"))
                 {
                     Logger.LogInfo($"Recording kill for player {player.name}, target:{target.name}");
-                    StatsManager.Instance.IncrementPlayerKill(player);
+                    StatsManager.Instance.IncrementPlayerKill(player, weaponName);
                 }
                 return;
             }
@@ -121,7 +121,7 @@ namespace StatsMod
             if (IsFirstTimeKill(target, playerId, recentlyKilledPlayers, ref lastPlayersCleanupTime, recentlyKilledPlayersLock, "player"))
             {
                 Logger.LogInfo($"Recording friendly kill for player {playerId}, name:{target.name}");
-                StatsManager.Instance.IncrementFriendlyKill(player);
+                StatsManager.Instance.IncrementFriendlyKill(player, weaponName);
             }
         }
 
@@ -281,7 +281,7 @@ namespace StatsMod
             return false;
         }
 
-        public static void RecordShieldHit(GameObject target, PlayerInput playerInput)
+        public static void RecordShieldHit(GameObject target, PlayerInput playerInput, string weaponName)
         {
             if (target == null || playerInput == null) return;
             SpiderHealthSystem spiderHealth = target.GetComponent<SpiderHealthSystem>();
@@ -296,7 +296,7 @@ namespace StatsMod
                 if (victimPlayerInput != null && victimPlayerInput != playerInput)
                 {
                     Logger.LogDebug($"Recording shield hit on player {victimPlayerInput.name} by player {playerInput.name}");
-                    StatsManager.Instance.IncrementFriendlyShieldsHit(playerInput);
+                    StatsManager.Instance.IncrementFriendlyShieldsHit(playerInput, weaponName);
                 }
             }
             else
@@ -310,12 +310,12 @@ namespace StatsMod
                 if (strutComponent == null)
                 {
                     Logger.LogDebug($"Recording shield hit on enemy {target.name} by player {playerInput.name}");
-                    StatsManager.Instance.IncrementEnemyShieldsTakenDown(playerInput);
+                    StatsManager.Instance.IncrementEnemyShieldsTakenDown(playerInput, weaponName);
                 }
             }
         }
 
-        public static void RecordHit(GameObject target, PlayerInput playerInput)
+        public static void RecordHit(GameObject target, PlayerInput playerInput, string weaponName)
         {
             if (target == null || playerInput == null) return;
             string targetName = target.GetComponentInParent<SpiderHealthSystem>() != null
@@ -335,10 +335,10 @@ namespace StatsMod
 
             if (HasActiveShield(target))
             {
-                RecordShieldHit(target, playerInput);
+                RecordShieldHit(target, playerInput, weaponName);
                 return;
             }
-            TryRecordKill(target, playerInput);
+            TryRecordKill(target, playerInput, weaponName);
         }
     }
 }

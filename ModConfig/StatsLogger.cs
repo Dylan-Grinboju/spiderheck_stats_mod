@@ -121,6 +121,29 @@ namespace StatsMod
                     lines.Add($"    Time Swinging: {FormatTimeSpan(playerData.GetCurrentWebSwingTime())}");
                     lines.Add($"    Time Airborne: {FormatTimeSpan(playerData.GetCurrentAirborneTime())}");
                     lines.Add($"    Highest Point: {playerData.HighestPoint:F1}m");
+                    
+                    // Weapon hits breakdown
+                    if (playerData.WeaponHits != null && playerData.WeaponHits.Any())
+                    {
+                        lines.Add($"    Weapon Hits (Kills + Shield Hits):");
+                        var sortedWeaponHits = playerData.WeaponHits
+                            .Where(w => w.Value > 0)
+                            .OrderByDescending(w => w.Value)
+                            .ToList();
+                        
+                        if (sortedWeaponHits.Any())
+                        {
+                            foreach (var weapon in sortedWeaponHits)
+                            {
+                                lines.Add($"      {weapon.Key}: {weapon.Value}");
+                            }
+                        }
+                        else
+                        {
+                            lines.Add($"      No weapon hits recorded");
+                        }
+                    }
+                    
                     lines.Add("");
                 }
             }

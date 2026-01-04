@@ -135,24 +135,28 @@ namespace StatsMod
             playerTracker.UnregisterPlayer(player);
         }
 
-        public void IncrementPlayerKill(PlayerInput player)
+        public void IncrementPlayerKill(PlayerInput player, string weaponName)
         {
             playerTracker.IncrementPlayerKill(player);
+            playerTracker.IncrementWeaponHit(player, weaponName);
         }
 
-        public void IncrementFriendlyKill(PlayerInput player)
+        public void IncrementFriendlyKill(PlayerInput player, string weaponName)
         {
             playerTracker.IncrementFriendlyKill(player);
+            playerTracker.IncrementWeaponHit(player, weaponName);
         }
 
-        public void IncrementEnemyShieldsTakenDown(PlayerInput player)
+        public void IncrementEnemyShieldsTakenDown(PlayerInput player, string weaponName)
         {
             playerTracker.IncrementEnemyShieldsTakenDown(player);
+            playerTracker.IncrementWeaponHit(player, weaponName);
         }
 
-        public void IncrementFriendlyShieldsHit(PlayerInput player)
+        public void IncrementFriendlyShieldsHit(PlayerInput player, string weaponName)
         {
             playerTracker.IncrementFriendlyShieldsHit(player);
+            playerTracker.IncrementWeaponHit(player, weaponName);
         }
 
         public void IncrementShieldsLost(PlayerInput player)

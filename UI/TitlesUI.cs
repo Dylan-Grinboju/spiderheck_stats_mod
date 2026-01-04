@@ -14,9 +14,9 @@ namespace StatsMod
         public int GRID_COLUMNS = 4;
         public int GRID_ROWS = 2;
         public float CARD_WIDTH = 280f;
-        public float CARD_HEIGHT = 200f;
+        public float CARD_HEIGHT = 300f;
         public float CARD_SPACING_X = 20f;
-        public float CARD_SPACING_Y = 150f;
+        public float CARD_SPACING_Y = 100f;
         public float GRID_MARGIN_X = 0f;
         public float GRID_MARGIN_Y = 0f;
         public float HEADER_HEIGHT = 100f;
@@ -338,8 +338,6 @@ namespace StatsMod
             GUILayout.Label(title.Description ?? "", cardDescriptionStyle, GUILayout.Width(cardWidth));
 
             GUILayout.Space(UIManager.ScaleValue(DESCRIPTION_TO_SQUARE_SPACING));
-
-            GUILayout.FlexibleSpace();
 
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();

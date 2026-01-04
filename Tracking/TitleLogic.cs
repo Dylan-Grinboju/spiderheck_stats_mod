@@ -199,7 +199,7 @@ namespace StatsMod
                 new TitleEntry(leaders.MaxKillStreak)
                 {
                     TitleName = "Serial Killer",
-                    Description = "max kill streak",
+                    Description = $"max kill streak - {leaders.MaxKillStreak.Value.MaxKillStreak}",
                     Priority = 99, //This is fun to know so I am bumping it
                     Requirements = new HashSet<string> { "MaxKillStreak" }
                 },
@@ -403,7 +403,7 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.MostOffense)
                 {
                     TitleName = "ICBM",
-                    Description = "highest altitude, airborne time and most kills",
+                    Description = "strikes from above with deadly precision",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense", "HighestPoint", "MostAirborneTime" }
                 });
@@ -414,7 +414,7 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.MostWebSwings)
                 {
                     TitleName = "Ninja",
-                    Description = "avoids everything",
+                    Description = "High above and untouchable",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostWebSwings", "HighestPoint", "LeastDamageTaken" }
                 });
