@@ -9,6 +9,14 @@ namespace StatsMod
 {
     public class TitleEntry
     {
+        public TitleEntry(KeyValuePair<PlayerInput, PlayerTracker.PlayerData> playerData)
+        {
+            Player = playerData.Key;
+            PlayerName = playerData.Value.PlayerName;
+            PrimaryColor = playerData.Value.PlayerColor;
+            SecondaryColor = playerData.Value.SecondaryColor;
+        }
+
         public string TitleName { get; set; }
         public string Description { get; set; }
         public string PlayerName { get; set; }
@@ -165,164 +173,86 @@ namespace StatsMod
 
         private List<TitleEntry> CreateOneCategoryTitles(StatLeaders leaders, int defaultPriority = 10)
         {
-            var titles = new List<TitleEntry>();
-
-            if (leaders.MostWebSwings.Value.WebSwings > 0)
+            var titles = new List<TitleEntry>
             {
-                titles.Add(new TitleEntry
+                new TitleEntry(leaders.MostWebSwings)
                 {
                     TitleName = "The swinger",
                     Description = "most web swings",
-                    PlayerName = leaders.MostWebSwings.Value.PlayerName,
-                    PrimaryColor = leaders.MostWebSwings.Value.PlayerColor,
-                    SecondaryColor = leaders.MostWebSwings.Value.SecondaryColor,
-                    Player = leaders.MostWebSwings.Key,
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostWebSwings" }
-                });
-            }
-
-            titles.Add(new TitleEntry
-            {
-                TitleName = "Sky Scraper",
-                Description = "highest point reached",
-                PlayerName = leaders.HighestPoint.Value.PlayerName,
-                PrimaryColor = leaders.HighestPoint.Value.PlayerColor,
-                SecondaryColor = leaders.HighestPoint.Value.SecondaryColor,
-                Player = leaders.HighestPoint.Key,
-                Priority = defaultPriority,
-                Requirements = new HashSet<string> { "HighestPoint" }
-            });
-
-            if (leaders.MostAirborneTime.Value.AirborneTime.TotalSeconds > 0)
-            {
-                titles.Add(new TitleEntry
+                },
+                new TitleEntry(leaders.HighestPoint)
+                {
+                    TitleName = "Sky Scraper",
+                    Description = "highest point reached",
+                    Priority = defaultPriority,
+                    Requirements = new HashSet<string> { "HighestPoint" }
+                },
+                new TitleEntry(leaders.MostAirborneTime)
                 {
                     TitleName = "Air Dancer",
                     Description = "most airborne time",
-                    PlayerName = leaders.MostAirborneTime.Value.PlayerName,
-                    PrimaryColor = leaders.MostAirborneTime.Value.PlayerColor,
-                    SecondaryColor = leaders.MostAirborneTime.Value.SecondaryColor,
-                    Player = leaders.MostAirborneTime.Key,
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostAirborneTime" }
-                });
-            }
-
-            if (leaders.MaxKillStreak.Value.MaxKillStreak > 0)
-            {
-                titles.Add(new TitleEntry
+                },
+                new TitleEntry(leaders.MaxKillStreak)
                 {
                     TitleName = "Serial Killer",
                     Description = "max kill streak",
-                    PlayerName = leaders.MaxKillStreak.Value.PlayerName,
-                    PrimaryColor = leaders.MaxKillStreak.Value.PlayerColor,
-                    SecondaryColor = leaders.MaxKillStreak.Value.SecondaryColor,
-                    Player = leaders.MaxKillStreak.Key,
                     Priority = 99, //This is fun to know so I am bumping it
                     Requirements = new HashSet<string> { "MaxKillStreak" }
-                });
-            }
-
-            titles.Add(new TitleEntry
-            {
-                TitleName = "Survivor",
-                Description = "most alive time",
-                PlayerName = leaders.MostAliveTime.Value.PlayerName,
-                PrimaryColor = leaders.MostAliveTime.Value.PlayerColor,
-                SecondaryColor = leaders.MostAliveTime.Value.SecondaryColor,
-                Player = leaders.MostAliveTime.Key,
-                Priority = defaultPriority,
-                Requirements = new HashSet<string> { "MostAliveTime" }
-            });
-
-            var mostOffenseValue = leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown;
-            if (mostOffenseValue > 0)
-            {
-                titles.Add(new TitleEntry
+                },
+                new TitleEntry(leaders.MostAliveTime)
+                {
+                    TitleName = "Survivor",
+                    Description = "most alive time",
+                    Priority = defaultPriority,
+                    Requirements = new HashSet<string> { "MostAliveTime" }
+                },
+                new TitleEntry(leaders.MostOffense)
                 {
                     TitleName = "Destroyer",
                     Description = "most offense",
-                    PlayerName = leaders.MostOffense.Value.PlayerName,
-                    PrimaryColor = leaders.MostOffense.Value.PlayerColor,
-                    SecondaryColor = leaders.MostOffense.Value.SecondaryColor,
-                    Player = leaders.MostOffense.Key,
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense" }
-                });
-            }
-
-            var mostDamageValue = leaders.MostDamageTaken.Value.Deaths + leaders.MostDamageTaken.Value.ShieldsLost;
-            if (mostDamageValue > 0)
-            {
-                titles.Add(new TitleEntry
+                },
+                new TitleEntry(leaders.MostDamageTaken)
                 {
                     TitleName = "Punching Bag",
                     Description = "most damage taken",
-                    PlayerName = leaders.MostDamageTaken.Value.PlayerName,
-                    PrimaryColor = leaders.MostDamageTaken.Value.PlayerColor,
-                    SecondaryColor = leaders.MostDamageTaken.Value.SecondaryColor,
-                    Player = leaders.MostDamageTaken.Key,
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostDamageTaken" }
-                });
-            }
-
-            titles.Add(new TitleEntry
-            {
-                TitleName = "Shadow",
-                Description = "least damage taken",
-                PlayerName = leaders.LeastDamageTaken.Value.PlayerName,
-                PrimaryColor = leaders.LeastDamageTaken.Value.PlayerColor,
-                SecondaryColor = leaders.LeastDamageTaken.Value.SecondaryColor,
-                Player = leaders.LeastDamageTaken.Key,
-                Priority = defaultPriority,
-                Requirements = new HashSet<string> { "LeastDamageTaken" }
-            });
-
-            var mostFriendlyFireValue = leaders.MostFriendlyFire.Value.FriendlyKills + leaders.MostFriendlyFire.Value.FriendlyShieldsHit;
-            if (mostFriendlyFireValue > 0)
-            {
-                titles.Add(new TitleEntry
+                },
+                new TitleEntry(leaders.LeastDamageTaken)
+                {
+                    TitleName = "Shadow",
+                    Description = "least damage taken",
+                    Priority = defaultPriority,
+                    Requirements = new HashSet<string> { "LeastDamageTaken" }
+                },
+                new TitleEntry(leaders.MostFriendlyFire)
                 {
                     TitleName = "Confused",
                     Description = "most friendly fire",
-                    PlayerName = leaders.MostFriendlyFire.Value.PlayerName,
-                    PrimaryColor = leaders.MostFriendlyFire.Value.PlayerColor,
-                    SecondaryColor = leaders.MostFriendlyFire.Value.SecondaryColor,
-                    Player = leaders.MostFriendlyFire.Key,
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostFriendlyFire" }
-                });
-            }
-
-            titles.Add(new TitleEntry
-            {
-                TitleName = "Team Player",
-                Description = "least friendly fire",
-                PlayerName = leaders.LeastFriendlyFire.Value.PlayerName,
-                PrimaryColor = leaders.LeastFriendlyFire.Value.PlayerColor,
-                SecondaryColor = leaders.LeastFriendlyFire.Value.SecondaryColor,
-                Player = leaders.LeastFriendlyFire.Key,
-                Priority = defaultPriority,
-                Requirements = new HashSet<string> { "LeastFriendlyFire" }
-            });
-
-            var leastOffenseValue = leaders.LeastOffense.Value.Kills + leaders.LeastOffense.Value.EnemyShieldsTakenDown;
-            if (leastOffenseValue == 0)
-            {
-                titles.Add(new TitleEntry
+                },
+                new TitleEntry(leaders.LeastFriendlyFire)
+                {
+                    TitleName = "Team Player",
+                    Description = "least friendly fire",
+                    Priority = defaultPriority,
+                    Requirements = new HashSet<string> { "LeastFriendlyFire" }
+                },
+                new TitleEntry(leaders.LeastOffense)
                 {
                     TitleName = "Pacifist",
                     Description = "least offense",
-                    PlayerName = leaders.LeastOffense.Value.PlayerName,
-                    PrimaryColor = leaders.LeastOffense.Value.PlayerColor,
-                    SecondaryColor = leaders.LeastOffense.Value.SecondaryColor,
-                    Player = leaders.LeastOffense.Key,
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "LeastOffense" }
-                });
-            }
+                }
+            };
 
             return titles;
         }
@@ -343,14 +273,10 @@ namespace StatsMod
 
             if (offenseWinner == altitudeWinner)
             {
-                titles.Add(new TitleEntry
+                titles.Add(new TitleEntry(leaders.MostOffense)
                 {
                     TitleName = "Orbital Strike",
                     Description = "highest altitude and most kills",
-                    PlayerName = leaders.MostOffense.Value.PlayerName,
-                    PrimaryColor = leaders.MostOffense.Value.PlayerColor,
-                    SecondaryColor = leaders.MostOffense.Value.SecondaryColor,
-                    Player = leaders.MostOffense.Key,
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense", "HighestPoint" }
                 });
@@ -358,14 +284,10 @@ namespace StatsMod
 
             if (airborneWinner == altitudeWinner)
             {
-                titles.Add(new TitleEntry
+                titles.Add(new TitleEntry(leaders.MostAirborneTime)
                 {
                     TitleName = "Satellite",
                     Description = "highest point for the longest time",
-                    PlayerName = leaders.MostAirborneTime.Value.PlayerName,
-                    PrimaryColor = leaders.MostAirborneTime.Value.PlayerColor,
-                    SecondaryColor = leaders.MostAirborneTime.Value.SecondaryColor,
-                    Player = leaders.MostAirborneTime.Key,
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "HighestPoint", "MostAirborneTime" }
                 });
@@ -373,14 +295,10 @@ namespace StatsMod
 
             if (offenseWinner == damageWinner)
             {
-                titles.Add(new TitleEntry
+                titles.Add(new TitleEntry(leaders.MostOffense)
                 {
                     TitleName = "Reckless",
                     Description = "most damage, to himself and enemies",
-                    PlayerName = leaders.MostOffense.Value.PlayerName,
-                    PrimaryColor = leaders.MostOffense.Value.PlayerColor,
-                    SecondaryColor = leaders.MostOffense.Value.SecondaryColor,
-                    Player = leaders.MostOffense.Key,
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense", "MostDamageTaken" }
                 });
@@ -388,14 +306,10 @@ namespace StatsMod
 
             if (offenseWinner == damageLoser)
             {
-                titles.Add(new TitleEntry
+                titles.Add(new TitleEntry(leaders.MostOffense)
                 {
                     TitleName = "Assassin",
                     Description = "Untouchable and deadly",
-                    PlayerName = leaders.MostOffense.Value.PlayerName,
-                    PrimaryColor = leaders.MostOffense.Value.PlayerColor,
-                    SecondaryColor = leaders.MostOffense.Value.SecondaryColor,
-                    Player = leaders.MostOffense.Key,
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense", "LeastDamageTaken" }
                 });
@@ -403,58 +317,42 @@ namespace StatsMod
 
             if (offenseLoser == damageLoser)
             {
-                titles.Add(new TitleEntry
+                titles.Add(new TitleEntry(leaders.LeastOffense)
                 {
                     TitleName = "Nothing Burger",
                     Description = "doesn't harm, doesn't help",
-                    PlayerName = leaders.LeastOffense.Value.PlayerName,
-                    PrimaryColor = leaders.LeastOffense.Value.PlayerColor,
-                    SecondaryColor = leaders.LeastOffense.Value.SecondaryColor,
-                    Player = leaders.LeastOffense.Key,
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "LeastOffense", "LeastDamageTaken" }
                 });
             }
             if (leaders.MostShieldsLost.Value.ShieldsLost > 0 && shieldsLostWinner == deathsLoser)
             {
-                titles.Add(new TitleEntry
+                titles.Add(new TitleEntry(leaders.MostShieldsLost)
                 {
                     TitleName = "On Death's Bed",
                     Description = "a constant near death experience",
-                    PlayerName = leaders.MostShieldsLost.Value.PlayerName,
-                    PrimaryColor = leaders.MostShieldsLost.Value.PlayerColor,
-                    SecondaryColor = leaders.MostShieldsLost.Value.SecondaryColor,
-                    Player = leaders.MostShieldsLost.Key,
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostShieldsLost", "LeastDeaths" }
                 });
             }
             if (offenseWinner == friendlyFireWinner)
             {
-                titles.Add(new TitleEntry
+                titles.Add(new TitleEntry(leaders.MostOffense)
                 {
                     TitleName = "Destructive Power",
                     Description = "keep your distance, let it work",
-                    PlayerName = leaders.MostOffense.Value.PlayerName,
-                    PrimaryColor = leaders.MostOffense.Value.PlayerColor,
-                    SecondaryColor = leaders.MostOffense.Value.SecondaryColor,
-                    Player = leaders.MostOffense.Key,
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense", "MostFriendlyFire" }
                 });
             }
 
             var swingsWinner = leaders.MostWebSwings.Key;
-            if (leaders.MostWebSwings.Value.WebSwings > 0 && swingsWinner == airborneWinner)
+            if (swingsWinner == airborneWinner)
             {
-                titles.Add(new TitleEntry
+                titles.Add(new TitleEntry(leaders.MostWebSwings)
                 {
                     TitleName = "Spider-Man",
                     Description = "most web swings and airborne time",
-                    PlayerName = leaders.MostWebSwings.Value.PlayerName,
-                    PrimaryColor = leaders.MostWebSwings.Value.PlayerColor,
-                    SecondaryColor = leaders.MostWebSwings.Value.SecondaryColor,
-                    Player = leaders.MostWebSwings.Key,
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostWebSwings", "MostAirborneTime" }
                 });
@@ -463,16 +361,23 @@ namespace StatsMod
             var altitudeLoser = leaders.LowestPoint.Key;
             if (offenseWinner == altitudeLoser)
             {
-                titles.Add(new TitleEntry
+                titles.Add(new TitleEntry(leaders.MostOffense)
                 {
                     TitleName = "Lawn-mower",
                     Description = "stays low and fires up",
-                    PlayerName = leaders.MostOffense.Value.PlayerName,
-                    PrimaryColor = leaders.MostOffense.Value.PlayerColor,
-                    SecondaryColor = leaders.MostOffense.Value.SecondaryColor,
-                    Player = leaders.MostOffense.Key,
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense", "LowestPoint" }
+                });
+            }
+
+            if (swingsWinner == offenseWinner)
+            {
+                titles.Add(new TitleEntry(leaders.MostOffense)
+                {
+                    TitleName = "Hit & Run",
+                    Description = "strike fast, escape faster",
+                    Priority = defaultPriority,
+                    Requirements = new HashSet<string> { "MostOffense", "MostWebSwings" }
                 });
             }
 
@@ -493,33 +398,23 @@ namespace StatsMod
             var friendlyFireLoser = leaders.LeastFriendlyFire.Key;
             var swingsWinner = leaders.MostWebSwings.Key;
 
-            if (leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown > 0 &&
-                offenseWinner == altitudeWinner && offenseWinner == airborneWinner)
+            if (offenseWinner == altitudeWinner && offenseWinner == airborneWinner)
             {
-                titles.Add(new TitleEntry
+                titles.Add(new TitleEntry(leaders.MostOffense)
                 {
                     TitleName = "ICBM",
                     Description = "highest altitude, airborne time and most kills",
-                    PlayerName = leaders.MostOffense.Value.PlayerName,
-                    PrimaryColor = leaders.MostOffense.Value.PlayerColor,
-                    SecondaryColor = leaders.MostOffense.Value.SecondaryColor,
-                    Player = leaders.MostOffense.Key,
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense", "HighestPoint", "MostAirborneTime" }
                 });
             }
 
-            if (leaders.MostWebSwings.Value.WebSwings > 0 &&
-                swingsWinner == altitudeWinner && swingsWinner == damageLoser)
+            if (swingsWinner == altitudeWinner && swingsWinner == damageLoser)
             {
-                titles.Add(new TitleEntry
+                titles.Add(new TitleEntry(leaders.MostWebSwings)
                 {
                     TitleName = "Ninja",
                     Description = "avoids everything",
-                    PlayerName = leaders.MostWebSwings.Value.PlayerName,
-                    PrimaryColor = leaders.MostWebSwings.Value.PlayerColor,
-                    SecondaryColor = leaders.MostWebSwings.Value.SecondaryColor,
-                    Player = leaders.MostWebSwings.Key,
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostWebSwings", "HighestPoint", "LeastDamageTaken" }
                 });
@@ -527,14 +422,10 @@ namespace StatsMod
 
             if (offenseWinner == damageWinner && offenseWinner == friendlyFireLoser)
             {
-                titles.Add(new TitleEntry
+                titles.Add(new TitleEntry(leaders.MostOffense)
                 {
                     TitleName = "Elegant Barbarian",
                     Description = "trust him",
-                    PlayerName = leaders.MostOffense.Value.PlayerName,
-                    PrimaryColor = leaders.MostOffense.Value.PlayerColor,
-                    SecondaryColor = leaders.MostOffense.Value.SecondaryColor,
-                    Player = leaders.MostOffense.Key,
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense", "MostDamageTaken", "LeastFriendlyFire" }
                 });
@@ -542,14 +433,10 @@ namespace StatsMod
 
             if (offenseWinner == damageLoser && offenseWinner == friendlyFireLoser)
             {
-                titles.Add(new TitleEntry
+                titles.Add(new TitleEntry(leaders.MostOffense)
                 {
                     TitleName = "MVP",
                     Description = "the team relies on you",
-                    PlayerName = leaders.MostOffense.Value.PlayerName,
-                    PrimaryColor = leaders.MostOffense.Value.PlayerColor,
-                    SecondaryColor = leaders.MostOffense.Value.SecondaryColor,
-                    Player = leaders.MostOffense.Key,
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense", "LeastDamageTaken", "LeastFriendlyFire" }
                 });
@@ -557,14 +444,10 @@ namespace StatsMod
 
             if (offenseWinner == damageLoser && offenseWinner == friendlyFireWinner)
             {
-                titles.Add(new TitleEntry
+                titles.Add(new TitleEntry(leaders.MostOffense)
                 {
                     TitleName = "Ordered Chaos",
                     Description = "a necessary evil",
-                    PlayerName = leaders.MostOffense.Value.PlayerName,
-                    PrimaryColor = leaders.MostOffense.Value.PlayerColor,
-                    SecondaryColor = leaders.MostOffense.Value.SecondaryColor,
-                    Player = leaders.MostOffense.Key,
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense", "LeastDamageTaken", "MostFriendlyFire" }
                 });
@@ -572,14 +455,10 @@ namespace StatsMod
 
             if (offenseLoser == damageLoser && offenseLoser == friendlyFireWinner)
             {
-                titles.Add(new TitleEntry
+                titles.Add(new TitleEntry(leaders.LeastOffense)
                 {
                     TitleName = "Traitor",
                     Description = "watch your back",
-                    PlayerName = leaders.LeastOffense.Value.PlayerName,
-                    PrimaryColor = leaders.LeastOffense.Value.PlayerColor,
-                    SecondaryColor = leaders.LeastOffense.Value.SecondaryColor,
-                    Player = leaders.LeastOffense.Key,
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "LeastOffense", "LeastDamageTaken", "MostFriendlyFire" }
                 });
@@ -587,23 +466,33 @@ namespace StatsMod
 
             if (swingsWinner == airborneWinner && swingsWinner == damageWinner)
             {
-                titles.Add(new TitleEntry
+                titles.Add(new TitleEntry(leaders.MostWebSwings)
                 {
                     TitleName = "Spooderman",
                     Description = "spidey senses not working",
-                    PlayerName = leaders.MostWebSwings.Value.PlayerName,
-                    PrimaryColor = leaders.MostWebSwings.Value.PlayerColor,
-                    SecondaryColor = leaders.MostWebSwings.Value.SecondaryColor,
-                    Player = leaders.MostWebSwings.Key,
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostWebSwings", "MostAirborneTime", "MostDamageTaken" }
+                });
+            }
+
+            var altitudeLoser = leaders.LowestPoint.Key;
+            var airborneLoser = leaders.LeastAirborneTime.Key;
+            var swingsLoser = leaders.LeastWebSwings.Key;
+            if (altitudeLoser == airborneLoser && altitudeLoser == swingsLoser)
+            {
+                titles.Add(new TitleEntry(leaders.LowestPoint)
+                {
+                    TitleName = "Basement Dweller",
+                    Description = "lives in the shadows below",
+                    Priority = defaultPriority,
+                    Requirements = new HashSet<string> { "LowestPoint", "LeastAirborneTime", "LeastWebSwings" }
                 });
             }
 
             return titles;
         }
 
-        private List<TitleEntry> CreateFourCategoryTitles(StatLeaders leaders, int defaultPriority = 50)
+        private List<TitleEntry> CreateFourCategoryTitles(StatLeaders leaders, int defaultPriority = 40)
         {
             var titles = new List<TitleEntry>();
 
@@ -611,20 +500,28 @@ namespace StatsMod
             var damageLoser = leaders.LeastDamageTaken.Key;
             var altitudeWinner = leaders.HighestPoint.Key;
             var friendlyFireLoser = leaders.LeastFriendlyFire.Key;
+            var airborneWinner = leaders.MostAirborneTime.Key;
+            var swingsWinner = leaders.MostWebSwings.Key;
 
-            if (leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown > 0 &&
-                offenseWinner == damageLoser && offenseWinner == altitudeWinner && offenseWinner == friendlyFireLoser)
+            if (offenseWinner == damageLoser && offenseWinner == altitudeWinner && offenseWinner == friendlyFireLoser)
             {
-                titles.Add(new TitleEntry
+                titles.Add(new TitleEntry(leaders.MostOffense)
                 {
                     TitleName = "God Complex",
                     Description = "untouchable perfection",
-                    PlayerName = leaders.MostOffense.Value.PlayerName,
-                    PrimaryColor = leaders.MostOffense.Value.PlayerColor,
-                    SecondaryColor = leaders.MostOffense.Value.SecondaryColor,
-                    Player = leaders.MostOffense.Key,
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense", "LeastDamageTaken", "HighestPoint", "LeastFriendlyFire" }
+                });
+            }
+
+            if (altitudeWinner == airborneWinner && altitudeWinner == damageLoser && altitudeWinner == swingsWinner)
+            {
+                titles.Add(new TitleEntry(leaders.HighestPoint)
+                {
+                    TitleName = "The Untouchable",
+                    Description = "master of evasion",
+                    Priority = defaultPriority,
+                    Requirements = new HashSet<string> { "HighestPoint", "MostAirborneTime", "LeastDamageTaken", "MostWebSwings" }
                 });
             }
 
