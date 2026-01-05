@@ -538,6 +538,18 @@ namespace StatsMod
                 });
             }
 
+            var aliveTimeWinner = leaders.MostAliveTime.Key;
+            if (damageWinner == aliveTimeWinner)
+            {
+                titles.Add(new TitleEntry(leaders.MostDamageTaken)
+                {
+                    TitleName = "Nine Lives",
+                    Description = "Most Damage, Alive Time",
+                    Priority = defaultPriority,
+                    Requirements = new HashSet<string> { "MostDamageTaken", "MostAliveTime" }
+                });
+            }
+
             return titles;
         }
 
