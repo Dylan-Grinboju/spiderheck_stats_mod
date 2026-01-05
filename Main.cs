@@ -6,7 +6,6 @@ using UnityEngine.InputSystem;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Reflection;
-using StatsMod.Cheats;
 
 namespace StatsMod
 {
