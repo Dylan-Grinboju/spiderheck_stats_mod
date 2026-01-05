@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEngine.InputSystem;
-using Silk;
 using Logger = Silk.Logger;
 
 namespace StatsMod
@@ -121,7 +119,7 @@ namespace StatsMod
                     lines.Add($"    Time Swinging: {FormatTimeSpan(playerData.GetCurrentWebSwingTime())}");
                     lines.Add($"    Time Airborne: {FormatTimeSpan(playerData.GetCurrentAirborneTime())}");
                     lines.Add($"    Highest Point: {playerData.HighestPoint:F1}m");
-                    
+
                     // Weapon hits breakdown
                     if (playerData.WeaponHits != null && playerData.WeaponHits.Any())
                     {
@@ -130,7 +128,7 @@ namespace StatsMod
                             .Where(w => w.Value > 0)
                             .OrderByDescending(w => w.Value)
                             .ToList();
-                        
+
                         if (sortedWeaponHits.Any())
                         {
                             foreach (var weapon in sortedWeaponHits)
@@ -143,7 +141,7 @@ namespace StatsMod
                             lines.Add($"      No weapon hits recorded");
                         }
                     }
-                    
+
                     lines.Add("");
                 }
             }

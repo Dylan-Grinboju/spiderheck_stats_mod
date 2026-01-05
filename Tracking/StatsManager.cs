@@ -85,6 +85,7 @@ namespace StatsMod
             {
                 lastGameTitles = titlesUI.GetCurrentTitles();
                 hasPendingTitles = lastGameTitles.Count > 0;
+                statsSnapshot.Titles = lastGameTitles;
             }
 
             if (ModConfig.SaveStatsToFile)

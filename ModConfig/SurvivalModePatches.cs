@@ -1,10 +1,7 @@
 using HarmonyLib;
-using Silk;
 using Logger = Silk.Logger;
 using System;
-using UnityEngine;
 using UnityEngine.SceneManagement;
-using System.Collections.Generic;
 
 namespace StatsMod
 {

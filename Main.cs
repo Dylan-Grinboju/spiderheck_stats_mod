@@ -11,7 +11,7 @@ using StatsMod.Cheats;
 namespace StatsMod
 {
     // SilkMod Attribute with the format: name, authors, mod version, silk version, and identifier
-    [SilkMod("Stats Mod", new string[] { "Dylan" }, "1.3.1", "0.7.0", "Stats_Mod", 1)]
+    [SilkMod("Stats Mod", new string[] { "Dylan" }, "2.0.0", "0.7.0", "Stats_Mod", 1)]
     public class StatsMod : SilkMod
     {
         public static StatsMod Instance { get; private set; }
@@ -41,14 +41,20 @@ namespace StatsMod
             // Initialize configuration with default values first
             SetupConfiguration();
 
-            // Check for updates asynchronously
-            _ = Task.Run(async () =>
+            if (ModConfig.CheckForUpdates)
             {
-                await Task.Delay(15000);
-                await ModUpdater.CheckForUpdatesAsync();
-            });
+                // Check for updates asynchronously
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(15000);
+                    await ModUpdater.CheckForUpdatesAsync();
+                });
+            }
+            else
+            {
+                Logger.LogInfo("Update checking is disabled in configuration.");
+            }
 
-            // Check if tracking is enabled before initializing mod components
             if (!ModConfig.TrackingEnabled)
             {
                 Logger.LogInfo("Stats Mod tracking is disabled in configuration. Mod components will not be initialized.");
@@ -59,10 +65,9 @@ namespace StatsMod
             UIManager.Initialize();
             Logger.LogInfo("UI Manager initialized");
 
-            // Initialize pause tracker
             GameObject pauseTrackerObj = new GameObject("PauseTracker");
             pauseTrackerObj.AddComponent<PauseTracker>();
-            GameObject.DontDestroyOnLoad(pauseTrackerObj);
+            DontDestroyOnLoad(pauseTrackerObj);
             Logger.LogInfo("Pause tracker initialized");
 
             Harmony harmony = new Harmony("com.StatsMod");
@@ -76,15 +81,16 @@ namespace StatsMod
 
             Logger.LogInfo("Harmony patches applied.");
 
+            // Uncommenting this will not initialize anything as this is not pushed to github on purpose
             // Initialize cheat manager for testing
-            try
-            {
-                CheatManager.Initialize();
-            }
-            catch (System.Exception ex)
-            {
-                Logger.LogError($"Error initializing CheatManager: {ex.Message}");
-            }
+            // try
+            // {
+            //     CheatManager.Initialize();
+            // }
+            // catch (System.Exception ex)
+            // {
+            //     Logger.LogError($"Error initializing CheatManager: {ex.Message}");
+            // }
         }
 
         private void SetupConfiguration()

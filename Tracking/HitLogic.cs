@@ -83,11 +83,9 @@ namespace StatsMod
 
             if (enemyBrain != null)
             {
-                Logger.LogDebug($"Target {target.name} is an enemy of type {enemyBrain.name}");
                 RollerBrain rollerBrain = enemyBrain.GetComponentInParent<RollerBrain>();
                 if (rollerBrain != null)
                 {
-                    Logger.LogDebug($"Target {target.name} is part of RollerBrain {rollerBrain.gameObject.name}, checking strut death handling");
                     if (!WillRollerStrutKillCauseRollerBrainDeath(rollerBrain))
                         return;
                 }
@@ -169,7 +167,6 @@ namespace StatsMod
             lock (discOwnerLock)
             {
                 discOwnerTracker[discId] = owner;
-                Logger.LogInfo($"Registered disc owner for disc {discId}, owner: {owner.name}");
             }
         }
 
@@ -197,7 +194,6 @@ namespace StatsMod
             {
                 if (discOwnerTracker.Remove(discId))
                 {
-                    Logger.LogInfo($"Cleaned up disc owner for disc {discId}");
                 }
             }
         }
@@ -325,11 +321,9 @@ namespace StatsMod
             {
                 return;
             }
-            Logger.LogDebug($"Recording hit on target {target.name} by player {playerInput.name}");
 
             if (IsTargetImmune(target))
             {
-                Logger.LogDebug($"Target {target.name} is currently immune, not recording hit");
                 return;
             }
 

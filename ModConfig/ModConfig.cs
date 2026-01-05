@@ -1,9 +1,7 @@
 using Silk;
 using Logger = Silk.Logger;
-using System.Collections.Generic;
 using System;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace StatsMod
 {
