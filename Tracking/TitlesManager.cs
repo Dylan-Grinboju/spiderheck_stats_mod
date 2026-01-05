@@ -227,134 +227,127 @@ namespace StatsMod
             {
                 new TitleEntry(leaders.MostWebSwings)
                 {
-                    TitleName = "The swinger",
-                    Description = "most web swings",
+                    TitleName = "Peter Parker",
+                    Description = "Most Web Swings",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostWebSwings" }
                 },
                 new TitleEntry(leaders.HighestPoint)
                 {
-                    TitleName = "Sky Scraper",
-                    Description = "highest point reached",
-                    Priority = defaultPriority,
-                    Requirements = new HashSet<string> { "HighestPoint" }
-                },
-                new TitleEntry(leaders.HighestPoint)
-                {
-                    TitleName = "1000 Meters Club",
-                    Description = $"reached {leaders.HighestPoint.Value.HighestPoint:F1}m altitude",
-                    Priority = leaders.HighestPoint.Value.HighestPoint >= 1000 ? 25 : -1000,
+                    TitleName = leaders.HighestPoint.Value.HighestPoint >= 1000 ? "1000 Meters Club" : "Sky Scraper",
+                    Description = $"Highest Point ({leaders.HighestPoint.Value.HighestPoint:F1}m)",
+                    Priority = leaders.HighestPoint.Value.HighestPoint >= 1000 ? 25 : defaultPriority,
                     Requirements = new HashSet<string> { "HighestPoint" }
                 },
                 new TitleEntry(leaders.MostAirborneTime)
                 {
                     TitleName = "Air Dancer",
-                    Description = "most airborne time",
+                    Description = "Most Airborne Time",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostAirborneTime" }
                 },
                 new TitleEntry(leaders.MostKillsWhileAirborne)
                 {
                     TitleName = "Sky Hunter",
-                    Description = "most kills while airborne",
+                    Description = "Most Kills While Airborne",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostKillsWhileAirborne" }
                 },
                 new TitleEntry(leaders.MostKillsWhileSolo)
                 {
                     TitleName = "Lone Wolf",
-                    Description = "most kills while last alive",
-                    Priority = defaultPriority,
+                    Description = $"Most Kills While Solo ({leaders.MostKillsWhileSolo})",
+                    Priority = defaultPriority + 10,
                     Requirements = new HashSet<string> { "MostKillsWhileSolo" }
                 },
                 new TitleEntry(leaders.MostWaveClutches)
                 {
                     TitleName = "Clutch Master",
-                    Description = "saved the team the most times",
-                    Priority = defaultPriority,
+                    Description = $"Most Wave Clutches ({leaders.MostWaveClutches})",
+                    Priority = defaultPriority + 10,
                     Requirements = new HashSet<string> { "MostWaveClutches" }
                 },
                 new TitleEntry(leaders.MaxKillStreak)
                 {
                     TitleName = "Serial Killer",
-                    Description = $"max kill streak - {leaders.MaxKillStreak.Value.MaxKillStreak}",
+                    Description = $"Max Kill Streak ({leaders.MaxKillStreak.Value.MaxKillStreak})",
                     Priority = 90, //This is fun to know so I am bumping it
                     Requirements = new HashSet<string> { "MaxKillStreak" }
                 },
                 new TitleEntry(leaders.MaxKillStreakWhileSolo)
                 {
                     TitleName = "Solo Rampage",
-                    Description = $"max solo kill streak - {leaders.MaxKillStreakWhileSolo.Value.MaxKillStreakWhileSolo}",
+                    Description = $"Max Kill Streak While Solo ({leaders.MaxKillStreakWhileSolo.Value.MaxKillStreakWhileSolo})",
                     Priority = 95,
                     Requirements = new HashSet<string> { "MaxKillStreakWhileSolo" }
                 },
                 new TitleEntry(leaders.MostAliveTime)
                 {
                     TitleName = "Survivor",
-                    Description = "most alive time",
+                    Description = "Most Alive Time",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostAliveTime" }
                 },
                 new TitleEntry(leaders.MostOffense)
                 {
                     TitleName = "Destroyer",
-                    Description = "most offense",
+                    Description = "Most Offense",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense" }
                 },
                 new TitleEntry(leaders.MostDamageTaken)
                 {
                     TitleName = "Punching Bag",
-                    Description = "most damage taken",
+                    Description = "Most Damage Taken",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostDamageTaken" }
                 },
                 new TitleEntry(leaders.LeastDamageTaken)
                 {
                     TitleName = "Shadow",
-                    Description = "least damage taken",
+                    Description = "Least Damage Taken",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "LeastDamageTaken" }
                 },
                 new TitleEntry(leaders.MostFriendlyFire)
                 {
                     TitleName = "Confused",
-                    Description = "most friendly fire",
+                    Description = "Most Friendly Fire",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostFriendlyFire" }
                 },
                 new TitleEntry(leaders.LeastFriendlyFire)
                 {
                     TitleName = "Team Player",
-                    Description = "least friendly fire",
+                    Description = "Least Friendly Fire",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "LeastFriendlyFire" }
                 },
                 new TitleEntry(leaders.LeastOffense)
                 {
                     TitleName = "Pacifist",
-                    Description = "least offense",
+                    Description = "Least Offense",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "LeastOffense" }
                 },
                 new TitleEntry(leaders.MostGunsKills)
                 {
                     TitleName = "Gunslinger",
-                    Description = "most gun kills",
+                    Description = "Most Gun Kills",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostGunsKills" }
                 },
                 new TitleEntry(leaders.MostExplosionsKills)
                 {
                     TitleName = "Demolitionist",
-                    Description = "most explosive kills",
+                    Description = "Most Explosive Kills",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostExplosionsKills" }
                 },
                 new TitleEntry(leaders.MostBladeKills)
                 {
                     TitleName = "Blade Master",
-                    Description = "most blade kills",
+                    Description = "Most Blade Kills",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostBladeKills" }
                 }
@@ -387,7 +380,7 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.MostOffense)
                 {
                     TitleName = "Orbital Strike",
-                    Description = "highest altitude and most kills",
+                    Description = "Most Offense, Highest Point",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense", "HighestPoint" }
                 });
@@ -398,7 +391,7 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.MostAirborneTime)
                 {
                     TitleName = "Satellite",
-                    Description = "highest point for the longest time",
+                    Description = "Highest Point, Most Airborne Time",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "HighestPoint", "MostAirborneTime" }
                 });
@@ -408,8 +401,8 @@ namespace StatsMod
             {
                 titles.Add(new TitleEntry(leaders.MostOffense)
                 {
-                    TitleName = "Reckless",
-                    Description = "most damage, to himself and enemies",
+                    TitleName = "Glass Cannon",
+                    Description = "Most Offense, Damage Taken",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense", "MostDamageTaken" }
                 });
@@ -419,8 +412,8 @@ namespace StatsMod
             {
                 titles.Add(new TitleEntry(leaders.MostOffense)
                 {
-                    TitleName = "Assassin",
-                    Description = "Untouchable and deadly",
+                    TitleName = "Sword and Shield",
+                    Description = "Most Offense, Least Damage Taken",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense", "LeastDamageTaken" }
                 });
@@ -431,7 +424,7 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.LeastOffense)
                 {
                     TitleName = "Nothing Burger",
-                    Description = "doesn't harm, doesn't help",
+                    Description = "Least Offense, Damage Taken",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "LeastOffense", "LeastDamageTaken" }
                 });
@@ -441,7 +434,7 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.MostShieldsLost)
                 {
                     TitleName = "On Death's Bed",
-                    Description = "a constant near death experience",
+                    Description = "Most Shields Lost, Least Deaths",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostShieldsLost", "LeastDeaths" }
                 });
@@ -450,8 +443,8 @@ namespace StatsMod
             {
                 titles.Add(new TitleEntry(leaders.MostOffense)
                 {
-                    TitleName = "Destructive Power",
-                    Description = "keep your distance, let it work",
+                    TitleName = "Perfectly Balanced",
+                    Description = "Most Offense, Friendly Fire",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense", "MostFriendlyFire" }
                 });
@@ -463,7 +456,7 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.MostWebSwings)
                 {
                     TitleName = "Spider-Man",
-                    Description = "most web swings and airborne time",
+                    Description = "Most Web Swings, Airborne Time",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostWebSwings", "MostAirborneTime" }
                 });
@@ -475,7 +468,7 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.MostOffense)
                 {
                     TitleName = "Lawn-mower",
-                    Description = "stays low and fires up",
+                    Description = "Most Offense, Lowest Point",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense", "LowestPoint" }
                 });
@@ -486,7 +479,7 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.MostOffense)
                 {
                     TitleName = "Hit & Run",
-                    Description = "strike fast, escape faster",
+                    Description = "Most Offense, Web Swings",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense", "MostWebSwings" }
                 });
@@ -496,8 +489,8 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.MostWaveClutches)
                 {
                     TitleName = "Last Stand Hero",
-                    Description = "clutched waves and killed solo",
-                    Priority = defaultPriority,
+                    Description = $"Most Wave Clutches ({leaders.MostWaveClutches}), Kills While Solo ({leaders.MostKillsWhileSolo})",
+                    Priority = defaultPriority + 20,
                     Requirements = new HashSet<string> { "MostWaveClutches", "MostKillsWhileSolo" }
                 });
             }
@@ -506,7 +499,7 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.MostExplosionsKills)
                 {
                     TitleName = "Kamikaze",
-                    Description = "explosive self-destruction",
+                    Description = "Most Explosive Kills, Damage Taken",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostExplosionsKills", "MostDamageTaken" }
                 });
@@ -517,7 +510,7 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.MostGunsKills)
                 {
                     TitleName = "War Machine",
-                    Description = "gun-based dominance",
+                    Description = "Most Gun Kills, Offense",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostGunsKills", "MostOffense" }
                 });
@@ -528,9 +521,20 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.MostBladeKills)
                 {
                     TitleName = "Silent Assassin",
-                    Description = "deadly and untouched",
+                    Description = "Most Blade Kills, Least Damage Taken",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostBladeKills", "LeastDamageTaken" }
+                });
+            }
+
+            if (bladeWinner == altitudeWinner)
+            {
+                titles.Add(new TitleEntry(leaders.MostBladeKills)
+                {
+                    TitleName = "I have the High Ground",
+                    Description = "Most Blade Kills, Highest Point",
+                    Priority = defaultPriority,
+                    Requirements = new HashSet<string> { "MostBladeKills", "HighestPoint" }
                 });
             }
 
@@ -560,25 +564,25 @@ namespace StatsMod
             var mostWaveClutchesWinner = leaders.MostWaveClutches.Key;
 
 
-            if (bladeWinner == altitudeWinner && offenseWinner == airborneWinner)
+            if (explosionsWinner == altitudeWinner && explosionsWinner == airborneWinner)
             {
-                titles.Add(new TitleEntry(leaders.MostBladeKills)
+                titles.Add(new TitleEntry(leaders.MostExplosionsKills)
                 {
                     TitleName = "ICBM",
-                    Description = "strikes from above with deadly precision",
+                    Description = "Most explosion Kills, Airborne Time, Highest Point",
                     Priority = defaultPriority,
-                    Requirements = new HashSet<string> { "MostBladeKills", "HighestPoint", "MostAirborneTime" }
+                    Requirements = new HashSet<string> { "explosionsWinner", "HighestPoint", "MostAirborneTime" }
                 });
             }
 
-            if (swingsWinner == altitudeWinner && swingsWinner == damageLoser)
+            if (bladeWinner == altitudeWinner && bladeWinner == damageLoser)
             {
-                titles.Add(new TitleEntry(leaders.MostWebSwings)
+                titles.Add(new TitleEntry(leaders.MostBladeKills)
                 {
                     TitleName = "Phantom Blade",
-                    Description = "High above and untouchable",
+                    Description = "Most blade kills, Highest Point, Least Damage Taken",
                     Priority = defaultPriority,
-                    Requirements = new HashSet<string> { "MostWebSwings", "HighestPoint", "LeastDamageTaken" }
+                    Requirements = new HashSet<string> { "MostBladeKills", "HighestPoint", "LeastDamageTaken" }
                 });
             }
 
@@ -587,7 +591,7 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.MostOffense)
                 {
                     TitleName = "Elegant Barbarian",
-                    Description = "trust him",
+                    Description = "Most Offense, Damage Taken, Least Friendly Fire",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense", "MostDamageTaken", "LeastFriendlyFire" }
                 });
@@ -598,7 +602,7 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.MostOffense)
                 {
                     TitleName = "MVP",
-                    Description = "the team relies on you",
+                    Description = "Most Offense, Least Damage Taken, Friendly Fire",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense", "LeastDamageTaken", "LeastFriendlyFire" }
                 });
@@ -609,7 +613,7 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.MostOffense)
                 {
                     TitleName = "Agent of Chaos",
-                    Description = "trust no one",
+                    Description = "Most Offense, Friendly Fire, Least Damage Taken",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense", "LeastDamageTaken", "MostFriendlyFire" }
                 });
@@ -620,8 +624,8 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.MostFriendlyFire)
                 {
                     TitleName = "Ordered Chaos",
-                    Description = "There is method to the madness",
-                    Priority = defaultPriority,
+                    Description = "Most Friendly Fire, Wave Clutches, Max Kill Streak While Solo",
+                    Priority = defaultPriority + 10,
                     Requirements = new HashSet<string> { "MostFriendlyFire", "MaxKillStreakWhileSolo", "MostWaveClutches" }
                 });
             }
@@ -632,7 +636,7 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.LeastOffense)
                 {
                     TitleName = "Traitor",
-                    Description = "watch your back",
+                    Description = "Least Offense, Damage Taken, Most Friendly Fire",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "LeastOffense", "LeastDamageTaken", "MostFriendlyFire" }
                 });
@@ -643,8 +647,8 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.MostWebSwings)
                 {
                     TitleName = "Spooderman",
-                    Description = "spidey senses not working",
-                    Priority = defaultPriority,
+                    Description = "Most Web Swings, Airborne Time, Damage Taken",
+                    Priority = defaultPriority + 10,
                     Requirements = new HashSet<string> { "MostWebSwings", "MostAirborneTime", "MostDamageTaken" }
                 });
             }
@@ -654,7 +658,7 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.LowestPoint)
                 {
                     TitleName = "Basement Dweller",
-                    Description = "lives in the shadows below",
+                    Description = "Lowest Point, Least Airborne Time, Web Swings",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "LowestPoint", "LeastAirborneTime", "LeastWebSwings" }
                 });
@@ -665,7 +669,7 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.MostGunsKills)
                 {
                     TitleName = "Marksman",
-                    Description = "precise and deadly",
+                    Description = "Most Gun Kills, Offense, Least Friendly Fire",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostGunsKills", "MostOffense", "LeastFriendlyFire" }
                 });
@@ -676,9 +680,20 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.MostExplosionsKills)
                 {
                     TitleName = "Mutually Assured Destruction",
-                    Description = "explosive chaos everywhere",
+                    Description = "Most Explosive Kills, Offense, Friendly Fire",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostExplosionsKills", "MostOffense", "MostFriendlyFire" }
+                });
+            }
+
+            if (bladeWinner == explosionsWinner && explosionsWinner == gunsWinner)
+            {
+                titles.Add(new TitleEntry(leaders.MostExplosionsKills)
+                {
+                    TitleName = "Master of Arms",
+                    Description = "Most Explosive Kills, Gun Kills, Blade Kills",
+                    Priority = defaultPriority,
+                    Requirements = new HashSet<string> { "MostExplosionsKills", "MostGunsKills", "MostBladeKills" }
                 });
             }
 
@@ -706,7 +721,7 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.MostOffense)
                 {
                     TitleName = "God Complex",
-                    Description = "untouchable perfection",
+                    Description = "Most Offense, Least Damage Taken, Friendly Fire, Highest Point",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense", "LeastDamageTaken", "HighestPoint", "LeastFriendlyFire" }
                 });
@@ -717,7 +732,7 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.HighestPoint)
                 {
                     TitleName = "The Untouchable",
-                    Description = "master of evasion",
+                    Description = "Highest Point, Most Airborne Time, Web Swings, Least Damage Taken",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "HighestPoint", "MostAirborneTime", "LeastDamageTaken", "MostWebSwings" }
                 });
@@ -728,7 +743,7 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.MostOffense)
                 {
                     TitleName = "Nuclear Warhead",
-                    Description = "explosive strikes from the heavens",
+                    Description = "Most Offense, Airborne Time, Explosive Kills, Highest Point",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense", "HighestPoint", "MostAirborneTime", "MostExplosionsKills" }
                 });
@@ -739,7 +754,7 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.LeastOffense)
                 {
                     TitleName = "Inside Job",
-                    Description = "explosive betrayal",
+                    Description = "Least Offense, Damage Taken, Most Friendly Fire, Explosive Kills",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "LeastOffense", "LeastDamageTaken", "MostFriendlyFire", "MostExplosionsKills" }
                 });
@@ -750,7 +765,7 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.MostOffense)
                 {
                     TitleName = "Rambo",
-                    Description = "one man army",
+                    Description = "Most Offense, Gun Kills, Least Damage Taken, Friendly Fire",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense", "LeastDamageTaken", "LeastFriendlyFire", "MostGunsKills" }
                 });
@@ -774,7 +789,7 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.MostOffense)
                 {
                     TitleName = "Supernova",
-                    Description = "godlike explosive perfection",
+                    Description = "Most Offense, Friendly Fire, Explosive Kills, Least Damage Taken, Highest Point",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense", "LeastDamageTaken", "HighestPoint", "friendlyFireWinner", "MostExplosionsKills" }
                 });
