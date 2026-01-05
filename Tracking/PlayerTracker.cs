@@ -54,6 +54,8 @@ namespace StatsMod
             public int ShieldsLost { get; set; }
             public int KillStreak { get; set; }
             public int MaxKillStreak { get; set; }
+            public int KillStreakWhileSolo { get; set; }
+            public int MaxKillStreakWhileSolo { get; set; }
             public string PlayerName { get; set; }
             public DateTime JoinTime { get; set; }
             public Color PlayerColor { get; set; }
@@ -85,6 +87,8 @@ namespace StatsMod
                 ShieldsLost = 0;
                 KillStreak = 0;
                 MaxKillStreak = 0;
+                KillStreakWhileSolo = 0;
+                MaxKillStreakWhileSolo = 0;
                 PlayerName = name;
                 JoinTime = DateTime.Now;
                 PlayerColor = Color.white;
@@ -230,6 +234,7 @@ namespace StatsMod
                 {
                     data.Deaths++;
                     data.KillStreak = 0;
+                    data.KillStreakWhileSolo = 0;
                     StopAliveTimer(data);
                     StopWebSwingTimer(playerInput);
                 }
@@ -290,6 +295,8 @@ namespace StatsMod
                 entry.Value.AirborneTime = TimeSpan.Zero;
                 entry.Value.KillStreak = 0;
                 entry.Value.MaxKillStreak = 0;
+                entry.Value.KillStreakWhileSolo = 0;
+                entry.Value.MaxKillStreakWhileSolo = 0;
                 entry.Value.TotalAliveTime = TimeSpan.Zero;
                 entry.Value.HighestPoint = 0f;
                 foreach (var weaponKey in entry.Value.WeaponHits.Keys.ToList())
@@ -342,6 +349,11 @@ namespace StatsMod
                 if (IsOnlyOnePlayerAlive())
                 {
                     data.KillsWhileSolo++;
+                    data.KillStreakWhileSolo++;
+                    if (data.KillStreakWhileSolo > data.MaxKillStreakWhileSolo)
+                    {
+                        data.MaxKillStreakWhileSolo = data.KillStreakWhileSolo;
+                    }
                 }
             }
         }
@@ -536,6 +548,14 @@ namespace StatsMod
                     return;
                 }
                 data.CurrentAliveStartTime = DateTime.Now;
+
+                if (!IsOnlyOnePlayerAlive())
+                {
+                    foreach (var entry in activePlayers)
+                    {
+                        entry.Value.KillStreakWhileSolo = 0;
+                    }
+                }
             }
             else
             {

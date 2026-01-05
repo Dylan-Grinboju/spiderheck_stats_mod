@@ -39,6 +39,7 @@ namespace StatsMod
         public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostKillsWhileSolo { get; set; }
         public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostWaveClutches { get; set; }
         public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MaxKillStreak { get; set; }
+        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MaxKillStreakWhileSolo { get; set; }
         public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostAliveTime { get; set; }
 
         public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostOffense { get; set; }
@@ -138,6 +139,9 @@ namespace StatsMod
             var streakRanked = players.OrderByDescending(p => p.Value.MaxKillStreak).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
             leaders.MaxKillStreak = streakRanked[0];
 
+            var streakWhileSoloRanked = players.OrderByDescending(p => p.Value.MaxKillStreakWhileSolo).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+            leaders.MaxKillStreakWhileSolo = streakWhileSoloRanked[0];
+
             var aliveTimeRanked = players.OrderByDescending(p => p.Value.TotalAliveTime).ToList();
             leaders.MostAliveTime = aliveTimeRanked[0];
 
@@ -222,6 +226,13 @@ namespace StatsMod
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "HighestPoint" }
                 },
+                new TitleEntry(leaders.HighestPoint)
+                {
+                    TitleName = "1000 Meters Club",
+                    Description = $"reached {leaders.HighestPoint.Value.HighestPoint:F1}m altitude",
+                    Priority = leaders.HighestPoint.Value.HighestPoint >= 1000 ? 25 : 0,
+                    Requirements = new HashSet<string> { "HighestPoint" }
+                },
                 new TitleEntry(leaders.MostAirborneTime)
                 {
                     TitleName = "Air Dancer",
@@ -254,8 +265,15 @@ namespace StatsMod
                 {
                     TitleName = "Serial Killer",
                     Description = $"max kill streak - {leaders.MaxKillStreak.Value.MaxKillStreak}",
-                    Priority = 99, //This is fun to know so I am bumping it
+                    Priority = 90, //This is fun to know so I am bumping it
                     Requirements = new HashSet<string> { "MaxKillStreak" }
+                },
+                new TitleEntry(leaders.MaxKillStreakWhileSolo)
+                {
+                    TitleName = "Solo Rampage",
+                    Description = $"max solo kill streak - {leaders.MaxKillStreakWhileSolo.Value.MaxKillStreakWhileSolo}",
+                    Priority = 95,
+                    Requirements = new HashSet<string> { "MaxKillStreakWhileSolo" }
                 },
                 new TitleEntry(leaders.MostAliveTime)
                 {
