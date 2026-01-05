@@ -72,11 +72,6 @@ namespace StatsMod
 
         public void CalculateAndStoreTitles(GameStatsSnapshot snapshot)
         {
-            CalculateTitles(snapshot);
-        }
-
-        public void CalculateTitles(GameStatsSnapshot snapshot)
-        {
             currentTitles.Clear();
 
             if (snapshot?.ActivePlayers == null || snapshot.ActivePlayers.Count <= 1)
@@ -104,6 +99,7 @@ namespace StatsMod
             currentTitles.AddRange(fiveCategoryTitles);
 
             RemoveDominatedTitles();
+            BalanceTitlePriorities();
 
             currentTitles = currentTitles.OrderByDescending(t => t.Priority).ToList();
 
@@ -207,6 +203,23 @@ namespace StatsMod
             currentTitles.RemoveAll(t => toRemove.Contains(t));
         }
 
+        // To prevent one player from dominating all titles due to sheer number of categories,
+        // we increase the priority of titles held by other players. Makes it more fun.
+
+        private void BalanceTitlePriorities()
+        {
+            for (int i = 0; i < currentTitles.Count; i++)
+            {
+                var currentTitle = currentTitles[i];
+                for (int j = 0; j < currentTitles.Count; j++)
+                {
+                    if (i != j && currentTitles[j].Player != currentTitle.Player)
+                    {
+                        currentTitles[j].Priority += 5;
+                    }
+                }
+            }
+        }
 
         private List<TitleEntry> CreateOneCategoryTitles(StatLeaders leaders, int defaultPriority = 10)
         {
@@ -230,7 +243,7 @@ namespace StatsMod
                 {
                     TitleName = "1000 Meters Club",
                     Description = $"reached {leaders.HighestPoint.Value.HighestPoint:F1}m altitude",
-                    Priority = leaders.HighestPoint.Value.HighestPoint >= 1000 ? 25 : 0,
+                    Priority = leaders.HighestPoint.Value.HighestPoint >= 1000 ? 25 : -1000,
                     Requirements = new HashSet<string> { "HighestPoint" }
                 },
                 new TitleEntry(leaders.MostAirborneTime)
@@ -543,15 +556,18 @@ namespace StatsMod
             var explosionsWinner = leaders.MostExplosionsKills.Key;
             var gunsWinner = leaders.MostGunsKills.Key;
             var bladeWinner = leaders.MostBladeKills.Key;
+            var maxKillStreakWhileSoloWinner = leaders.MaxKillStreakWhileSolo.Key;
+            var mostWaveClutchesWinner = leaders.MostWaveClutches.Key;
 
-            if (offenseWinner == altitudeWinner && offenseWinner == airborneWinner)
+
+            if (bladeWinner == altitudeWinner && offenseWinner == airborneWinner)
             {
-                titles.Add(new TitleEntry(leaders.MostOffense)
+                titles.Add(new TitleEntry(leaders.MostBladeKills)
                 {
                     TitleName = "ICBM",
                     Description = "strikes from above with deadly precision",
                     Priority = defaultPriority,
-                    Requirements = new HashSet<string> { "MostOffense", "HighestPoint", "MostAirborneTime" }
+                    Requirements = new HashSet<string> { "MostBladeKills", "HighestPoint", "MostAirborneTime" }
                 });
             }
 
@@ -559,7 +575,7 @@ namespace StatsMod
             {
                 titles.Add(new TitleEntry(leaders.MostWebSwings)
                 {
-                    TitleName = "Ninja",
+                    TitleName = "Phantom Blade",
                     Description = "High above and untouchable",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostWebSwings", "HighestPoint", "LeastDamageTaken" }
@@ -592,12 +608,24 @@ namespace StatsMod
             {
                 titles.Add(new TitleEntry(leaders.MostOffense)
                 {
-                    TitleName = "Ordered Chaos",
-                    Description = "untouchable destruction",
+                    TitleName = "Agent of Chaos",
+                    Description = "trust no one",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostOffense", "LeastDamageTaken", "MostFriendlyFire" }
                 });
             }
+
+            if (maxKillStreakWhileSoloWinner == mostWaveClutchesWinner && maxKillStreakWhileSoloWinner == friendlyFireWinner)
+            {
+                titles.Add(new TitleEntry(leaders.MostFriendlyFire)
+                {
+                    TitleName = "Ordered Chaos",
+                    Description = "There is method to the madness",
+                    Priority = defaultPriority,
+                    Requirements = new HashSet<string> { "MostFriendlyFire", "MaxKillStreakWhileSolo", "MostWaveClutches" }
+                });
+            }
+
 
             if (offenseLoser == damageLoser && offenseLoser == friendlyFireWinner)
             {
@@ -629,17 +657,6 @@ namespace StatsMod
                     Description = "lives in the shadows below",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "LowestPoint", "LeastAirborneTime", "LeastWebSwings" }
-                });
-            }
-
-            if (bladeWinner == airborneWinner && bladeWinner == damageLoser)
-            {
-                titles.Add(new TitleEntry(leaders.MostBladeKills)
-                {
-                    TitleName = "Phantom Blade",
-                    Description = "untouchable aerial blade master",
-                    Priority = defaultPriority,
-                    Requirements = new HashSet<string> { "MostBladeKills", "MostAirborneTime", "LeastDamageTaken" }
                 });
             }
 
@@ -749,17 +766,17 @@ namespace StatsMod
             var offenseWinner = leaders.MostOffense.Key;
             var damageLoser = leaders.LeastDamageTaken.Key;
             var altitudeWinner = leaders.HighestPoint.Key;
-            var friendlyFireLoser = leaders.LeastFriendlyFire.Key;
+            var friendlyFireWinner = leaders.MostFriendlyFire.Key;
             var explosionsWinner = leaders.MostExplosionsKills.Key;
 
-            if (offenseWinner == damageLoser && offenseWinner == altitudeWinner && offenseWinner == friendlyFireLoser && offenseWinner == explosionsWinner)
+            if (offenseWinner == damageLoser && offenseWinner == altitudeWinner && offenseWinner == friendlyFireWinner && offenseWinner == explosionsWinner)
             {
                 titles.Add(new TitleEntry(leaders.MostOffense)
                 {
                     TitleName = "Supernova",
                     Description = "godlike explosive perfection",
                     Priority = defaultPriority,
-                    Requirements = new HashSet<string> { "MostOffense", "LeastDamageTaken", "HighestPoint", "LeastFriendlyFire", "MostExplosionsKills" }
+                    Requirements = new HashSet<string> { "MostOffense", "LeastDamageTaken", "HighestPoint", "friendlyFireWinner", "MostExplosionsKills" }
                 });
             }
 

@@ -31,7 +31,6 @@ namespace StatsMod
             try
             {
                 StatsManager.Instance.StopVersusSession();
-                Logger.LogInfo("Versus mode stopped via StatsManager");
             }
             catch (Exception ex)
             {
