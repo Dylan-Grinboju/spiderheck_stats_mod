@@ -54,10 +54,10 @@ namespace StatsMod
         public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostBladeKills { get; set; }
     }
 
-    public class TitleLogic
+    public class TitlesManager
     {
-        private static TitleLogic _instance;
-        public static TitleLogic Instance => _instance ?? (_instance = new TitleLogic());
+        private static TitlesManager _instance;
+        public static TitlesManager Instance => _instance ?? (_instance = new TitlesManager());
 
         private List<TitleEntry> currentTitles = new List<TitleEntry>();
         private bool hasGameEndedTitles = false;
@@ -65,6 +65,11 @@ namespace StatsMod
         public List<TitleEntry> CurrentTitles => new List<TitleEntry>(currentTitles);
         public bool HasGameEndedTitles => hasGameEndedTitles;
         public int TitleCount => currentTitles.Count;
+
+        public void CalculateAndStoreTitles(GameStatsSnapshot snapshot)
+        {
+            CalculateTitles(snapshot);
+        }
 
         public void CalculateTitles(GameStatsSnapshot snapshot)
         {

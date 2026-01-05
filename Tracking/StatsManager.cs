@@ -79,7 +79,7 @@ namespace StatsMod
             GameStatsSnapshot statsSnapshot = GetStatsSnapshot();
 
             // Calculate titles for this game
-            UIManager.CalculateAndStoreTitles(statsSnapshot);
+            TitlesManager.Instance.CalculateAndStoreTitles(statsSnapshot);
             var titlesUI = UIManager.Instance?.GetTitlesUI();
             if (titlesUI != null)
             {

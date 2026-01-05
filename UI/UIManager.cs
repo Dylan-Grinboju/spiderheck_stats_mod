@@ -423,11 +423,6 @@ namespace StatsMod
             Instance?.ShowTitlesUI();
         }
 
-        public static void CalculateAndStoreTitles(GameStatsSnapshot snapshot)
-        {
-            Instance?.titlesUI?.CalculateTitles(snapshot);
-        }
-
         public static void ClearTitlesForNewGame()
         {
             Instance?.titlesUI?.ClearTitlesForNewGame();

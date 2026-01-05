@@ -78,14 +78,14 @@ namespace StatsMod
         {
             if (!ModConfig.TitlesEnabled) return;
             isDisplayVisible = true;
-            if (TitleLogic.Instance.HasGameEndedTitles && TitleLogic.Instance.TitleCount > 0 && !hasAnimationPlayed)
+            if (TitlesManager.Instance.HasGameEndedTitles && TitlesManager.Instance.TitleCount > 0 && !hasAnimationPlayed)
             {
                 StartAnimation();
                 hasAnimationPlayed = true;
             }
-            else if (TitleLogic.Instance.HasGameEndedTitles && TitleLogic.Instance.TitleCount > 0)
+            else if (TitlesManager.Instance.HasGameEndedTitles && TitlesManager.Instance.TitleCount > 0)
             {
-                titlesToShow = TitleLogic.Instance.TitleCount;
+                titlesToShow = TitlesManager.Instance.TitleCount;
             }
         }
 
@@ -93,7 +93,7 @@ namespace StatsMod
         {
             if (!ModConfig.TitlesEnabled) return;
             isDisplayVisible = true;
-            titlesToShow = TitleLogic.Instance.TitleCount;
+            titlesToShow = TitlesManager.Instance.TitleCount;
         }
 
         public void HideDisplay()
@@ -124,14 +124,14 @@ namespace StatsMod
         {
             if (isAnimating)
             {
-                titlesToShow = TitleLogic.Instance.TitleCount;
+                titlesToShow = TitlesManager.Instance.TitleCount;
                 isAnimating = false;
             }
         }
 
         public void ClearTitlesForNewGame()
         {
-            TitleLogic.Instance.ClearTitles();
+            TitlesManager.Instance.ClearTitles();
             titlesToShow = 0;
             isAnimating = false;
             hasAnimationPlayed = false;
@@ -141,7 +141,7 @@ namespace StatsMod
         #region Animation
         private void StartAnimation()
         {
-            if (TitleLogic.Instance.TitleCount == 0) return;
+            if (TitlesManager.Instance.TitleCount == 0) return;
             isAnimating = true;
             titlesToShow = 0;
             animationTimer = 0f;
@@ -162,10 +162,10 @@ namespace StatsMod
             int shouldShow = Mathf.FloorToInt(animationTimer / revealDelay);
             if (shouldShow > titlesToShow)
             {
-                titlesToShow = Mathf.Min(shouldShow, TitleLogic.Instance.TitleCount);
+                titlesToShow = Mathf.Min(shouldShow, TitlesManager.Instance.TitleCount);
             }
 
-            if (titlesToShow >= TitleLogic.Instance.TitleCount)
+            if (titlesToShow >= TitlesManager.Instance.TitleCount)
             {
                 isAnimating = false;
             }
@@ -173,20 +173,12 @@ namespace StatsMod
         #endregion
 
         #region Public Methods
-        public void CalculateTitles(GameStatsSnapshot snapshot)
-        {
-            TitleLogic.Instance.CalculateTitles(snapshot);
-        }
 
         public List<TitleEntry> GetCurrentTitles()
         {
-            return TitleLogic.Instance.CurrentTitles;
+            return TitlesManager.Instance.CurrentTitles;
         }
 
-        public bool HasPendingTitles()
-        {
-            return TitleLogic.Instance.HasGameEndedTitles && TitleLogic.Instance.TitleCount > 0;
-        }
         #endregion
 
         #region Style Management
@@ -244,7 +236,7 @@ namespace StatsMod
             GUILayout.Label("Titles", headerStyle);
             GUILayout.Space(UIManager.ScaleValue(40f));
 
-            if (!TitleLogic.Instance.HasGameEndedTitles || TitleLogic.Instance.TitleCount == 0)
+            if (!TitlesManager.Instance.HasGameEndedTitles || TitlesManager.Instance.TitleCount == 0)
             {
                 var noTitlesStyle = new GUIStyle(cardPlayerNameStyle) { normal = { textColor = UIManager.Gray } };
                 GUILayout.Label("No titles to display", noTitlesStyle);
@@ -263,7 +255,7 @@ namespace StatsMod
         {
             float headerHeight = UIManager.ScaleValue(HEADER_HEIGHT);
 
-            if (!TitleLogic.Instance.HasGameEndedTitles || TitleLogic.Instance.TitleCount == 0)
+            if (!TitlesManager.Instance.HasGameEndedTitles || TitlesManager.Instance.TitleCount == 0)
             {
                 return headerHeight + UIManager.ScaleValue(100f);
             }
@@ -274,7 +266,7 @@ namespace StatsMod
 
         private void DrawTitles(float contentWidth)
         {
-            var titles = TitleLogic.Instance.CurrentTitles;
+            var titles = TitlesManager.Instance.CurrentTitles;
             int count = Mathf.Min(titlesToShow, titles.Count, MAX_TITLES);
             if (count == 0)
             {

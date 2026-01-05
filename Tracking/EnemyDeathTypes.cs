@@ -132,7 +132,6 @@ namespace StatsMod
 
                 if (laserColliderLayersField == null || beamWidthField == null)
                 {
-                    Logger.LogWarning("Could not access DeathCube fields for laser damage tracking");
                     return;
                 }
 
@@ -181,7 +180,6 @@ namespace StatsMod
 
                 if (damageLayersField == null || beamWidthField == null || beamLengthField == null || pointField == null)
                 {
-                    Logger.LogWarning("Could not access DeathRay fields for laser damage tracking");
                     return;
                 }
 
@@ -233,7 +231,6 @@ namespace StatsMod
                 var damageEnemiesField = AccessTools.Field(typeof(EnergyBall), "damageEnemies");
                 if (damageEnemiesField == null)
                 {
-                    Logger.LogWarning("Could not access EnergyBall damageEnemies field for damage tracking");
                     return;
                 }
 
@@ -245,7 +242,6 @@ namespace StatsMod
 
                 if (isEnemyMethod == null || isDamageableMethod == null)
                 {
-                    Logger.LogWarning("Could not access EnergyBall IsEnemy or IsDamageable methods");
                     return;
                 }
 
@@ -763,7 +759,6 @@ namespace StatsMod
                     {
                         // Override the ulong.MaxValue that was set by the original method
                         __instance.ownerWeaponClientId = (ulong)playerController.playerID.Value;
-                        Logger.LogInfo($"Fixed weapon {__instance.serializationWeaponName} owner to: {playerController.playerID.Value}");
                     }
 
                 }
