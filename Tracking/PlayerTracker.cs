@@ -45,6 +45,8 @@ namespace StatsMod
             public ulong PlayerId { get; set; }
             public int Deaths { get; set; }
             public int Kills { get; set; }
+            public int KillsWhileAirborne { get; set; }
+            public int KillsWhileSolo { get; set; }
             public int FriendlyKills { get; set; }
             public int EnemyShieldsTakenDown { get; set; }
             public int FriendlyShieldsHit { get; set; }
@@ -73,6 +75,8 @@ namespace StatsMod
                 PlayerId = id;
                 Deaths = 0;
                 Kills = 0;
+                KillsWhileAirborne = 0;
+                KillsWhileSolo = 0;
                 FriendlyKills = 0;
                 EnemyShieldsTakenDown = 0;
                 FriendlyShieldsHit = 0;
@@ -272,6 +276,8 @@ namespace StatsMod
             {
                 entry.Value.Deaths = 0;
                 entry.Value.Kills = 0;
+                entry.Value.KillsWhileAirborne = 0;
+                entry.Value.KillsWhileSolo = 0;
                 entry.Value.FriendlyKills = 0;
                 entry.Value.EnemyShieldsTakenDown = 0;
                 entry.Value.FriendlyShieldsHit = 0;
@@ -295,6 +301,12 @@ namespace StatsMod
             return new Dictionary<PlayerInput, PlayerData>(activePlayers);
         }
 
+        public bool IsOnlyOnePlayerAlive()
+        {
+            int aliveCount = activePlayers.Count(p => p.Value.CurrentAliveStartTime.HasValue);
+            return aliveCount == 1;
+        }
+
         public void IncrementPlayerKill(PlayerInput player)
         {
             if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
@@ -304,6 +316,21 @@ namespace StatsMod
                 if (data.KillStreak > data.MaxKillStreak)
                 {
                     data.MaxKillStreak = data.KillStreak;
+                }
+                
+                SpiderController spider = player.GetComponentInChildren<SpiderController>();
+                if (spider != null)
+                {
+                    Stabilizer stabilizer = spider.GetComponentInChildren<Stabilizer>();
+                    if (stabilizer != null && !stabilizer.grounded)
+                    {
+                        data.KillsWhileAirborne++;
+                    }
+                }
+
+                if (IsOnlyOnePlayerAlive())
+                {
+                    data.KillsWhileSolo++;
                 }
             }
         }

@@ -35,6 +35,8 @@ namespace StatsMod
         public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> LowestPoint { get; set; }
         public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostAirborneTime { get; set; }
         public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> LeastAirborneTime { get; set; }
+        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostKillsWhileAirborne { get; set; }
+        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostKillsWhileSolo { get; set; }
         public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MaxKillStreak { get; set; }
         public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostAliveTime { get; set; }
 
@@ -122,6 +124,12 @@ namespace StatsMod
             var airborneRanked = players.OrderByDescending(p => p.Value.AirborneTime).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
             leaders.MostAirborneTime = airborneRanked[0];
             leaders.LeastAirborneTime = airborneRanked[airborneRanked.Count - 1];
+
+            var airborneKillsRanked = players.OrderByDescending(p => p.Value.KillsWhileAirborne).ThenByDescending(p => p.Value.Kills).ToList();
+            leaders.MostKillsWhileAirborne = airborneKillsRanked[0];
+
+            var soloKillsRanked = players.OrderByDescending(p => p.Value.KillsWhileSolo).ThenByDescending(p => p.Value.Kills).ToList();
+            leaders.MostKillsWhileSolo = soloKillsRanked[0];
 
             var streakRanked = players.OrderByDescending(p => p.Value.MaxKillStreak).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
             leaders.MaxKillStreak = streakRanked[0];
@@ -216,6 +224,20 @@ namespace StatsMod
                     Description = "most airborne time",
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostAirborneTime" }
+                },
+                new TitleEntry(leaders.MostKillsWhileAirborne)
+                {
+                    TitleName = "Sky Hunter",
+                    Description = "most kills while airborne",
+                    Priority = defaultPriority,
+                    Requirements = new HashSet<string> { "MostKillsWhileAirborne" }
+                },
+                new TitleEntry(leaders.MostKillsWhileSolo)
+                {
+                    TitleName = "Lone Wolf",
+                    Description = "most kills while last alive",
+                    Priority = defaultPriority,
+                    Requirements = new HashSet<string> { "MostKillsWhileSolo" }
                 },
                 new TitleEntry(leaders.MaxKillStreak)
                 {
