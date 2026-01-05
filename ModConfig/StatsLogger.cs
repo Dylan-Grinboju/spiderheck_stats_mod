@@ -59,10 +59,12 @@ namespace StatsMod
 
         private string FormatGameStats(GameStatsSnapshot statsSnapshot)
         {
+            string modeHeader = statsSnapshot.GameMode == GameMode.Versus ? "VERSUS MODE" : "SURVIVAL MODE";
+
             var lines = new List<string>
             {
                 "=".PadRight(60, '='),
-                "SPIDERHECK SURVIVAL MODE STATISTICS",
+                $"SPIDERHECK {modeHeader} STATISTICS",
                 "=".PadRight(60, '='),
                 "",
                 "GAME INFORMATION:",

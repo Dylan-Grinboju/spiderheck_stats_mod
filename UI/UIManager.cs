@@ -205,7 +205,7 @@ namespace StatsMod
             }
 
             // If in a game, clear titles and show empty titles screen
-            if (StatsManager.Instance.IsSurvivalActive)
+            if (StatsManager.Instance.IsActive)
             {
                 titlesUI?.ClearTitlesForNewGame();
             }

@@ -16,8 +16,11 @@ namespace StatsMod
         private EnemiesTracker enemiesTracker;
 
         private bool isSurvivalActive = false;
-        private DateTime survivalStartTime;
+        private bool isVersusActive = false;
+        private DateTime sessionStartTime;
         private TimeSpan lastGameDuration;
+        private GameMode currentGameMode = GameMode.None;
+        private GameMode lastGameMode = GameMode.None;
 
         private bool isPaused = false;
         private DateTime pauseStartTime;
@@ -25,8 +28,9 @@ namespace StatsMod
         private bool hasPendingTitles = false;
         private List<TitleEntry> lastGameTitles = new List<TitleEntry>();
 
-        public bool IsSurvivalActive => isSurvivalActive;
+        public bool IsActive => isSurvivalActive || isVersusActive;
         public bool HasPendingTitles => hasPendingTitles;
+        public GameMode LastGameMode => lastGameMode;
 
         private StatsManager()
         {
@@ -37,32 +41,56 @@ namespace StatsMod
 
         public void StartSurvivalSession()
         {
-            if (isSurvivalActive)
+            StartSession(GameMode.Survival);
+        }
+
+        public void StartVersusSession()
+        {
+            StartSession(GameMode.Versus);
+        }
+
+        private void StartSession(GameMode mode)
+        {
+            if (IsActive)
             {
-                Logger.LogWarning("Attempting to start survival session while one is already active");
+                Logger.LogWarning($"Attempting to start {mode} session while one is already active");
                 return;
             }
 
-            isSurvivalActive = true;
-            survivalStartTime = DateTime.Now;
+            isSurvivalActive = mode == GameMode.Survival;
+            isVersusActive = mode == GameMode.Versus;
+            currentGameMode = mode;
+            sessionStartTime = DateTime.Now;
 
             playerTracker.ResetPlayerStats();
             enemiesTracker.ResetEnemiesKilled();
             playerTracker.StartAllAliveTimers();
 
-            // Clear pending titles from previous game
             hasPendingTitles = false;
             lastGameTitles.Clear();
             UIManager.ClearTitlesForNewGame();
 
-            Logger.LogInfo($"Survival session started");
+            Logger.LogInfo($"{mode} session started");
         }
 
         public void StopSurvivalSession()
         {
-            if (!isSurvivalActive)
+            StopSession(GameMode.Survival);
+        }
+
+        public void StopVersusSession()
+        {
+            StopSession(GameMode.Versus);
+        }
+
+        private void StopSession(GameMode mode)
+        {
+            bool isCorrectMode = (mode == GameMode.Survival && isSurvivalActive) ||
+                                 (mode == GameMode.Versus && isVersusActive);
+
+            if (!isCorrectMode)
             {
-                Logger.LogWarning("Attempting to stop survival session when none is active");
+                Logger.LogWarning($"Attempting to stop {mode} session when none is active");
                 return;
             }
 
@@ -70,9 +98,10 @@ namespace StatsMod
             playerTracker.StopAllWebSwingTimers();
             playerTracker.StopAllAirborneTimers();
 
-            TimeSpan sessionTime = DateTime.Now - survivalStartTime;
+            TimeSpan sessionTime = DateTime.Now - sessionStartTime;
             lastGameDuration = sessionTime;
             isSurvivalActive = false;
+            isVersusActive = false;
             isPaused = false;
 
             GameStatsSnapshot statsSnapshot = GetStatsSnapshot();
@@ -92,21 +121,23 @@ namespace StatsMod
                 StatsLogger.Instance.LogGameStats(statsSnapshot);
             }
 
-            Logger.LogInfo($"Survival session stopped. Duration: {FormatTimeSpan(sessionTime)}");
+            lastGameMode = currentGameMode;
+            currentGameMode = GameMode.None;
+            Logger.LogInfo($"{mode} session stopped. Duration: {FormatTimeSpan(sessionTime)}");
         }
 
         public TimeSpan GetCurrentSessionTime()
         {
-            if (!isSurvivalActive)
+            if (!IsActive)
                 return TimeSpan.Zero;
 
             DateTime endTime = isPaused ? pauseStartTime : DateTime.Now;
-            return endTime - survivalStartTime;
+            return endTime - sessionStartTime;
         }
 
         public void PauseTimers()
         {
-            if (isPaused || !isSurvivalActive)
+            if (isPaused || !IsActive)
                 return;
 
             isPaused = true;
@@ -116,11 +147,11 @@ namespace StatsMod
 
         public void ResumeTimers()
         {
-            if (!isPaused || !isSurvivalActive)
+            if (!isPaused || !IsActive)
                 return;
 
             TimeSpan pausedDuration = DateTime.Now - pauseStartTime;
-            survivalStartTime = survivalStartTime.Add(pausedDuration);
+            sessionStartTime = sessionStartTime.Add(pausedDuration);
             isPaused = false;
             playerTracker.ResumeTimers();
         }
@@ -224,6 +255,8 @@ namespace StatsMod
             return new GameStatsSnapshot
             {
                 IsSurvivalActive = isSurvivalActive,
+                IsVersusActive = isVersusActive,
+                GameMode = currentGameMode,
                 CurrentSessionTime = GetCurrentSessionTime(),
                 LastGameDuration = lastGameDuration,
                 ActivePlayers = new Dictionary<PlayerInput, PlayerTracker.PlayerData>(playerTracker.GetActivePlayers()),
@@ -240,10 +273,19 @@ namespace StatsMod
     public class GameStatsSnapshot
     {
         public bool IsSurvivalActive { get; set; }
+        public bool IsVersusActive { get; set; }
+        public GameMode GameMode { get; set; }
         public TimeSpan CurrentSessionTime { get; set; }
         public TimeSpan LastGameDuration { get; set; }
         public Dictionary<PlayerInput, PlayerTracker.PlayerData> ActivePlayers { get; set; }
         public int EnemiesKilled { get; set; }
         public List<TitleEntry> Titles { get; set; }
+    }
+
+    public enum GameMode
+    {
+        None,
+        Survival,
+        Versus
     }
 }

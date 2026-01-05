@@ -785,7 +785,7 @@ namespace StatsMod
         {
             try
             {
-                if (StatsManager.Instance.IsSurvivalActive)
+                if (StatsManager.Instance.IsActive)
                 {
                     StatsManager.Instance.RecordPlayerRespawn(__instance);
                 }
@@ -832,7 +832,7 @@ namespace StatsMod
                     return;
                 }
 
-                if (__instance.spiderController != null && StatsManager.Instance.IsSurvivalActive)
+                if (__instance.spiderController != null && StatsManager.Instance.IsActive)
                 {
                     PlayerInput playerInput = __instance.spiderController.GetComponentInParent<PlayerInput>();
                     if (playerInput != null)
@@ -879,7 +879,7 @@ namespace StatsMod
         {
             try
             {
-                if (!StatsManager.Instance.IsSurvivalActive)
+                if (!StatsManager.Instance.IsActive)
                     return;
 
                 SpiderController spider = __instance.GetComponentInParent<SpiderController>();

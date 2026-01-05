@@ -57,11 +57,18 @@ namespace StatsMod
             {
                 if (scene.name.Equals("Lobby"))
                 {
-                    // Check if we have pending titles from a finished game
                     if (StatsManager.Instance.HasPendingTitles)
                     {
-                        Logger.LogInfo("Returned to lobby with pending titles, showing TitlesUI");
-                        UIManager.AutoShowTitles();
+                        if (StatsManager.Instance.LastGameMode == GameMode.Versus)
+                        {
+                            Logger.LogInfo("Returned to lobby from versus, showing BigUI");
+                            UIManager.AutoPullHUD();
+                        }
+                        else
+                        {
+                            Logger.LogInfo("Returned to lobby with pending titles, showing TitlesUI");
+                            UIManager.AutoShowTitles();
+                        }
                     }
                 }
             }
