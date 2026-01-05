@@ -55,7 +55,7 @@ namespace StatsMod
         #endregion
 
         #region Other Widths
-        public float WIDTH_TIME_LABEL = 100f;
+        public float WIDTH_TIME_LABEL = 150f;
         public float WIDTH_LAST_GAME_LABEL = 300f;
         public float WIDTH_ENEMIES_LABEL = 300f;
         public float WIDTH_CARD_HALF = 0.48f;

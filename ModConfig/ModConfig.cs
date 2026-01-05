@@ -10,29 +10,29 @@ namespace StatsMod
         private const string ModId = StatsMod.ModId;
 
         // Display settings
-        public static bool ShowStatsWindow => Config.GetModConfigValue<bool>(ModId, "display.showStatsWindow", true);
-        public static bool ShowPlayers => Config.GetModConfigValue<bool>(ModId, "display.showPlayers", true);
-        public static bool ShowPlayTime => Config.GetModConfigValue<bool>(ModId, "display.showPlayTime", true);
-        public static bool ShowEnemyDeaths => Config.GetModConfigValue<bool>(ModId, "display.showEnemyDeaths", true);
+        public static bool ShowStatsWindow => Config.GetModConfigValue(ModId, "display.showStatsWindow", true);
+        public static bool ShowPlayers => Config.GetModConfigValue(ModId, "display.showPlayers", true);
+        public static bool ShowPlayTime => Config.GetModConfigValue(ModId, "display.showPlayTime", true);
+        public static bool ShowEnemyDeaths => Config.GetModConfigValue(ModId, "display.showEnemyDeaths", true);
 
-        public static int DisplayPositionX => ValidatePositionX(Config.GetModConfigValue<int>(ModId, "display.position.x", 10));
-        public static int DisplayPositionY => ValidatePositionY(Config.GetModConfigValue<int>(ModId, "display.position.y", 10));
+        public static int DisplayPositionX => ValidatePositionX(Config.GetModConfigValue(ModId, "display.position.x", 10));
+        public static int DisplayPositionY => ValidatePositionY(Config.GetModConfigValue(ModId, "display.position.y", 10));
 
         // UI Scaling settings
-        public static bool AutoScale => Config.GetModConfigValue<bool>(ModId, "display.autoScale", true);
-        public static float UIScale => ValidateScale(Config.GetModConfigValue<float>(ModId, "display.uiScale", 1.0f));
-        public static float BigUIOpacity => ValidateOpacity(Config.GetModConfigValue<float>(ModId, "display.bigUIOpacity", 100f));
+        public static bool AutoScale => Config.GetModConfigValue(ModId, "display.autoScale", true);
+        public static float UIScale => ValidateScale(Config.GetModConfigValue(ModId, "display.uiScale", 1.0f));
+        public static float BigUIOpacity => ValidateOpacity(Config.GetModConfigValue(ModId, "display.bigUIOpacity", 100f));
 
         // Tracking settings
-        public static bool TrackingEnabled => Config.GetModConfigValue<bool>(ModId, "tracking.enabled", true);
-        public static bool SaveStatsToFile => Config.GetModConfigValue<bool>(ModId, "tracking.saveStatsToFile", true);
+        public static bool TrackingEnabled => Config.GetModConfigValue(ModId, "tracking.enabled", true);
+        public static bool SaveStatsToFile => Config.GetModConfigValue(ModId, "tracking.saveStatsToFile", true);
 
         // Updater settings
-        public static bool CheckForUpdates => Config.GetModConfigValue<bool>(ModId, "updater.checkForUpdates", true);
+        public static bool CheckForUpdates => Config.GetModConfigValue(ModId, "updater.checkForUpdates", true);
 
         // Titles settings
-        public static bool TitlesEnabled => Config.GetModConfigValue<bool>(ModId, "titles.enabled", true);
-        public static float TitlesRevealDelaySeconds => ValidateTitlesRevealDelay(Config.GetModConfigValue<float>(ModId, "titles.revealDelaySeconds", 2.0f));
+        public static bool TitlesEnabled => Config.GetModConfigValue(ModId, "titles.enabled", true);
+        public static float TitlesRevealDelaySeconds => ValidateTitlesRevealDelay(Config.GetModConfigValue(ModId, "titles.revealDelaySeconds", 2.0f));
 
         private static float ValidateTitlesRevealDelay(float value)
         {
@@ -69,9 +69,8 @@ namespace StatsMod
             }
             if (Screen.width <= value)
             {
-                int clamped = Math.Max(0, Screen.width - 10);
-                Logger.LogWarning($"Position value {value} exceeds screen width {Screen.width}, clamping to {clamped}");
-                return clamped;
+                Logger.LogWarning($"Position value {value} exceeds screen width {Screen.width}, clamping to 0");
+                return 0;
             }
             return value;
         }

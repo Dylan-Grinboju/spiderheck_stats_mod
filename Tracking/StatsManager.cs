@@ -27,7 +27,6 @@ namespace StatsMod
 
         public bool IsSurvivalActive => isSurvivalActive;
         public bool HasPendingTitles => hasPendingTitles;
-        public List<TitleEntry> LastGameTitles => new List<TitleEntry>(lastGameTitles);
 
         private StatsManager()
         {
