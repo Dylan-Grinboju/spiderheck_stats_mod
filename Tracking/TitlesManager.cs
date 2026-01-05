@@ -37,6 +37,7 @@ namespace StatsMod
         public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> LeastAirborneTime { get; set; }
         public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostKillsWhileAirborne { get; set; }
         public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostKillsWhileSolo { get; set; }
+        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostWaveClutches { get; set; }
         public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MaxKillStreak { get; set; }
         public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostAliveTime { get; set; }
 
@@ -130,6 +131,9 @@ namespace StatsMod
 
             var soloKillsRanked = players.OrderByDescending(p => p.Value.KillsWhileSolo).ThenByDescending(p => p.Value.Kills).ToList();
             leaders.MostKillsWhileSolo = soloKillsRanked[0];
+
+            var waveClutchesRanked = players.OrderByDescending(p => p.Value.WaveClutches).ThenByDescending(p => p.Value.Kills).ToList();
+            leaders.MostWaveClutches = waveClutchesRanked[0];
 
             var streakRanked = players.OrderByDescending(p => p.Value.MaxKillStreak).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
             leaders.MaxKillStreak = streakRanked[0];
@@ -239,6 +243,13 @@ namespace StatsMod
                     Priority = defaultPriority,
                     Requirements = new HashSet<string> { "MostKillsWhileSolo" }
                 },
+                new TitleEntry(leaders.MostWaveClutches)
+                {
+                    TitleName = "Clutch Master",
+                    Description = "saved the team the most times",
+                    Priority = defaultPriority,
+                    Requirements = new HashSet<string> { "MostWaveClutches" }
+                },
                 new TitleEntry(leaders.MaxKillStreak)
                 {
                     TitleName = "Serial Killer",
@@ -337,6 +348,8 @@ namespace StatsMod
             var explosionsWinner = leaders.MostExplosionsKills.Key;
             var gunsWinner = leaders.MostGunsKills.Key;
             var bladeWinner = leaders.MostBladeKills.Key;
+            var clutchWinner = leaders.MostWaveClutches.Key;
+            var soloKillsWinner = leaders.MostKillsWhileSolo.Key;
 
             if (offenseWinner == altitudeWinner)
             {
@@ -447,7 +460,16 @@ namespace StatsMod
                     Requirements = new HashSet<string> { "MostOffense", "MostWebSwings" }
                 });
             }
-
+            if (clutchWinner == soloKillsWinner)
+            {
+                titles.Add(new TitleEntry(leaders.MostWaveClutches)
+                {
+                    TitleName = "Last Stand Hero",
+                    Description = "clutched waves and killed solo",
+                    Priority = defaultPriority,
+                    Requirements = new HashSet<string> { "MostWaveClutches", "MostKillsWhileSolo" }
+                });
+            }
             if (explosionsWinner == damageWinner)
             {
                 titles.Add(new TitleEntry(leaders.MostExplosionsKills)

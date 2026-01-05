@@ -112,6 +112,7 @@ namespace StatsMod
                     lines.Add($"    Kills: {playerData.Kills}");
                     lines.Add($"    Kills While Airborne: {playerData.KillsWhileAirborne}");
                     lines.Add($"    Kills While Solo: {playerData.KillsWhileSolo}");
+                    lines.Add($"    Wave Clutches: {playerData.WaveClutches}");
                     lines.Add($"    Max Kill Streak: {playerData.MaxKillStreak}");
                     lines.Add($"    Friendly Kills (PvP): {playerData.FriendlyKills}");
                     lines.Add($"    Deaths: {playerData.Deaths}");

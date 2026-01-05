@@ -48,6 +48,7 @@ namespace StatsMod
             public int KillsWhileAirborne { get; set; }
             public int KillsWhileSolo { get; set; }
             public int FriendlyKills { get; set; }
+            public int WaveClutches { get; set; }
             public int EnemyShieldsTakenDown { get; set; }
             public int FriendlyShieldsHit { get; set; }
             public int ShieldsLost { get; set; }
@@ -78,6 +79,7 @@ namespace StatsMod
                 KillsWhileAirborne = 0;
                 KillsWhileSolo = 0;
                 FriendlyKills = 0;
+                WaveClutches = 0;
                 EnemyShieldsTakenDown = 0;
                 FriendlyShieldsHit = 0;
                 ShieldsLost = 0;
@@ -279,6 +281,7 @@ namespace StatsMod
                 entry.Value.KillsWhileAirborne = 0;
                 entry.Value.KillsWhileSolo = 0;
                 entry.Value.FriendlyKills = 0;
+                entry.Value.WaveClutches = 0;
                 entry.Value.EnemyShieldsTakenDown = 0;
                 entry.Value.FriendlyShieldsHit = 0;
                 entry.Value.ShieldsLost = 0;
@@ -305,6 +308,14 @@ namespace StatsMod
         {
             int aliveCount = activePlayers.Count(p => p.Value.CurrentAliveStartTime.HasValue);
             return aliveCount == 1;
+        }
+
+        public PlayerInput GetOnlyAlivePlayer()
+        {
+            if (!IsOnlyOnePlayerAlive())
+                return null;
+
+            return activePlayers.FirstOrDefault(p => p.Value.CurrentAliveStartTime.HasValue).Key;
         }
 
         public void IncrementPlayerKill(PlayerInput player)
@@ -340,6 +351,14 @@ namespace StatsMod
             if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
             {
                 data.FriendlyKills++;
+            }
+        }
+
+        public void IncrementWaveClutch(PlayerInput player)
+        {
+            if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
+            {
+                data.WaveClutches++;
             }
         }
 

@@ -178,6 +178,28 @@ namespace StatsMod
             playerTracker.IncrementWeaponHit(player, weaponName);
         }
 
+        public void IncrementWaveClutch(PlayerInput player)
+        {
+            playerTracker.IncrementWaveClutch(player);
+        }
+
+        public void CheckWaveClutch()
+        {
+            if (!isSurvivalActive)
+                return;
+
+            var players = playerTracker.GetActivePlayers();
+            if (players.Count < 2)
+                return;
+
+            PlayerInput clutchPlayer = playerTracker.GetOnlyAlivePlayer();
+            if (clutchPlayer != null)
+            {
+                playerTracker.IncrementWaveClutch(clutchPlayer);
+                Logger.LogInfo($"Wave clutch recorded for player");
+            }
+        }
+
         public void IncrementEnemyShieldsTakenDown(PlayerInput player, string weaponName)
         {
             playerTracker.IncrementEnemyShieldsTakenDown(player);

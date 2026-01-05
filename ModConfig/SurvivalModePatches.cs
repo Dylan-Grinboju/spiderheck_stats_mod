@@ -1,6 +1,7 @@
 using HarmonyLib;
 using Logger = Silk.Logger;
 using System;
+using System.Collections;
 using UnityEngine.SceneManagement;
 
 namespace StatsMod
@@ -75,6 +76,22 @@ namespace StatsMod
             catch (Exception ex)
             {
                 Logger.LogError($"Error in LobbyController.OnSceneLoaded patch: {ex.Message}");
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(SurvivalMode), "CompleteWave")]
+    public class SurvivalModeCompleteWavePatch
+    {
+        static void Prefix(SurvivalMode __instance)
+        {
+            try
+            {
+                StatsManager.Instance.CheckWaveClutch();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error in SurvivalMode.CompleteWave patch: {ex.Message}");
             }
         }
     }
