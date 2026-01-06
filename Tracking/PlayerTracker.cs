@@ -12,19 +12,8 @@ namespace StatsMod
 {
     public class PlayerTracker
     {
-        private static PlayerTracker _instance;
-        public static PlayerTracker Instance
-        {
-            get
-            {
-                if (_instance == null)
-                {
-                    _instance = new PlayerTracker();
-                    Logger.LogInfo("Player tracker created via singleton access");
-                }
-                return _instance;
-            }
-        }
+        private static readonly Lazy<PlayerTracker> _lazy = new Lazy<PlayerTracker>(() => new PlayerTracker());
+        public static PlayerTracker Instance => _lazy.Value;
 
         private Dictionary<PlayerInput, PlayerData> activePlayers = new Dictionary<PlayerInput, PlayerData>();
 
@@ -146,6 +135,33 @@ namespace StatsMod
                 }
                 return AirborneTime;
             }
+
+            public void StopAliveTimer()
+            {
+                if (CurrentAliveStartTime.HasValue)
+                {
+                    TotalAliveTime += DateTime.Now - CurrentAliveStartTime.Value;
+                    CurrentAliveStartTime = null;
+                }
+            }
+
+            public void StopWebSwingTimer()
+            {
+                if (CurrentWebSwingStartTime.HasValue)
+                {
+                    WebSwingTime += DateTime.Now - CurrentWebSwingStartTime.Value;
+                    CurrentWebSwingStartTime = null;
+                }
+            }
+
+            public void StopAirborneTimer()
+            {
+                if (CurrentAirborneStartTime.HasValue)
+                {
+                    AirborneTime += DateTime.Now - CurrentAirborneStartTime.Value;
+                    CurrentAirborneStartTime = null;
+                }
+            }
         }
 
         public PlayerTracker()
@@ -172,16 +188,14 @@ namespace StatsMod
             SpiderCustomizer customizer = player.GetComponentInChildren<SpiderCustomizer>();
             if (customizer != null)
             {
-                var primaryColorField = typeof(SpiderCustomizer).GetField("_primaryColor", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (primaryColorField != null)
+                if (ReflectionCache.PrimaryColorField != null)
                 {
-                    Color primaryColor = (Color)primaryColorField.GetValue(customizer);
+                    Color primaryColor = (Color)ReflectionCache.PrimaryColorField.GetValue(customizer);
                     playerData.PlayerColor = primaryColor;
                 }
-                var secondaryColorField = typeof(SpiderCustomizer).GetField("_secondaryColor", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (secondaryColorField != null)
+                if (ReflectionCache.SecondaryColorField != null)
                 {
-                    Color secondaryColor = (Color)secondaryColorField.GetValue(customizer);
+                    Color secondaryColor = (Color)ReflectionCache.SecondaryColorField.GetValue(customizer);
                     playerData.SecondaryColor = secondaryColor;
                 }
             }
@@ -235,7 +249,7 @@ namespace StatsMod
                     data.Deaths++;
                     data.KillStreak = 0;
                     data.KillStreakWhileSolo = 0;
-                    StopAliveTimer(data);
+                    data.StopAliveTimer();
                     StopWebSwingTimer(playerInput);
                 }
                 else
@@ -437,12 +451,7 @@ namespace StatsMod
         {
             if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
             {
-                if (data.CurrentWebSwingStartTime.HasValue)
-                {
-                    TimeSpan swingSession = DateTime.Now - data.CurrentWebSwingStartTime.Value;
-                    data.WebSwingTime += swingSession;
-                    data.CurrentWebSwingStartTime = null;
-                }
+                data.StopWebSwingTimer();
             }
         }
 
@@ -462,12 +471,7 @@ namespace StatsMod
         {
             if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
             {
-                if (data.CurrentAirborneStartTime.HasValue)
-                {
-                    TimeSpan airborneSession = DateTime.Now - data.CurrentAirborneStartTime.Value;
-                    data.AirborneTime += airborneSession;
-                    data.CurrentAirborneStartTime = null;
-                }
+                data.StopAirborneTimer();
             }
         }
 
@@ -579,12 +583,7 @@ namespace StatsMod
         {
             foreach (var entry in activePlayers)
             {
-                if (entry.Value.CurrentAliveStartTime.HasValue)
-                {
-                    TimeSpan aliveSession = DateTime.Now - entry.Value.CurrentAliveStartTime.Value;
-                    entry.Value.TotalAliveTime += aliveSession;
-                    entry.Value.CurrentAliveStartTime = null;
-                }
+                entry.Value.StopAliveTimer();
             }
         }
 
@@ -592,12 +591,7 @@ namespace StatsMod
         {
             foreach (var entry in activePlayers)
             {
-                if (entry.Value.CurrentWebSwingStartTime.HasValue)
-                {
-                    TimeSpan swingSession = DateTime.Now - entry.Value.CurrentWebSwingStartTime.Value;
-                    entry.Value.WebSwingTime += swingSession;
-                    entry.Value.CurrentWebSwingStartTime = null;
-                }
+                entry.Value.StopWebSwingTimer();
             }
         }
 
@@ -605,12 +599,7 @@ namespace StatsMod
         {
             foreach (var entry in activePlayers)
             {
-                if (entry.Value.CurrentAirborneStartTime.HasValue)
-                {
-                    TimeSpan airborneSession = DateTime.Now - entry.Value.CurrentAirborneStartTime.Value;
-                    entry.Value.AirborneTime += airborneSession;
-                    entry.Value.CurrentAirborneStartTime = null;
-                }
+                entry.Value.StopAirborneTimer();
             }
         }
 
@@ -688,15 +677,6 @@ namespace StatsMod
             }
         }
 
-        private void StopAliveTimer(PlayerData data)
-        {
-            if (data.CurrentAliveStartTime.HasValue)
-            {
-                TimeSpan aliveSession = DateTime.Now - data.CurrentAliveStartTime.Value;
-                data.TotalAliveTime += aliveSession;
-                data.CurrentAliveStartTime = null;
-            }
-        }
 
         public void RecordPlayerRespawn(PlayerController playerController)
         {
@@ -721,226 +701,6 @@ namespace StatsMod
             catch (Exception ex)
             {
                 Logger.LogError($"Error recording player respawn: {ex.Message}");
-            }
-        }
-    }
-
-    [HarmonyPatch(typeof(PlayerInput), "OnEnable")]
-    public class PlayerInputEnablePatch
-    {
-        static void Postfix(PlayerInput __instance)
-        {
-            try
-            {
-                StatsManager.Instance.RegisterPlayer(__instance);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"Error in PlayerInput.OnEnable patch: {ex.Message}");
-            }
-        }
-    }
-
-    [HarmonyPatch(typeof(PlayerInput), "OnDisable")]
-    public class PlayerInputDisablePatch
-    {
-        static void Prefix(PlayerInput __instance)
-        {
-            try
-            {
-                StatsManager.Instance.UnregisterPlayer(__instance);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"Error in PlayerInput.OnDisable patch: {ex.Message}");
-            }
-        }
-    }
-    //I found that this is the function that is called when a spider dies, even if in astral
-    [HarmonyPatch(typeof(SpiderHealthSystem), "DisintegrateLegsAndDestroy")]
-    public class SpiderHealthSystemDisintegrateLegsAndDestroyPatch
-    {
-        static void Prefix(SpiderHealthSystem __instance)
-        {
-            try
-            {
-                StatsManager.Instance.RecordPlayerDeath(__instance);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"Error in SpiderHealthSystem.DisintegrateLegsAndDestroy patch: {ex.Message}");
-            }
-        }
-    }
-
-    //If the Astral player passed the round, the spider gets revived, and then we uncount the death. 
-    //Didn't find a simpler approach to this
-    [HarmonyPatch(typeof(SpiderHealthSystem), "DisableDeathEffect")]
-    public class SpiderHealthSystemDisableDeathEffect
-    {
-        static void Prefix(SpiderHealthSystem __instance)
-        {
-            try
-            {
-                StatsManager.Instance.UndoPlayerDeath(__instance);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"Error in SpiderHealthSystem.DisableDeathEffect patch: {ex.Message}");
-            }
-        }
-    }
-
-    [HarmonyPatch(typeof(SpiderCustomizer), "SetSpiderColor")]
-    public class SpiderCustomizerSetSpiderColorPatch
-    {
-        static void Postfix(SpiderCustomizer __instance)
-        {
-            try
-            {
-                PlayerInput playerInput = __instance.GetComponentInParent<PlayerInput>();
-                if (playerInput != null)
-                {
-                    // Access the private _primaryColor field using reflection
-                    var primaryColorField = typeof(SpiderCustomizer).GetField("_primaryColor", BindingFlags.NonPublic | BindingFlags.Instance);
-                    if (primaryColorField != null)
-                    {
-                        Color primaryColor = (Color)primaryColorField.GetValue(__instance);
-                        StatsManager.Instance.UpdatePlayerColor(playerInput, primaryColor);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"Error in SpiderCustomizer.SetSpiderColor patch: {ex.Message}");
-            }
-        }
-    }
-
-    [HarmonyPatch(typeof(PlayerController), "SpawnCharacter", new Type[] { typeof(Vector3), typeof(Quaternion) })]
-    public class PlayerControllerSpawnCharacterPatch
-    {
-        static void Postfix(PlayerController __instance)
-        {
-            try
-            {
-                if (StatsManager.Instance.IsActive)
-                {
-                    StatsManager.Instance.RecordPlayerRespawn(__instance);
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"Error in PlayerController.SpawnCharacter patch: {ex.Message}");
-            }
-        }
-    }
-
-    [HarmonyPatch(typeof(SpiderHealthSystem), "BreakShield")]
-    class PlayerShieldBreakPatch
-    {
-        static void Prefix(SpiderHealthSystem __instance)
-        {
-            try
-            {
-                if (__instance.rootObject != null)
-                {
-                    PlayerInput victimPlayerInput = __instance.rootObject.GetComponentInParent<PlayerInput>();
-                    if (victimPlayerInput != null)
-                    {
-                        StatsManager.Instance.IncrementShieldsLost(victimPlayerInput);
-                    }
-                }
-            }
-            catch (System.Exception ex)
-            {
-                Logger.LogError($"Error tracking player shield loss: {ex.Message}");
-            }
-        }
-    }
-
-    [HarmonyPatch(typeof(WebMaker), "ShootWeb")]
-    public class WebMakerShootWebPatch
-    {
-        static void Postfix(WebMaker __instance, GameObject ___target)
-        {
-            try
-            {
-                if (___target == null)
-                {
-                    return;
-                }
-
-                if (__instance.spiderController != null && StatsManager.Instance.IsActive)
-                {
-                    PlayerInput playerInput = __instance.spiderController.GetComponentInParent<PlayerInput>();
-                    if (playerInput != null)
-                    {
-                        StatsManager.Instance.IncrementWebSwings(playerInput);
-                        StatsManager.Instance.StartWebSwingTimer(playerInput);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"Error tracking web swing: {ex.Message}");
-            }
-        }
-    }
-
-    [HarmonyPatch(typeof(WebMaker), "DisconnectWeb")]
-    public class WebMakerDisconnectWebPatch
-    {
-        static void Prefix(WebMaker __instance)
-        {
-            try
-            {
-                if (__instance.spiderController != null)
-                {
-                    PlayerInput playerInput = __instance.spiderController.GetComponentInParent<PlayerInput>();
-                    if (playerInput != null)
-                    {
-                        StatsManager.Instance.StopWebSwingTimer(playerInput);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"Error stopping web swing timer: {ex.Message}");
-            }
-        }
-    }
-
-    [HarmonyPatch(typeof(Stabilizer), "FixedUpdate")]
-    public class StabilizerFixedUpdatePatch
-    {
-        static void Postfix(Stabilizer __instance)
-        {
-            try
-            {
-                if (!StatsManager.Instance.IsActive)
-                    return;
-
-                SpiderController spider = __instance.GetComponentInParent<SpiderController>();
-                if (spider == null) return;
-
-                PlayerInput playerInput = spider.GetComponentInParent<PlayerInput>();
-                if (playerInput == null) return;
-
-                StatsManager.Instance.UpdateHighestPoint(playerInput);
-
-                if (!__instance.grounded)
-                {
-                    StatsManager.Instance.StartAirborneTimer(playerInput);
-                }
-                else
-                {
-                    StatsManager.Instance.StopAirborneTimer(playerInput);
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"Error tracking airborne time: {ex.Message}");
             }
         }
     }

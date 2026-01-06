@@ -1,12 +1,10 @@
 using HarmonyLib;
 using Logger = Silk.Logger;
 using System;
-using System.Collections;
 using UnityEngine.SceneManagement;
 
 namespace StatsMod
 {
-
     [HarmonyPatch(typeof(SurvivalMode), "StartGame")]
     public class SurvivalModeStartPatch
     {
@@ -58,18 +56,18 @@ namespace StatsMod
             {
                 if (scene.name.Equals("Lobby"))
                 {
-                    if (StatsManager.Instance.HasPendingTitles)
+                    bool isVersus = StatsManager.Instance.LastGameMode == GameMode.Versus;
+                    bool isSurvivalWithNoTitles = StatsManager.Instance.LastGameMode == GameMode.Survival && TitlesManager.Instance.TitleCount == 0;
+
+                    if (isVersus || isSurvivalWithNoTitles)
                     {
-                        if (StatsManager.Instance.LastGameMode == GameMode.Versus)
-                        {
-                            Logger.LogInfo("Returned to lobby from versus, showing BigUI");
-                            UIManager.AutoPullHUD();
-                        }
-                        else
-                        {
-                            Logger.LogInfo("Returned to lobby with pending titles, showing TitlesUI");
-                            UIManager.AutoShowTitles();
-                        }
+                        Logger.LogInfo($"Returned to lobby from {StatsManager.Instance.LastGameMode}, showing BigUI");
+                        UIManager.AutoPullHUD();
+                    }
+                    else
+                    {
+                        Logger.LogInfo("Returned to lobby with pending titles, showing TitlesUI");
+                        UIManager.AutoShowTitles();
                     }
                 }
             }

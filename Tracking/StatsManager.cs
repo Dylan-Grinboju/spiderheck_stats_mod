@@ -25,11 +25,9 @@ namespace StatsMod
         private bool isPaused = false;
         private DateTime pauseStartTime;
 
-        private bool hasPendingTitles = false;
         private List<TitleEntry> lastGameTitles = new List<TitleEntry>();
 
         public bool IsActive => isSurvivalActive || isVersusActive;
-        public bool HasPendingTitles => hasPendingTitles;
         public GameMode LastGameMode => lastGameMode;
 
         private StatsManager()
@@ -66,7 +64,6 @@ namespace StatsMod
             enemiesTracker.ResetEnemiesKilled();
             playerTracker.StartAllAliveTimers();
 
-            hasPendingTitles = false;
             lastGameTitles.Clear();
             UIManager.ClearTitlesForNewGame();
 
@@ -106,13 +103,11 @@ namespace StatsMod
 
             GameStatsSnapshot statsSnapshot = GetStatsSnapshot();
 
-            // Calculate titles for this game
             TitlesManager.Instance.CalculateAndStoreTitles(statsSnapshot);
             var titlesUI = UIManager.Instance?.GetTitlesUI();
             if (titlesUI != null)
             {
                 lastGameTitles = titlesUI.GetCurrentTitles();
-                hasPendingTitles = lastGameTitles.Count > 0;
                 statsSnapshot.Titles = lastGameTitles;
             }
 
@@ -288,26 +283,8 @@ namespace StatsMod
 
         private string FormatTimeSpan(TimeSpan timeSpan)
         {
-            return $"{timeSpan.Hours:00}:{timeSpan.Minutes:00}:{timeSpan.Seconds:00}";
+            return TimeFormatUtils.FormatTimeSpan(timeSpan);
         }
     }
-
-    public class GameStatsSnapshot
-    {
-        public bool IsSurvivalActive { get; set; }
-        public bool IsVersusActive { get; set; }
-        public GameMode GameMode { get; set; }
-        public TimeSpan CurrentSessionTime { get; set; }
-        public TimeSpan LastGameDuration { get; set; }
-        public Dictionary<PlayerInput, PlayerTracker.PlayerData> ActivePlayers { get; set; }
-        public int EnemiesKilled { get; set; }
-        public List<TitleEntry> Titles { get; set; }
-    }
-
-    public enum GameMode
-    {
-        None,
-        Survival,
-        Versus
-    }
 }
+
