@@ -8,7 +8,6 @@ namespace StatsMod
     public class UIManager : MonoBehaviour
     {
         #region Singleton
-        private static UIManager _instance;
         public static UIManager Instance { get; private set; }
         #endregion
 
@@ -110,12 +109,11 @@ namespace StatsMod
         #region Initialization
         public static void Initialize()
         {
-            if (_instance == null)
+            if (Instance == null)
             {
                 GameObject uiManagerObj = new GameObject("UIManager");
-                _instance = uiManagerObj.AddComponent<UIManager>();
+                Instance = uiManagerObj.AddComponent<UIManager>();
                 DontDestroyOnLoad(uiManagerObj);
-                Instance = _instance;
 
                 Instance.InitializeComponents();
                 Logger.LogInfo("UIManager initialized");

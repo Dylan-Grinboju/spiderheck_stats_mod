@@ -75,11 +75,7 @@ namespace StatsMod
         {
             if (target == null) return;
 
-            EnemyBrain enemyBrain = target.GetComponent<EnemyBrain>();
-            if (enemyBrain == null)
-            {
-                enemyBrain = target.GetComponentInParent<EnemyBrain>();
-            }
+            EnemyBrain enemyBrain = target.GetComponentOrParent<EnemyBrain>();
 
             if (enemyBrain != null)
             {
@@ -100,11 +96,7 @@ namespace StatsMod
                 return;
             }
 
-            SpiderHealthSystem spiderHealth = target.GetComponent<SpiderHealthSystem>();
-            if (spiderHealth == null)
-            {
-                spiderHealth = target.GetComponentInParent<SpiderHealthSystem>();
-            }
+            SpiderHealthSystem spiderHealth = target.GetComponentOrParent<SpiderHealthSystem>();
 
             if (spiderHealth == null)
             {
@@ -192,9 +184,7 @@ namespace StatsMod
             int discId = discProjectile.GetInstanceID();
             lock (discOwnerLock)
             {
-                if (discOwnerTracker.Remove(discId))
-                {
-                }
+                discOwnerTracker.Remove(discId);
             }
         }
 
@@ -207,11 +197,7 @@ namespace StatsMod
         {
             if (target == null) return false;
 
-            EnemyHealthSystem enemyHealthSystem = target.GetComponent<EnemyHealthSystem>();
-            if (enemyHealthSystem == null)
-            {
-                enemyHealthSystem = target.GetComponentInParent<EnemyHealthSystem>();
-            }
+            EnemyHealthSystem enemyHealthSystem = target.GetComponentOrParent<EnemyHealthSystem>();
 
             if (enemyHealthSystem != null)
             {
@@ -226,11 +212,7 @@ namespace StatsMod
                 }
             }
 
-            SpiderHealthSystem spiderHealthSystem = target.GetComponent<SpiderHealthSystem>();
-            if (spiderHealthSystem == null)
-            {
-                spiderHealthSystem = target.GetComponentInParent<SpiderHealthSystem>();
-            }
+            SpiderHealthSystem spiderHealthSystem = target.GetComponentOrParent<SpiderHealthSystem>();
 
             if (spiderHealthSystem != null)
             {
@@ -252,22 +234,14 @@ namespace StatsMod
         {
             if (target == null) return false;
 
-            EnemyHealthSystem enemyHealthSystem = target.GetComponent<EnemyHealthSystem>();
-            if (enemyHealthSystem == null)
-            {
-                enemyHealthSystem = target.GetComponentInParent<EnemyHealthSystem>();
-            }
+            EnemyHealthSystem enemyHealthSystem = target.GetComponentOrParent<EnemyHealthSystem>();
 
             if (enemyHealthSystem != null)
             {
                 return enemyHealthSystem.shield != null && enemyHealthSystem.shield.activeInHierarchy;
             }
 
-            SpiderHealthSystem spiderHealthSystem = target.GetComponent<SpiderHealthSystem>();
-            if (spiderHealthSystem == null)
-            {
-                spiderHealthSystem = target.GetComponentInParent<SpiderHealthSystem>();
-            }
+            SpiderHealthSystem spiderHealthSystem = target.GetComponentOrParent<SpiderHealthSystem>();
 
             if (spiderHealthSystem != null)
             {
@@ -280,11 +254,7 @@ namespace StatsMod
         public static void RecordShieldHit(GameObject target, PlayerInput playerInput, string weaponName)
         {
             if (target == null || playerInput == null) return;
-            SpiderHealthSystem spiderHealth = target.GetComponent<SpiderHealthSystem>();
-            if (spiderHealth == null)
-            {
-                spiderHealth = target.GetComponentInParent<SpiderHealthSystem>();
-            }
+            SpiderHealthSystem spiderHealth = target.GetComponentOrParent<SpiderHealthSystem>();
 
             if (spiderHealth != null && spiderHealth.rootObject != null)
             {
@@ -297,11 +267,7 @@ namespace StatsMod
             }
             else
             {
-                RollerStrut strutComponent = target.GetComponent<RollerStrut>();
-                if (strutComponent == null)
-                {
-                    strutComponent = target.GetComponentInParent<RollerStrut>();
-                }
+                RollerStrut strutComponent = target.GetComponentOrParent<RollerStrut>();
 
                 if (strutComponent == null)
                 {

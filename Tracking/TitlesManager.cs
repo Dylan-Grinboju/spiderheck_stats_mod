@@ -205,7 +205,6 @@ namespace StatsMod
 
         // To prevent one player from dominating all titles due to sheer number of categories,
         // we increase the priority of titles held by other players. Makes it more fun.
-
         private void BalanceTitlePriorities()
         {
             for (int i = 0; i < currentTitles.Count; i++)
@@ -256,14 +255,14 @@ namespace StatsMod
                 new TitleEntry(leaders.MostKillsWhileSolo)
                 {
                     TitleName = "Lone Wolf",
-                    Description = $"Most Kills While Solo ({leaders.MostKillsWhileSolo})",
+                    Description = $"Most Kills While Solo ({leaders.MostKillsWhileSolo.Value.KillsWhileSolo})",
                     Priority = defaultPriority + 10,
                     Requirements = new HashSet<string> { "MostKillsWhileSolo" }
                 },
                 new TitleEntry(leaders.MostWaveClutches)
                 {
                     TitleName = "Clutch Master",
-                    Description = $"Most Wave Clutches ({leaders.MostWaveClutches})",
+                    Description = $"Most Wave Clutches ({leaders.MostWaveClutches.Value.WaveClutches})",
                     Priority = defaultPriority + 10,
                     Requirements = new HashSet<string> { "MostWaveClutches" }
                 },
@@ -489,7 +488,7 @@ namespace StatsMod
                 titles.Add(new TitleEntry(leaders.MostWaveClutches)
                 {
                     TitleName = "Last Stand Hero",
-                    Description = $"Most Wave Clutches ({leaders.MostWaveClutches}), Kills While Solo ({leaders.MostKillsWhileSolo})",
+                    Description = $"Most Wave Clutches ({leaders.MostWaveClutches.Value.WaveClutches}), Kills While Solo ({leaders.MostKillsWhileSolo.Value.KillsWhileSolo})",
                     Priority = defaultPriority + 20,
                     Requirements = new HashSet<string> { "MostWaveClutches", "MostKillsWhileSolo" }
                 });

@@ -1,12 +1,5 @@
-using UnityEngine;
 using Silk;
 using Logger = Silk.Logger;
-using System.Collections.Generic;
-using HarmonyLib;
-using System;
-using Interfaces;
-using UnityEngine.InputSystem;
-
 
 namespace StatsMod
 {
@@ -25,7 +18,6 @@ namespace StatsMod
                 }
                 return _instance;
             }
-            private set => _instance = value;
         }
 
         public int EnemiesKilled { get; private set; }
@@ -33,8 +25,6 @@ namespace StatsMod
         public EnemiesTracker()
         {
             EnemiesKilled = 0;
-
-            Instance = this;
             Logger.LogInfo("Enemies tracker initialized");
         }
 
