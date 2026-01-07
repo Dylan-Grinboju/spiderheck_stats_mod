@@ -27,6 +27,7 @@ namespace StatsMod
         public float COL_WIDTH_PLAYER_SHIELDS = 100f;
         public float COL_WIDTH_SHIELDS_LOST = 100f;
         public float COL_WIDTH_ALIVE_TIME = 120f;
+        public float COL_WIDTH_KILL_STREAK = 100f;
         public float COL_WIDTH_INDENT = 30f;
         #endregion
 
@@ -39,6 +40,7 @@ namespace StatsMod
         public string LABEL_PLAYER_SHIELDS = "Player Shields";
         public string LABEL_SHIELDS_LOST = "Shields Lost";
         public string LABEL_ALIVE_TIME = "Alive Time";
+        public string LABEL_KILL_STREAK = "Max Kill Streak";
         public string LABEL_SURVIVAL_MODE = "Survival Mode";
         public string LABEL_ENEMY_STATISTICS = "Enemy Statistics";
         public string LABEL_TIME = "Time:";
@@ -302,6 +304,7 @@ namespace StatsMod
                     GUILayout.Label(LABEL_PLAYER_SHIELDS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_PLAYER_SHIELDS)));
                     GUILayout.Label(LABEL_SHIELDS_LOST, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_SHIELDS_LOST)));
                     GUILayout.Label(LABEL_ALIVE_TIME, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ALIVE_TIME)));
+                    GUILayout.Label(LABEL_KILL_STREAK, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_KILL_STREAK)));
                     GUILayout.EndHorizontal();
 
                     GUILayout.Space(SPACING_BETWEEN_HEADERS);
@@ -318,10 +321,11 @@ namespace StatsMod
                         GUILayout.Label(playerData.Deaths.ToString(), playerData.Deaths > 0 ? deathsRedStyle : deathsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_DEATHS)));
                         GUILayout.Label(playerData.Kills.ToString(), playerData.Kills > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_KILLS)));
                         GUILayout.Label(playerData.FriendlyKills.ToString(), playerData.FriendlyKills > 0 ? friendlyKillsOrangeStyle : friendlyKillsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_PVP)));
-                        GUILayout.Label(playerData.EnemyShieldsTakenDown.ToString(), centeredWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_SHIELDS)));
-                        GUILayout.Label(playerData.FriendlyShieldsHit.ToString(), centeredWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_PLAYER_SHIELDS)));
-                        GUILayout.Label(playerData.ShieldsLost.ToString(), centeredWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_SHIELDS_LOST)));
+                        GUILayout.Label(playerData.EnemyShieldsTakenDown.ToString(), playerData.EnemyShieldsTakenDown > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_SHIELDS)));
+                        GUILayout.Label(playerData.FriendlyShieldsHit.ToString(), playerData.FriendlyShieldsHit > 0 ? friendlyKillsOrangeStyle : friendlyKillsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_PLAYER_SHIELDS)));
+                        GUILayout.Label(playerData.ShieldsLost.ToString(), playerData.ShieldsLost > 0 ? deathsRedStyle : deathsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_SHIELDS_LOST)));
                         GUILayout.Label(TimeFormatUtils.FormatTimeSpan(playerData.GetCurrentAliveTime()), centeredWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ALIVE_TIME)));
+                        GUILayout.Label(playerData.MaxKillStreak.ToString(), playerData.MaxKillStreak > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_KILL_STREAK)));
                         GUILayout.EndHorizontal();
 
                         GUILayout.Space(SPACING_BETWEEN_PLAYERS);
