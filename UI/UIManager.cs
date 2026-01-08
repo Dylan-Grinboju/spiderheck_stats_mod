@@ -203,7 +203,7 @@ namespace StatsMod
             }
 
             // If in a game, clear titles and show empty titles screen
-            if (StatsManager.Instance.IsActive)
+            if (GameSessionManager.Instance.IsActive)
             {
                 titlesUI?.ClearTitlesForNewGame();
             }

@@ -132,7 +132,7 @@ namespace StatsMod
         {
             GUILayout.BeginVertical();
 
-            var statsSnapshot = StatsManager.Instance.GetStatsSnapshot();
+            var statsSnapshot = GameSessionManager.Instance.GetStatsSnapshot();
 
             if (ModConfig.ShowPlayTime)
             {
@@ -266,7 +266,7 @@ namespace StatsMod
             {
                 totalHeight += PlayerStatsBaseHeight;
 
-                var statsSnapshot = StatsManager.Instance?.GetStatsSnapshot();
+                var statsSnapshot = GameSessionManager.Instance?.GetStatsSnapshot();
                 if (statsSnapshot?.ActivePlayers != null)
                 {
                     totalHeight += statsSnapshot.ActivePlayers.Count * PlayerStatsPerPlayerHeight;

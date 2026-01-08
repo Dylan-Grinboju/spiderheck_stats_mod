@@ -7,10 +7,14 @@ using Logger = Silk.Logger;
 
 namespace StatsMod
 {
-    public class StatsManager
+    /// <summary>
+    /// Manages game session lifecycle, timing, and state.
+    /// Coordinates between trackers and handles session start/stop events.
+    /// </summary>
+    public class GameSessionManager
     {
-        private static readonly Lazy<StatsManager> _lazy = new Lazy<StatsManager>(() => new StatsManager());
-        public static StatsManager Instance => _lazy.Value;
+        private static readonly Lazy<GameSessionManager> _lazy = new Lazy<GameSessionManager>(() => new GameSessionManager());
+        public static GameSessionManager Instance => _lazy.Value;
 
         private PlayerTracker playerTracker;
         private EnemiesTracker enemiesTracker;
@@ -28,14 +32,17 @@ namespace StatsMod
         private List<TitleEntry> lastGameTitles = new List<TitleEntry>();
 
         public bool IsActive => isSurvivalActive || isVersusActive;
+        public GameMode CurrentGameMode => currentGameMode;
         public GameMode LastGameMode => lastGameMode;
 
-        private StatsManager()
+        private GameSessionManager()
         {
             playerTracker = PlayerTracker.Instance;
             enemiesTracker = EnemiesTracker.Instance;
-            Logger.LogInfo("Stats manager initialized");
+            Logger.LogInfo("Game session manager initialized");
         }
+
+        #region Session Lifecycle
 
         public void StartSurvivalSession()
         {
@@ -118,8 +125,12 @@ namespace StatsMod
 
             lastGameMode = currentGameMode;
             currentGameMode = GameMode.None;
-            Logger.LogInfo($"{mode} session stopped. Duration: {FormatTimeSpan(sessionTime)}");
+            Logger.LogInfo($"{mode} session stopped. Duration: {TimeFormatUtils.FormatTimeSpan(sessionTime)}");
         }
+
+        #endregion
+
+        #region Timing
 
         public TimeSpan GetCurrentSessionTime()
         {
@@ -151,32 +162,9 @@ namespace StatsMod
             playerTracker.ResumeTimers();
         }
 
-        public void RegisterPlayer(PlayerInput player)
-        {
-            playerTracker.RegisterPlayer(player);
-        }
+        #endregion
 
-        public void UnregisterPlayer(PlayerInput player)
-        {
-            playerTracker.UnregisterPlayer(player);
-        }
-
-        public void IncrementPlayerKill(PlayerInput player, string weaponName)
-        {
-            playerTracker.IncrementPlayerKill(player);
-            playerTracker.IncrementWeaponHit(player, weaponName);
-        }
-
-        public void IncrementFriendlyKill(PlayerInput player, string weaponName)
-        {
-            playerTracker.IncrementFriendlyKill(player);
-            playerTracker.IncrementWeaponHit(player, weaponName);
-        }
-
-        public void IncrementWaveClutch(PlayerInput player)
-        {
-            playerTracker.IncrementWaveClutch(player);
-        }
+        #region Wave Clutch (Survival-specific)
 
         public void CheckWaveClutch()
         {
@@ -195,77 +183,9 @@ namespace StatsMod
             }
         }
 
-        public void IncrementEnemyShieldsTakenDown(PlayerInput player, string weaponName)
-        {
-            playerTracker.IncrementEnemyShieldsTakenDown(player);
-            playerTracker.IncrementWeaponHit(player, weaponName);
-        }
+        #endregion
 
-        public void IncrementFriendlyShieldsHit(PlayerInput player, string weaponName)
-        {
-            playerTracker.IncrementFriendlyShieldsHit(player);
-            playerTracker.IncrementWeaponHit(player, weaponName);
-        }
-
-        public void IncrementShieldsLost(PlayerInput player)
-        {
-            playerTracker.IncrementShieldsLost(player);
-        }
-
-        public void IncrementWebSwings(PlayerInput player)
-        {
-            playerTracker.IncrementWebSwings(player);
-        }
-
-        public void StartWebSwingTimer(PlayerInput player)
-        {
-            playerTracker.StartWebSwingTimer(player);
-        }
-
-        public void StopWebSwingTimer(PlayerInput player)
-        {
-            playerTracker.StopWebSwingTimer(player);
-        }
-
-        public void StartAirborneTimer(PlayerInput player)
-        {
-            playerTracker.StartAirborneTimer(player);
-        }
-
-        public void StopAirborneTimer(PlayerInput player)
-        {
-            playerTracker.StopAirborneTimer(player);
-        }
-
-        public void UpdatePlayerColor(PlayerInput player, Color color)
-        {
-            playerTracker.UpdatePlayerColor(player, color);
-        }
-
-        public void UpdateHighestPoint(PlayerInput player)
-        {
-            playerTracker.UpdateHighestPoint(player);
-        }
-
-        public void IncrementEnemyKilled()
-        {
-            enemiesTracker.IncrementEnemiesKilled();
-        }
-
-        public void RecordPlayerDeath(SpiderHealthSystem spiderHealth)
-        {
-            playerTracker.RecordPlayerDeath(spiderHealth);
-        }
-
-        public void UndoPlayerDeath(SpiderHealthSystem spiderHealth)
-        {
-            playerTracker.UndoPlayerDeath(spiderHealth);
-        }
-
-        public void RecordPlayerRespawn(PlayerController playerController)
-        {
-            playerTracker.RecordPlayerRespawn(playerController);
-        }
+        #region Stats Snapshot
 
         public GameStatsSnapshot GetStatsSnapshot()
         {
@@ -281,10 +201,6 @@ namespace StatsMod
             };
         }
 
-        private string FormatTimeSpan(TimeSpan timeSpan)
-        {
-            return TimeFormatUtils.FormatTimeSpan(timeSpan);
-        }
+        #endregion
     }
 }
-

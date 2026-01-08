@@ -91,7 +91,8 @@ namespace StatsMod
                 if (IsFirstTimeKill(target, enemyId, recentlyKilledEnemies, ref lastEnemiesCleanupTime, recentlyKilledLock, "enemy"))
                 {
                     Logger.LogInfo($"Recording kill for player {player.name}, target:{target.name}");
-                    StatsManager.Instance.IncrementPlayerKill(player, weaponName);
+                    PlayerTracker.Instance.IncrementPlayerKill(player);
+                    PlayerTracker.Instance.IncrementWeaponHit(player, weaponName);
                 }
                 return;
             }
@@ -111,7 +112,8 @@ namespace StatsMod
             if (IsFirstTimeKill(target, playerId, recentlyKilledPlayers, ref lastPlayersCleanupTime, recentlyKilledPlayersLock, "player"))
             {
                 Logger.LogInfo($"Recording friendly kill for player {playerId}, name:{target.name}");
-                StatsManager.Instance.IncrementFriendlyKill(player, weaponName);
+                PlayerTracker.Instance.IncrementFriendlyKill(player);
+                PlayerTracker.Instance.IncrementWeaponHit(player, weaponName);
             }
         }
 
@@ -254,7 +256,8 @@ namespace StatsMod
                 if (victimPlayerInput != null && victimPlayerInput != playerInput)
                 {
                     Logger.LogDebug($"Recording shield hit on player {victimPlayerInput.name} by player {playerInput.name}");
-                    StatsManager.Instance.IncrementFriendlyShieldsHit(playerInput, weaponName);
+                    PlayerTracker.Instance.IncrementFriendlyShieldsHit(playerInput);
+                    PlayerTracker.Instance.IncrementWeaponHit(playerInput, weaponName);
                 }
             }
             else
@@ -264,7 +267,8 @@ namespace StatsMod
                 if (strutComponent == null)
                 {
                     Logger.LogDebug($"Recording shield hit on enemy {target.name} by player {playerInput.name}");
-                    StatsManager.Instance.IncrementEnemyShieldsTakenDown(playerInput, weaponName);
+                    PlayerTracker.Instance.IncrementEnemyShieldsTakenDown(playerInput);
+                    PlayerTracker.Instance.IncrementWeaponHit(playerInput, weaponName);
                 }
             }
         }

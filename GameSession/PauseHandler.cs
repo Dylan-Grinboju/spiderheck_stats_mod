@@ -4,7 +4,7 @@ using Logger = Silk.Logger;
 
 namespace StatsMod
 {
-    public class PauseTracker : MonoBehaviour
+    public class PauseHandler : MonoBehaviour
     {
         private bool wasPaused = false;
 
@@ -14,12 +14,12 @@ namespace StatsMod
 
             if (isPaused && !wasPaused)
             {
-                StatsManager.Instance.PauseTimers();
+                GameSessionManager.Instance.PauseTimers();
                 Logger.LogInfo("Game paused - timers paused");
             }
             else if (!isPaused && wasPaused)
             {
-                StatsManager.Instance.ResumeTimers();
+                GameSessionManager.Instance.ResumeTimers();
                 Logger.LogInfo("Game resumed - timers resumed");
             }
 

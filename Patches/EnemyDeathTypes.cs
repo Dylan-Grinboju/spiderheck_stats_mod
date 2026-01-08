@@ -88,7 +88,7 @@ namespace StatsMod
         {
             try
             {
-                StatsManager.Instance.IncrementEnemyKilled();
+                EnemiesTracker.Instance.IncrementEnemiesKilled();
             }
             catch (System.Exception ex)
             {

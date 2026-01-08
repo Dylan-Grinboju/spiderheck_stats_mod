@@ -31,7 +31,7 @@ namespace StatsMod
         {
             try
             {
-                StatsManager.Instance.RegisterPlayer(__instance);
+                PlayerTracker.Instance.RegisterPlayer(__instance);
             }
             catch (Exception ex)
             {
@@ -47,7 +47,7 @@ namespace StatsMod
         {
             try
             {
-                StatsManager.Instance.UnregisterPlayer(__instance);
+                PlayerTracker.Instance.UnregisterPlayer(__instance);
             }
             catch (Exception ex)
             {
@@ -63,7 +63,7 @@ namespace StatsMod
         {
             try
             {
-                StatsManager.Instance.RecordPlayerDeath(__instance);
+                PlayerTracker.Instance.RecordPlayerDeath(__instance);
             }
             catch (Exception ex)
             {
@@ -79,7 +79,7 @@ namespace StatsMod
         {
             try
             {
-                StatsManager.Instance.UndoPlayerDeath(__instance);
+                PlayerTracker.Instance.UndoPlayerDeath(__instance);
             }
             catch (Exception ex)
             {
@@ -99,7 +99,7 @@ namespace StatsMod
                 if (playerInput != null && ReflectionCache.PrimaryColorField != null)
                 {
                     Color primaryColor = (Color)ReflectionCache.PrimaryColorField.GetValue(__instance);
-                    StatsManager.Instance.UpdatePlayerColor(playerInput, primaryColor);
+                    PlayerTracker.Instance.UpdatePlayerColor(playerInput, primaryColor);
                 }
             }
             catch (Exception ex)
@@ -116,9 +116,9 @@ namespace StatsMod
         {
             try
             {
-                if (StatsManager.Instance.IsActive)
+                if (GameSessionManager.Instance.IsActive)
                 {
-                    StatsManager.Instance.RecordPlayerRespawn(__instance);
+                    PlayerTracker.Instance.RecordPlayerRespawn(__instance);
                 }
             }
             catch (Exception ex)
@@ -140,7 +140,7 @@ namespace StatsMod
                     PlayerInput victimPlayerInput = __instance.rootObject.GetComponentInParent<PlayerInput>();
                     if (victimPlayerInput != null)
                     {
-                        StatsManager.Instance.IncrementShieldsLost(victimPlayerInput);
+                        PlayerTracker.Instance.IncrementShieldsLost(victimPlayerInput);
                     }
                 }
             }
@@ -163,13 +163,13 @@ namespace StatsMod
                     return;
                 }
 
-                if (__instance.spiderController != null && StatsManager.Instance.IsActive)
+                if (__instance.spiderController != null && GameSessionManager.Instance.IsActive)
                 {
                     PlayerInput playerInput = __instance.spiderController.GetComponentInParent<PlayerInput>();
                     if (playerInput != null)
                     {
-                        StatsManager.Instance.IncrementWebSwings(playerInput);
-                        StatsManager.Instance.StartWebSwingTimer(playerInput);
+                        PlayerTracker.Instance.IncrementWebSwings(playerInput);
+                        PlayerTracker.Instance.StartWebSwingTimer(playerInput);
                     }
                 }
             }
@@ -192,7 +192,7 @@ namespace StatsMod
                     PlayerInput playerInput = __instance.spiderController.GetComponentInParent<PlayerInput>();
                     if (playerInput != null)
                     {
-                        StatsManager.Instance.StopWebSwingTimer(playerInput);
+                        PlayerTracker.Instance.StopWebSwingTimer(playerInput);
                     }
                 }
             }
@@ -214,7 +214,7 @@ namespace StatsMod
         {
             try
             {
-                if (!StatsManager.Instance.IsActive)
+                if (!GameSessionManager.Instance.IsActive)
                     return;
 
                 PlayerInput playerInput = GetCachedPlayerInput(__instance);
@@ -222,12 +222,12 @@ namespace StatsMod
 
                 if (!__instance.grounded)
                 {
-                    StatsManager.Instance.UpdateHighestPoint(playerInput);
-                    StatsManager.Instance.StartAirborneTimer(playerInput);
+                    PlayerTracker.Instance.UpdateHighestPoint(playerInput);
+                    PlayerTracker.Instance.StartAirborneTimer(playerInput);
                 }
                 else
                 {
-                    StatsManager.Instance.StopAirborneTimer(playerInput);
+                    PlayerTracker.Instance.StopAirborneTimer(playerInput);
                 }
             }
             catch (Exception ex)

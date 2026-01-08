@@ -184,7 +184,7 @@ namespace StatsMod
 
             GUILayout.BeginArea(new Rect(backgroundRect.x + contentPadding, backgroundRect.y + contentPadding, contentWidth, availableContentHeight));
 
-            var statsSnapshot = StatsManager.Instance.GetStatsSnapshot();
+            var statsSnapshot = GameSessionManager.Instance.GetStatsSnapshot();
 
             // Draw survival and enemy stats horizontally if both are enabled
             if (ModConfig.ShowPlayTime && ModConfig.ShowEnemyDeaths)
@@ -235,7 +235,7 @@ namespace StatsMod
 
             if (ModConfig.ShowPlayers)
             {
-                var statsSnapshot = StatsManager.Instance?.GetStatsSnapshot();
+                var statsSnapshot = GameSessionManager.Instance?.GetStatsSnapshot();
                 float playerSectionHeight = UIManager.ScaleValue(120f); // Base height for player section
                 if (statsSnapshot?.ActivePlayers != null)
                 {

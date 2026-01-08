@@ -6,6 +6,7 @@ using Logger = Silk.Logger;
 
 namespace StatsMod
 {
+    // Handles logging game statistics to files.
     public class StatsLogger
     {
         private static readonly Lazy<StatsLogger> _lazy = new Lazy<StatsLogger>(() => new StatsLogger());
