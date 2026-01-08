@@ -125,6 +125,12 @@ namespace StatsMod
                         { "checkForUpdates", true }
                     }
                 },
+                { "titles", new Dictionary<string, object>
+                    {
+                        { "enabled", true },
+                        { "revealDelaySeconds", 2.0f }
+                    }
+                },
             };
 
             // Load the configuration (this will create the YAML file if it doesn't exist)
