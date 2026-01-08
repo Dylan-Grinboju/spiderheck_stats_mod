@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
@@ -205,6 +206,10 @@ namespace StatsMod
     [HarmonyPatch(typeof(Stabilizer), "FixedUpdate")]
     public class StabilizerFixedUpdatePatch
     {
+        // Cache PlayerInput references to avoid expensive GetComponentInParent calls every FixedUpdate
+        private static readonly Dictionary<Stabilizer, PlayerInput> _playerInputCache = new Dictionary<Stabilizer, PlayerInput>();
+        private static readonly object _cacheLock = new object();
+
         static void Postfix(Stabilizer __instance)
         {
             try
@@ -212,10 +217,7 @@ namespace StatsMod
                 if (!StatsManager.Instance.IsActive)
                     return;
 
-                SpiderController spider = __instance.GetComponentInParent<SpiderController>();
-                if (spider == null) return;
-
-                PlayerInput playerInput = spider.GetComponentInParent<PlayerInput>();
+                PlayerInput playerInput = GetCachedPlayerInput(__instance);
                 if (playerInput == null) return;
 
                 if (!__instance.grounded)
@@ -231,6 +233,42 @@ namespace StatsMod
             catch (Exception ex)
             {
                 Logger.LogError($"Error tracking airborne time: {ex.Message}");
+            }
+        }
+
+        private static PlayerInput GetCachedPlayerInput(Stabilizer stabilizer)
+        {
+            lock (_cacheLock)
+            {
+                if (_playerInputCache.TryGetValue(stabilizer, out PlayerInput cached))
+                {
+                    // Verify the cached reference is still valid
+                    if (cached != null) return cached;
+                    _playerInputCache.Remove(stabilizer);
+                }
+
+                // Cache miss - do the expensive lookup once
+                if (stabilizer.TryGetComponent(out SpiderController spider) || 
+                    (spider = stabilizer.GetComponentInParent<SpiderController>()) != null)
+                {
+                    PlayerInput playerInput = spider.GetComponentInParent<PlayerInput>();
+                    if (playerInput != null)
+                    {
+                        _playerInputCache[stabilizer] = playerInput;
+                        return playerInput;
+                    }
+                }
+
+                return null;
+            }
+        }
+
+        // Call this when players are removed to clean up cache
+        public static void ClearCache()
+        {
+            lock (_cacheLock)
+            {
+                _playerInputCache.Clear();
             }
         }
     }

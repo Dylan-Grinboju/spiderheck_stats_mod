@@ -38,6 +38,13 @@ namespace StatsMod
         private GUIStyle valueStyle;
         private GUIStyle cardStyle;
         private GUIStyle errorStyle;
+        private GUIStyle timerStyle;
+        private GUIStyle statusStyle;
+        private GUIStyle killsGreenStyle;
+        private GUIStyle killsWhiteStyle;
+        private GUIStyle deathsRedStyle;
+        private GUIStyle deathsWhiteStyle;
+        private GUIStyle playerColorStyle; // Reused for dynamic player colors
         private bool stylesInitialized = false;
         #endregion
 
@@ -89,6 +96,15 @@ namespace StatsMod
             valueStyle = UIManager.Instance.CreateValueStyle();
             cardStyle = UIManager.Instance.CreateCardStyle(UIManager.Instance.GetMediumTexture());
             errorStyle = UIManager.Instance.CreateErrorStyle();
+
+            // Cache colored styles to avoid per-frame allocations
+            timerStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.Green } };
+            statusStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.Gray } };
+            killsGreenStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.Green } };
+            killsWhiteStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.White } };
+            deathsRedStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.Red } };
+            deathsWhiteStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.White } };
+            playerColorStyle = new GUIStyle(valueStyle); // Will set color dynamically
 
             stylesInitialized = true;
         }
@@ -148,14 +164,12 @@ namespace StatsMod
             if (statsSnapshot.IsSurvivalActive)
             {
                 GUILayout.Label("Time:", labelStyle, GUILayout.Width(UIManager.ScaleValue(50)));
-                var timerStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.Green } };
-                GUILayout.Label(FormatTimeSpan(statsSnapshot.CurrentSessionTime), timerStyle, GUILayout.MinWidth(UIManager.ScaleValue(80)));
+                GUILayout.Label(TimeFormatUtils.FormatTimeSpan(statsSnapshot.CurrentSessionTime), timerStyle, GUILayout.MinWidth(UIManager.ScaleValue(80)));
             }
             else
             {
                 GUILayout.Label("Last Game:", labelStyle, GUILayout.Width(UIManager.ScaleValue(120)));
-                var statusStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.Gray } };
-                GUILayout.Label(statsSnapshot.LastGameDuration.TotalSeconds > 0 ? FormatTimeSpan(statsSnapshot.LastGameDuration) : "No games yet", statusStyle);
+                GUILayout.Label(statsSnapshot.LastGameDuration.TotalSeconds > 0 ? TimeFormatUtils.FormatTimeSpan(statsSnapshot.LastGameDuration) : "No games yet", statusStyle);
             }
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
@@ -172,8 +186,7 @@ namespace StatsMod
                 int enemiesKilled = statsSnapshot.EnemiesKilled;
                 GUILayout.BeginHorizontal();
                 GUILayout.Label("Enemies Killed:", labelStyle, GUILayout.Width(UIManager.ScaleValue(120)));
-                var killsStyle = new GUIStyle(valueStyle) { normal = { textColor = enemiesKilled > 0 ? UIManager.Green : UIManager.White } };
-                GUILayout.Label(enemiesKilled.ToString(), killsStyle);
+                GUILayout.Label(enemiesKilled.ToString(), enemiesKilled > 0 ? killsGreenStyle : killsWhiteStyle);
                 GUILayout.EndHorizontal();
             }
             catch (System.Exception ex)
@@ -207,14 +220,12 @@ namespace StatsMod
                         GUILayout.BeginHorizontal();
                         GUILayout.Label("", valueStyle, GUILayout.Width(UIManager.ScaleValue(5)));
 
-                        var playerNameStyle = new GUIStyle(valueStyle) { normal = { textColor = playerData.PlayerColor } };
-                        GUILayout.Label(playerData.PlayerName, playerNameStyle, GUILayout.Width(UIManager.ScaleValue(115)));
+                        // Reuse cached style, just update the color
+                        playerColorStyle.normal.textColor = playerData.PlayerColor;
+                        GUILayout.Label(playerData.PlayerName, playerColorStyle, GUILayout.Width(UIManager.ScaleValue(115)));
 
-                        var deathsStyle = new GUIStyle(valueStyle) { normal = { textColor = playerData.Deaths > 0 ? UIManager.Red : UIManager.White } };
-                        GUILayout.Label(playerData.Deaths.ToString(), deathsStyle, GUILayout.Width(UIManager.ScaleValue(90)));
-
-                        var killsStyle = new GUIStyle(valueStyle) { normal = { textColor = playerData.Kills > 0 ? UIManager.Green : UIManager.White } };
-                        GUILayout.Label(playerData.Kills.ToString(), killsStyle, GUILayout.Width(UIManager.ScaleValue(60)));
+                        GUILayout.Label(playerData.Deaths.ToString(), playerData.Deaths > 0 ? deathsRedStyle : deathsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(90)));
+                        GUILayout.Label(playerData.Kills.ToString(), playerData.Kills > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(60)));
                         GUILayout.EndHorizontal();
 
                         GUILayout.Space(UIManager.ScaleValue(8));
@@ -234,12 +245,7 @@ namespace StatsMod
         }
         #endregion
 
-        #region Utility Methods
-        private string FormatTimeSpan(TimeSpan timeSpan)
-        {
-            return $"{timeSpan.Hours:00}:{timeSpan.Minutes:00}:{timeSpan.Seconds:00}";
-        }
-        #endregion
+
 
         #region Window Size Management
         private void UpdateWindowSize()

@@ -624,7 +624,7 @@ namespace StatsMod
                     .ForLeader(l => l.MostDamageTaken, Req.MostDamageTaken)
                     .AndLeader(Req.MostAliveTime)
                     .WithName("Nine Lives")
-                    .WithDescription("Most Damage, Alive Time")
+                    .WithDescription("Most Damage Taken, Alive Time")
                     .WithPriority(defaultPriority)
                     .Build());
             }

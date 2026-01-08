@@ -54,6 +54,7 @@ namespace StatsMod
         private GUIStyle cardTitleStyle;
         private GUIStyle cardDescriptionStyle;
         private GUIStyle cardPlayerNameStyle;
+        private GUIStyle dynamicPlayerNameStyle; // Reused for dynamic player colors
         private bool stylesInitialized = false;
         private Texture2D whiteTexture;
         #endregion
@@ -208,6 +209,9 @@ namespace StatsMod
             cardPlayerNameStyle = UIManager.Instance.CreateValueStyle(PLAYER_NAME_FONT_SIZE);
             cardPlayerNameStyle.alignment = TextAnchor.MiddleCenter;
 
+            // Create reusable style for dynamic player colors
+            dynamicPlayerNameStyle = new GUIStyle(cardPlayerNameStyle);
+
             stylesInitialized = true;
         }
         #endregion
@@ -340,11 +344,9 @@ namespace StatsMod
 
             GUILayout.Space(UIManager.ScaleValue(SQUARE_TO_NAME_SPACING));
 
-            var nameStyle = new GUIStyle(cardPlayerNameStyle)
-            {
-                normal = { textColor = title.PrimaryColor }
-            };
-            GUILayout.Label(title.PlayerName, nameStyle, GUILayout.Width(cardWidth));
+            // Reuse cached style, just update the color
+            dynamicPlayerNameStyle.normal.textColor = title.PrimaryColor;
+            GUILayout.Label(title.PlayerName, dynamicPlayerNameStyle, GUILayout.Width(cardWidth));
 
             GUILayout.EndVertical();
         }
