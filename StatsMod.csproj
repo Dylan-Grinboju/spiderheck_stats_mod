@@ -10,9 +10,6 @@
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version)</FileVersion>
 
-    <!-- Description -->
-    <Description>Statistics tracking mod for Spiderheck - compatible with Silk 0.7.0</Description>
-
     <!-- Author -->
     <Authors>Dylan</Authors>
 
@@ -30,15 +27,40 @@
 
   </PropertyGroup>
 
+  <!-- Default Silk Version (can be overridden by build configuration) -->
+  <PropertyGroup>
+    <SilkVersion Condition="'$(SilkVersion)'==''">0.7.0</SilkVersion>
+  </PropertyGroup>
+
+  <!-- Configuration-specific settings for Silk 0.7.0 -->
+  <PropertyGroup Condition="'$(Configuration)'=='Release-v0.7.0' OR '$(Configuration)'=='Debug-v0.7.0'">
+    <SilkVersion>0.7.0</SilkVersion>
+    <AssemblyName>StatsMod-v0.7.0</AssemblyName>
+    <Description>Statistics tracking mod for Spiderheck - compatible with Silk 0.7.0</Description>
+  </PropertyGroup>
+
+  <!-- Configuration-specific settings for Silk 0.6.1 -->
+  <PropertyGroup Condition="'$(Configuration)'=='Release-v0.6.1' OR '$(Configuration)'=='Debug-v0.6.1'">
+    <SilkVersion>0.6.1</SilkVersion>
+    <AssemblyName>StatsMod-v0.6.1</AssemblyName>
+    <Description>Statistics tracking mod for Spiderheck - compatible with Silk 0.6.1</Description>
+  </PropertyGroup>
+
+  <!-- Default configurations (Debug/Release use latest Silk) -->
+  <PropertyGroup Condition="'$(Configuration)'=='Debug' OR '$(Configuration)'=='Release'">
+    <SilkVersion>0.7.0</SilkVersion>
+    <AssemblyName>StatsMod</AssemblyName>
+    <Description>Statistics tracking mod for Spiderheck - compatible with Silk 0.7.0</Description>
+  </PropertyGroup>
+
   <ItemGroup>
-  <PackageReference Include="ILRepack" Version="2.0.34" GeneratePathProperty="true">
+    <PackageReference Include="ILRepack" Version="2.0.34" GeneratePathProperty="true">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="SilkLoader" Version="0.7.0" />
-    <PackageReference Include="ILRepack.Lib.MSBuild.Task" Version="2.0.34.2" />  
+    <PackageReference Include="SilkLoader" Version="$(SilkVersion)" />
     <PackageReference Include="MonoMod.Backports" Version="1.1.2" />
-    </ItemGroup>
+  </ItemGroup>
 
   <!-- Exclude Sourcecode folder from compilation (decompiled game source for reference only) -->
   <ItemGroup>
@@ -187,6 +209,9 @@
     <WriteLinesToFile File="$(MSBuildProjectDirectory)\version.txt" Lines="$(Version)" Overwrite="true" />
     <Message Text="Generated version.txt with version $(Version)" Importance="high" />
   </Target>
+
+  <!-- Import ILRepack targets for dependency merging -->
+  <Import Project="ILRepack.targets" />
 
 </Project>
 

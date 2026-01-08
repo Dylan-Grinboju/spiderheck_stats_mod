@@ -160,9 +160,15 @@ namespace StatsMod
         {
             if (!isAnimating || !isDisplayVisible) return;
 
-            animationTimer += Time.unscaledDeltaTime;
+            animationTimer += Time.deltaTime;
             float revealDelay = ModConfig.TitlesRevealDelaySeconds;
 
+            if (revealDelay <= 0)
+            {
+                titlesToShow = TitlesManager.Instance.TitleCount;
+                isAnimating = false;
+                return;
+            }
             int shouldShow = Mathf.FloorToInt(animationTimer / revealDelay);
             if (shouldShow > titlesToShow)
             {
