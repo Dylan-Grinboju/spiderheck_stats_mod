@@ -55,6 +55,8 @@ namespace StatsMod
         private GUIStyle cardDescriptionStyle;
         private GUIStyle cardPlayerNameStyle;
         private GUIStyle dynamicPlayerNameStyle; // Reused for dynamic player colors
+        private GUIStyle noTitlesStyle;
+
         private bool stylesInitialized = false;
         private Texture2D whiteTexture;
         #endregion
@@ -71,6 +73,7 @@ namespace StatsMod
             whiteTexture = new Texture2D(1, 1);
             whiteTexture.SetPixel(0, 0, Color.white);
             whiteTexture.Apply();
+            whiteTexture.hideFlags = HideFlags.HideAndDontSave;
         }
         #endregion
 
@@ -211,6 +214,8 @@ namespace StatsMod
 
             // Create reusable style for dynamic player colors
             dynamicPlayerNameStyle = new GUIStyle(cardPlayerNameStyle);
+            noTitlesStyle = new GUIStyle(cardPlayerNameStyle) { normal = { textColor = UIManager.Gray } };
+
 
             stylesInitialized = true;
         }
@@ -242,7 +247,6 @@ namespace StatsMod
 
             if (!TitlesManager.Instance.HasGameEndedTitles || TitlesManager.Instance.TitleCount == 0)
             {
-                var noTitlesStyle = new GUIStyle(cardPlayerNameStyle) { normal = { textColor = UIManager.Gray } };
                 GUILayout.Label("No titles to display", noTitlesStyle);
             }
             else

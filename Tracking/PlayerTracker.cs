@@ -220,6 +220,8 @@ namespace StatsMod
 
                 RefreshPlayerCache();
 
+                StabilizerFixedUpdatePatch.ClearCache();
+
                 UIManager.Instance?.OnPlayerLeft();
             }
         }
@@ -349,7 +351,7 @@ namespace StatsMod
                 {
                     data.MaxKillStreak = data.KillStreak;
                 }
-                
+
                 SpiderController spider = player.GetComponentInChildren<SpiderController>();
                 if (spider != null)
                 {
@@ -483,12 +485,11 @@ namespace StatsMod
             }
         }
 
-        public void UpdateHighestPoint(PlayerInput player)
+        public void UpdateHighestPoint(PlayerInput player, SpiderController spider)
         {
-            if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
+            if (player != null && spider != null && activePlayers.TryGetValue(player, out PlayerData data))
             {
-                SpiderController spider = player.GetComponentInChildren<SpiderController>();
-                if (spider != null && spider.bodyRigidbody2D != null)
+                if (spider.bodyRigidbody2D != null)
                 {
                     float currentY = spider.bodyRigidbody2D.position.y;
                     if (currentY > data.HighestPoint)

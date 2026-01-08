@@ -84,9 +84,8 @@ namespace StatsMod
             }
             if (Screen.height <= value)
             {
-                int clamped = Math.Max(0, Screen.height - 10);
-                Logger.LogWarning($"Position value {value} exceeds screen height {Screen.height}, clamping to {clamped}");
-                return clamped;
+                Logger.LogWarning($"Position value {value} exceeds screen height {Screen.height}, clamping to 0");
+                return 0;
             }
             return value;
         }

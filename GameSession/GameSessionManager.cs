@@ -16,8 +16,8 @@ namespace StatsMod
         private static readonly Lazy<GameSessionManager> _lazy = new Lazy<GameSessionManager>(() => new GameSessionManager());
         public static GameSessionManager Instance => _lazy.Value;
 
-        private PlayerTracker playerTracker;
-        private EnemiesTracker enemiesTracker;
+        private readonly PlayerTracker playerTracker;
+        private readonly EnemiesTracker enemiesTracker;
 
         private bool isSurvivalActive = false;
         private bool isVersusActive = false;

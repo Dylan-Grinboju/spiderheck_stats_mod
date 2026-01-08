@@ -43,11 +43,18 @@ namespace StatsMod
             if (ModConfig.CheckForUpdates)
             {
                 // Check for updates asynchronously
-                _ = Task.Run(async () =>
+                try
                 {
-                    await Task.Delay(15000);
-                    await ModUpdater.CheckForUpdatesAsync();
-                });
+                    _ = Task.Run(async () =>
+                    {
+                        await Task.Delay(15000);
+                        await ModUpdater.CheckForUpdatesAsync();
+                    });
+                }
+                catch (System.Exception ex)
+                {
+                    Logger.LogError($"Update check failed: {ex.Message}");
+                }
             }
             else
             {

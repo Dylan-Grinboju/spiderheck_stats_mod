@@ -12,9 +12,6 @@
 
     <!-- Description -->
     <Description>Statistics tracking mod for Spiderheck - compatible with Silk 0.7.0</Description>
-    
-    <!-- Copy version.txt to output directory -->
-    <EnableDefaultItems>true</EnableDefaultItems>
 
     <!-- Author -->
     <Authors>Dylan</Authors>
@@ -31,12 +28,10 @@
     <!-- Target Framework -->
     <TargetFramework>net472</TargetFramework>
 
-    <!-- Prevent copying dependency DLLs to output
-    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies> -->
   </PropertyGroup>
 
   <ItemGroup>
-  <PackageReference Include="ILRepack" Version="2.0.34">
+  <PackageReference Include="ILRepack" Version="2.0.34" GeneratePathProperty="true">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
@@ -183,6 +178,7 @@
   <ItemGroup>
   <Reference Include="UnityEngine.TextRenderingModule">
     <HintPath>./lib/UnityEngine.TextRenderingModule.dll</HintPath>
+    <Private>false</Private>
   </Reference>
 </ItemGroup>
 

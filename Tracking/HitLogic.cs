@@ -1,17 +1,14 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Logger = Silk.Logger;
-using HarmonyLib;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 
 
 namespace StatsMod
 {
     public static class HitLogic
     {
-        private static float cleanupInterval = 10f;
+        private static readonly float cleanupInterval = 10f;
         private static HashSet<int> recentlyKilledEnemies = new HashSet<int>();
         private static float lastEnemiesCleanupTime = 0f;
         private static readonly object recentlyKilledLock = new object();
@@ -80,10 +77,9 @@ namespace StatsMod
             if (enemyBrain != null)
             {
                 RollerBrain rollerBrain = enemyBrain.GetComponentInParent<RollerBrain>();
-                if (rollerBrain != null)
+                if (rollerBrain != null && !WillRollerStrutKillCauseRollerBrainDeath(rollerBrain))
                 {
-                    if (!WillRollerStrutKillCauseRollerBrainDeath(rollerBrain))
-                        return;
+                    return;
                 }
 
                 int enemyId = enemyBrain.gameObject.GetInstanceID();

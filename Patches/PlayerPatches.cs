@@ -206,8 +206,8 @@ namespace StatsMod
     [HarmonyPatch(typeof(Stabilizer), "FixedUpdate")]
     public class StabilizerFixedUpdatePatch
     {
-        // Cache PlayerInput references to avoid expensive GetComponentInParent calls every FixedUpdate
-        private static readonly Dictionary<Stabilizer, PlayerInput> _playerInputCache = new Dictionary<Stabilizer, PlayerInput>();
+        // Cache to avoid expensive GetComponentInParent calls every FixedUpdate
+        private static readonly Dictionary<Stabilizer, (PlayerInput, SpiderController)> _componentCache = new Dictionary<Stabilizer, (PlayerInput, SpiderController)>();
         private static readonly object _cacheLock = new object();
 
         static void Postfix(Stabilizer __instance)
@@ -217,12 +217,12 @@ namespace StatsMod
                 if (!GameSessionManager.Instance.IsActive)
                     return;
 
-                PlayerInput playerInput = GetCachedPlayerInput(__instance);
-                if (playerInput == null) return;
+                var (playerInput, spider) = GetCachedComponents(__instance);
+                if (playerInput == null || spider == null) return;
 
                 if (!__instance.grounded)
                 {
-                    PlayerTracker.Instance.UpdateHighestPoint(playerInput);
+                    PlayerTracker.Instance.UpdateHighestPoint(playerInput, spider);
                     PlayerTracker.Instance.StartAirborneTimer(playerInput);
                 }
                 else
@@ -236,15 +236,15 @@ namespace StatsMod
             }
         }
 
-        private static PlayerInput GetCachedPlayerInput(Stabilizer stabilizer)
+        private static (PlayerInput, SpiderController) GetCachedComponents(Stabilizer stabilizer)
         {
             lock (_cacheLock)
             {
-                if (_playerInputCache.TryGetValue(stabilizer, out PlayerInput cached))
+                if (_componentCache.TryGetValue(stabilizer, out var cached))
                 {
-                    // Verify the cached reference is still valid
-                    if (cached != null) return cached;
-                    _playerInputCache.Remove(stabilizer);
+                    // Verify the cached references are still valid
+                    if (cached.Item1 != null && cached.Item2 != null) return cached;
+                    _componentCache.Remove(stabilizer);
                 }
 
                 // Cache miss - do the expensive lookup once
@@ -252,14 +252,15 @@ namespace StatsMod
                     (spider = stabilizer.GetComponentInParent<SpiderController>()) != null)
                 {
                     PlayerInput playerInput = spider.GetComponentInParent<PlayerInput>();
-                    if (playerInput != null)
+                    if (playerInput != null && spider != null)
                     {
-                        _playerInputCache[stabilizer] = playerInput;
-                        return playerInput;
+                        var components = (playerInput, spider);
+                        _componentCache[stabilizer] = components;
+                        return components;
                     }
                 }
 
-                return null;
+                return (null, null);
             }
         }
 
@@ -268,7 +269,7 @@ namespace StatsMod
         {
             lock (_cacheLock)
             {
-                _playerInputCache.Clear();
+                _componentCache.Clear();
             }
         }
     }

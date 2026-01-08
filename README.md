@@ -15,7 +15,7 @@ A statistics tracking mod for Spiderheck that monitors player performance and ga
 - **Log File**: All the stats are saved to a local txt file when the game ends 
 - **Configurable**: Using the Yaml file, various aspects of the mod can be changed
 - **Updater**: The mod will automatically check for updates when the game starts
-- **versus mode support**: The mod will track stats in versus mode, but as this was developed with the survival mode in mind, some features may not work as intended
+- **Versus Mode Support**: The mod will track stats in versus mode, but as this was developed with the survival mode in mind, some features may not work as intended
 
 ### Small version:
 <img width="2510" height="1393" alt="image" src="https://github.com/user-attachments/assets/70784ca7-bda0-478f-864d-ce39e5b6dae1" />

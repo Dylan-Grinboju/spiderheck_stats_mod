@@ -10,8 +10,7 @@ namespace StatsMod
 
         void Update()
         {
-            bool isPaused = (Time.timeScale == 0f);
-
+            bool isPaused = Mathf.Approximately(Time.timeScale, 0f);
             if (isPaused && !wasPaused)
             {
                 GameSessionManager.Instance.PauseTimers();

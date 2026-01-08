@@ -2,14 +2,50 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Target Name="ILRepackMerge" AfterTargets="Build">
       <PropertyGroup>
-      <ILRepackExe>$(NuGetPackageRoot)ilrepack\2.0.34\tools\ILRepack.exe</ILRepackExe>
-      <OutputPath>$(MSBuildThisFileDirectory)bin\$(Configuration)\$(TargetFramework)</OutputPath>
-    </PropertyGroup>
+        <!-- Dynamically locate ILRepack package using MSBuild's automatic Pkg* property -->
+        <!-- This works regardless of NuGet version or configuration -->
+        <ILRepackExe Condition="'$(ILRepackExe)'=='' AND Exists('$(PkgILRepack)\tools\ILRepack.exe')">$(PkgILRepack)\tools\ILRepack.exe</ILRepackExe>
+        
+        <!-- Fallback: Search in NuGetPackageRoot for any version (uses the first match found) -->
+        <ILRepackExe Condition="'$(ILRepackExe)'=='' AND '$(NuGetPackageRoot)'!=''">$([System.IO.Directory]::GetFiles($(NuGetPackageRoot)ilrepack, 'ILRepack.exe', System.IO.SearchOption.AllDirectories)[0])</ILRepackExe>
+        
+        <!-- Final fallback: Use tools folder in user profile (common NuGet location) -->
+        <ILRepackExe Condition="'$(ILRepackExe)'==''">$(USERPROFILE)\.nuget\packages\ilrepack\tools\ILRepack.exe</ILRepackExe>
+        
+        <OutputPath>$(MSBuildThisFileDirectory)bin\$(Configuration)\$(TargetFramework)</OutputPath>
+      </PropertyGroup>
+      
+      <!-- Validate that ILRepack was found -->
+      <Error Condition="!Exists('$(ILRepackExe)')" Text="ILRepack.exe could not be found. Expected at: $(ILRepackExe)" />
 
-    <Message Text="Merging all dependencies into StatsMod.dll..." Importance="High" />
+      <Message Text="Merging all dependencies into StatsMod.dll..." Importance="High" />
 
-    <Exec Command="&quot;$(ILRepackExe)&quot; /out:&quot;$(OutputPath)\StatsMod.dll&quot; &quot;$(OutputPath)\StatsMod.dll&quot; &quot;$(OutputPath)\MonoMod.Backports.dll&quot; &quot;$(OutputPath)\MonoMod.ILHelpers.dll&quot; &quot;$(OutputPath)\MonoMod.Utils.dll&quot; &quot;$(OutputPath)\MonoMod.Core.dll&quot; &quot;$(OutputPath)\MonoMod.RuntimeDetour.dll&quot; &quot;$(OutputPath)\MonoMod.Iced.dll&quot; &quot;$(OutputPath)\Mono.Cecil.dll&quot; &quot;$(OutputPath)\Mono.Cecil.Rocks.dll&quot; &quot;$(OutputPath)\Mono.Cecil.Mdb.dll&quot; &quot;$(OutputPath)\Mono.Cecil.Pdb.dll&quot; /lib:&quot;$(OutputPath)&quot; /internalize" />
 
-    <Message Text="Successfully merged all dependencies into StatsMod.dll" Importance="High" />
+      <ItemGroup>
+        <ILRepackInputAssemblies Include="$(OutputPath)\StatsMod.dll" />
+        <ILRepackInputAssemblies Include="$(OutputPath)\MonoMod.Backports.dll" />
+        <ILRepackInputAssemblies Include="$(OutputPath)\MonoMod.ILHelpers.dll" />
+        <ILRepackInputAssemblies Include="$(OutputPath)\MonoMod.Utils.dll" />
+        <ILRepackInputAssemblies Include="$(OutputPath)\MonoMod.Core.dll" />
+        <ILRepackInputAssemblies Include="$(OutputPath)\MonoMod.RuntimeDetour.dll" />
+        <ILRepackInputAssemblies Include="$(OutputPath)\MonoMod.Iced.dll" />
+        <ILRepackInputAssemblies Include="$(OutputPath)\Mono.Cecil.dll" />
+        <ILRepackInputAssemblies Include="$(OutputPath)\Mono.Cecil.Rocks.dll" />
+        <ILRepackInputAssemblies Include="$(OutputPath)\Mono.Cecil.Mdb.dll" />
+        <ILRepackInputAssemblies Include="$(OutputPath)\Mono.Cecil.Pdb.dll" />
+        </ItemGroup>
+      <Exec Command="&quot;$(ILRepackExe)&quot; /out:&quot;$(OutputPath)\StatsMod.dll&quot; @(ILRepackInputAssemblies->'&quot;%(Identity)&quot;', ' ') /lib:&quot;$(OutputPath)&quot; /internalize" />
+
+      <Message Text="Successfully merged all dependencies into StatsMod.dll" Importance="High" />
+      
+      <!-- Clean up: Delete the merged DLLs, keeping only the final StatsMod.dll -->
+      <Message Text="Cleaning up merged dependency DLLs..." Importance="High" />
+      <Delete Files="@(ILRepackInputAssemblies)" Condition="'%(Filename)' != 'StatsMod'" />
+      <Delete Files="$(OutputPath)\0Harmony.dll" />
+      <Delete Files="$(OutputPath)\Silk.dll" />
+      <Delete Files="$(OutputPath)\System.ValueTuple.dll" />
+      <Delete Files="$(OutputPath)\StatsMod_merged.pdb" />
+      
+      <Message Text="Cleanup complete - only StatsMod.dll remains" Importance="High" />
   </Target>
 </Project>

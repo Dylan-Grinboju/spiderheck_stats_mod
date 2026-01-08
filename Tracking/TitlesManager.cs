@@ -276,21 +276,32 @@ namespace StatsMod
         private void RemoveDominatedTitles()
         {
             var titlesByPlayer = currentTitles.GroupBy(t => t.Player);
-            var toRemove = new List<TitleEntry>();
+            var toRemove = new HashSet<TitleEntry>();
 
             foreach (var playerTitles in titlesByPlayer)
             {
-                var titles = playerTitles.ToList();
+                // Sort titles by requirement count (descending) for optimization
+                // Titles with more requirements can only dominate titles with fewer requirements
+                var titles = playerTitles.OrderByDescending(t => t.Requirements.Count).ToList();
 
-                foreach (var title in titles)
+                for (int i = 0; i < titles.Count; i++)
                 {
-                    var isDominated = titles.Any(other =>
-                        other != title &&
-                        title.Requirements.IsSubsetOf(other.Requirements) &&
-                        other.Requirements.Count > title.Requirements.Count);
+                    if (toRemove.Contains(titles[i]))
+                        continue;
 
-                    if (isDominated)
-                        toRemove.Add(title);
+                    var currentRequirementCount = titles[i].Requirements.Count;
+
+                    for (int j = 0; j < i; j++)
+                    {
+                        if (titles[j].Requirements.Count <= currentRequirementCount)
+                            break;
+
+                        if (titles[i].Requirements.IsSubsetOf(titles[j].Requirements))
+                        {
+                            toRemove.Add(titles[i]);
+                            break; 
+                        }
+                    }
                 }
             }
 
@@ -303,13 +314,13 @@ namespace StatsMod
         {
             var titlesByPlayer = currentTitles.GroupBy(t => t.Player)
                                               .ToDictionary(g => g.Key, g => g.Count());
-            
+
             foreach (var title in currentTitles)
             {
                 int otherPlayersTitleCount = titlesByPlayer
                     .Where(kvp => kvp.Key != title.Player)
                     .Sum(kvp => kvp.Value);
-                
+
                 title.Priority += otherPlayersTitleCount * 5;
             }
         }
@@ -364,14 +375,14 @@ namespace StatsMod
                     .ForLeader(l => l.MaxKillStreak, Req.MaxKillStreak)
                     .WithName("Serial Killer")
                     .WithDescription($"Max Kill Streak ({leaders.MaxKillStreak.Value.MaxKillStreak})")
-                    .WithPriority(90) // This is fun to know so bumping it
+                    .WithPriority(defaultPriority)
                     .Build(),
 
                 new TitleBuilder(leaders)
                     .ForLeader(l => l.MaxKillStreakWhileSolo, Req.MaxKillStreakWhileSolo)
                     .WithName("Solo Rampage")
                     .WithDescription($"Max Kill Streak While Solo ({leaders.MaxKillStreakWhileSolo.Value.MaxKillStreakWhileSolo})")
-                    .WithPriority(95)
+                    .WithPriority(defaultPriority)
                     .Build(),
 
                 new TitleBuilder(leaders)
@@ -507,7 +518,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (leaders.MostShieldsLost.Value.ShieldsLost > 0 && 
+            if (leaders.MostShieldsLost.Value.ShieldsLost > 0 &&
                 TitleBuilder.SamePlayer(leaders.MostShieldsLost, leaders.LeastDeaths))
             {
                 titles.Add(new TitleBuilder(leaders)

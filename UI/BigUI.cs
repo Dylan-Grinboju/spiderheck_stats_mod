@@ -92,6 +92,8 @@ namespace StatsMod
         private GUIStyle friendlyKillsOrangeStyle;
         private GUIStyle friendlyKillsWhiteStyle;
         private GUIStyle centeredWhiteStyle;
+        private GUIStyle dynamicPlayerNameStyle;
+
         private bool stylesInitialized = false;
         #endregion
 
@@ -152,6 +154,8 @@ namespace StatsMod
             friendlyKillsOrangeStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.Orange }, alignment = TextAnchor.MiddleCenter };
             friendlyKillsWhiteStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.White }, alignment = TextAnchor.MiddleCenter };
             centeredWhiteStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.White }, alignment = TextAnchor.MiddleCenter };
+            dynamicPlayerNameStyle = new GUIStyle(valueStyle) { alignment = TextAnchor.MiddleCenter };
+
 
             stylesInitialized = true;
         }
@@ -315,8 +319,8 @@ namespace StatsMod
 
                         GUILayout.BeginHorizontal();
                         // Player name style needs dynamic color per-player
-                        var playerNameStyle = new GUIStyle(valueStyle) { normal = { textColor = playerData.PlayerColor }, alignment = TextAnchor.MiddleCenter };
-                        GUILayout.Label(playerData.PlayerName, playerNameStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_PLAYER_NAME)));
+                        dynamicPlayerNameStyle.normal.textColor = playerData.PlayerColor;
+                        GUILayout.Label(playerData.PlayerName, dynamicPlayerNameStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_PLAYER_NAME)));
 
                         GUILayout.Label(playerData.Deaths.ToString(), playerData.Deaths > 0 ? deathsRedStyle : deathsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_DEATHS)));
                         GUILayout.Label(playerData.Kills.ToString(), playerData.Kills > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_KILLS)));

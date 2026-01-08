@@ -2,19 +2,20 @@ using HarmonyLib;
 using Logger = Silk.Logger;
 using System;
 using UnityEngine;
+using System.Reflection;
 
 namespace WhispCooldownFix
 {
     [HarmonyPatch(typeof(WhispBrain), "Start")]
     public class WhispCooldownStartPatch
     {
+        private static readonly FieldInfo shotCooldownTillField = AccessTools.Field(typeof(WhispBrain), "_shotCooldownTill");
+        private static readonly FieldInfo shotCooldownField = AccessTools.Field(typeof(WhispBrain), "shotCooldown");
+
         static void Postfix(WhispBrain __instance)
         {
             try
             {
-                var shotCooldownTillField = AccessTools.Field(typeof(WhispBrain), "_shotCooldownTill");
-                var shotCooldownField = AccessTools.Field(typeof(WhispBrain), "shotCooldown");
-
                 if (shotCooldownTillField != null && shotCooldownField != null)
                 {
                     float shotCooldown = (float)shotCooldownField.GetValue(__instance);
