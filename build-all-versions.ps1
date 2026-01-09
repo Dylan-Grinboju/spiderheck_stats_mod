@@ -39,7 +39,7 @@ Write-Host "Build Summary" -ForegroundColor Cyan
 Write-Host "=================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Output files created:" -ForegroundColor White
-Write-Host "  • bin\Release-v0.7\net472\StatsMod-v0.7.0.dll" -ForegroundColor Yellow
-Write-Host "  • bin\Release-v0.6\net472\StatsMod-v0.6.1.dll" -ForegroundColor Yellow
+Write-Host "  • bin\Release-v0.7.0\net472\StatsMod-v0.7.0.dll" -ForegroundColor Yellow
+Write-Host "  • bin\Release-v0.6.1\net472\StatsMod-v0.6.1.dll" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "✓ All builds completed successfully!" -ForegroundColor Green

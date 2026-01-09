@@ -220,9 +220,10 @@ namespace StatsMod
                 var (playerInput, spider) = GetCachedComponents(__instance);
                 if (playerInput == null || spider == null) return;
 
+                PlayerTracker.Instance.UpdateHighestPoint(playerInput, spider);
+
                 if (!__instance.grounded)
                 {
-                    PlayerTracker.Instance.UpdateHighestPoint(playerInput, spider);
                     PlayerTracker.Instance.StartAirborneTimer(playerInput);
                 }
                 else

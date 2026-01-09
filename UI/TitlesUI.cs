@@ -41,6 +41,7 @@ namespace StatsMod
         #endregion
 
         #region UI State
+        private List<TitleEntry> _cachedTitles;
         private bool isDisplayVisible = false;
         private bool isAnimating = false;
         private int titlesToShow = 0;
@@ -65,7 +66,14 @@ namespace StatsMod
         public void Initialize()
         {
             CreateTextures();
+            TitlesManager.Instance.OnTitlesUpdated += UpdateTitlesCache;
+            UpdateTitlesCache();
             Logger.LogInfo("TitlesUI initialized");
+        }
+
+        private void UpdateTitlesCache()
+        {
+            _cachedTitles = TitlesManager.Instance.CurrentTitles;
         }
 
         private void CreateTextures()
@@ -280,7 +288,8 @@ namespace StatsMod
 
         private void DrawTitles(float contentWidth)
         {
-            var titles = TitlesManager.Instance.CurrentTitles;
+            if (_cachedTitles == null) _cachedTitles = TitlesManager.Instance.CurrentTitles;
+            var titles = _cachedTitles;
             int count = Mathf.Min(titlesToShow, titles.Count, MAX_TITLES);
             if (count == 0)
             {
@@ -383,6 +392,7 @@ namespace StatsMod
         #region Cleanup
         private void OnDestroy()
         {
+            TitlesManager.Instance.OnTitlesUpdated -= UpdateTitlesCache;
             if (whiteTexture != null) Destroy(whiteTexture);
         }
         #endregion

@@ -162,6 +162,7 @@ namespace StatsMod
         public List<TitleEntry> CurrentTitles => new List<TitleEntry>(currentTitles);
         public bool HasGameEndedTitles => hasGameEndedTitles;
         public int TitleCount => currentTitles.Count;
+        public event Action OnTitlesUpdated;
 
         public void CalculateAndStoreTitles(GameStatsSnapshot snapshot)
         {
@@ -198,6 +199,7 @@ namespace StatsMod
 
             hasGameEndedTitles = currentTitles.Count > 0;
             Logger.LogInfo($"Calculated {currentTitles.Count} titles for {players.Count} players");
+            OnTitlesUpdated?.Invoke();
         }
 
         private StatLeaders CalculateStatLeaders(List<KeyValuePair<PlayerInput, PlayerTracker.PlayerData>> players)
@@ -270,6 +272,7 @@ namespace StatsMod
         {
             currentTitles.Clear();
             hasGameEndedTitles = false;
+            OnTitlesUpdated?.Invoke();
         }
 
 
