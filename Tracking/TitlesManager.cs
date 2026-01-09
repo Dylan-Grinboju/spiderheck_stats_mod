@@ -302,7 +302,7 @@ namespace StatsMod
                         if (titles[i].Requirements.IsSubsetOf(titles[j].Requirements))
                         {
                             toRemove.Add(titles[i]);
-                            break; 
+                            break;
                         }
                     }
                 }
@@ -330,134 +330,192 @@ namespace StatsMod
 
         private List<TitleEntry> CreateOneCategoryTitles(StatLeaders leaders, int defaultPriority = 10)
         {
-            var titles = new List<TitleEntry>
+            var titles = new List<TitleEntry>();
+
+            if (leaders.MostWebSwings.Value.WebSwings > 0)
             {
-                new TitleBuilder(leaders)
+                titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostWebSwings, Req.MostWebSwings)
                     .WithName("Peter Parker")
                     .WithDescription("Most Web Swings")
                     .WithPriority(defaultPriority)
-                    .Build(),
+                    .Build());
+            }
 
-                new TitleBuilder(leaders)
+            if (leaders.HighestPoint.Value.HighestPoint > 0)
+            {
+                titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.HighestPoint, Req.HighestPoint)
                     .WithName(leaders.HighestPoint.Value.HighestPoint >= 1000 ? "1000 Meters Club" : "Sky Scraper")
                     .WithDescription($"Highest Point ({leaders.HighestPoint.Value.HighestPoint:F1}m)")
                     .WithPriority(leaders.HighestPoint.Value.HighestPoint >= 1000 ? 25 : defaultPriority)
-                    .Build(),
+                    .Build());
+            }
 
-                new TitleBuilder(leaders)
+            if (leaders.MostAirborneTime.Value.AirborneTime > TimeSpan.Zero)
+            {
+                titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostAirborneTime, Req.MostAirborneTime)
                     .WithName("Air Dancer")
                     .WithDescription("Most Airborne Time")
                     .WithPriority(defaultPriority)
-                    .Build(),
+                    .Build());
+            }
 
-                new TitleBuilder(leaders)
+            if (leaders.MostKillsWhileAirborne.Value.KillsWhileAirborne > 0)
+            {
+                titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostKillsWhileAirborne, Req.MostKillsWhileAirborne)
                     .WithName("Sky Hunter")
                     .WithDescription("Most Kills While Airborne")
                     .WithPriority(defaultPriority)
-                    .Build(),
+                    .Build());
+            }
 
-                new TitleBuilder(leaders)
+            if (leaders.MostKillsWhileSolo.Value.KillsWhileSolo > 0)
+            {
+                titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostKillsWhileSolo, Req.MostKillsWhileSolo)
                     .WithName("Lone Wolf")
                     .WithDescription($"Most Kills While Solo ({leaders.MostKillsWhileSolo.Value.KillsWhileSolo})")
                     .WithPriority(defaultPriority + 10)
-                    .Build(),
+                    .Build());
+            }
 
-                new TitleBuilder(leaders)
+            if (leaders.MostWaveClutches.Value.WaveClutches > 0)
+            {
+                titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostWaveClutches, Req.MostWaveClutches)
                     .WithName("Clutch Master")
                     .WithDescription($"Most Wave Clutches ({leaders.MostWaveClutches.Value.WaveClutches})")
                     .WithPriority(defaultPriority + 10)
-                    .Build(),
+                    .Build());
+            }
 
-                new TitleBuilder(leaders)
+            if (leaders.MaxKillStreak.Value.MaxKillStreak > 0)
+            {
+                titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MaxKillStreak, Req.MaxKillStreak)
                     .WithName("Serial Killer")
                     .WithDescription($"Max Kill Streak ({leaders.MaxKillStreak.Value.MaxKillStreak})")
                     .WithPriority(defaultPriority)
-                    .Build(),
+                    .Build());
+            }
 
-                new TitleBuilder(leaders)
+            if (leaders.MaxKillStreakWhileSolo.Value.MaxKillStreakWhileSolo > 0)
+            {
+                titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MaxKillStreakWhileSolo, Req.MaxKillStreakWhileSolo)
                     .WithName("Solo Rampage")
                     .WithDescription($"Max Kill Streak While Solo ({leaders.MaxKillStreakWhileSolo.Value.MaxKillStreakWhileSolo})")
                     .WithPriority(defaultPriority)
-                    .Build(),
+                    .Build());
+            }
 
-                new TitleBuilder(leaders)
+            if (leaders.MostAliveTime.Value.TotalAliveTime > TimeSpan.Zero)
+            {
+                titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostAliveTime, Req.MostAliveTime)
                     .WithName("Survivor")
                     .WithDescription("Most Alive Time")
                     .WithPriority(defaultPriority)
-                    .Build(),
+                    .Build());
+            }
 
-                new TitleBuilder(leaders)
+            if ((leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown) > 0)
+            {
+                titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostOffense, Req.MostOffense)
                     .WithName("Destroyer")
                     .WithDescription("Most Offense")
                     .WithPriority(defaultPriority)
-                    .Build(),
+                    .Build());
+            }
 
-                new TitleBuilder(leaders)
+            if ((leaders.MostDamageTaken.Value.Deaths + leaders.MostDamageTaken.Value.ShieldsLost) > 0)
+            {
+                titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostDamageTaken, Req.MostDamageTaken)
                     .WithName("Punching Bag")
                     .WithDescription("Most Damage Taken")
                     .WithPriority(defaultPriority)
-                    .Build(),
+                    .Build());
+            }
 
-                new TitleBuilder(leaders)
-                    .ForLeader(l => l.LeastDamageTaken, Req.LeastDamageTaken)
-                    .WithName("Shadow")
-                    .WithDescription("Least Damage Taken")
-                    .WithPriority(defaultPriority)
-                    .Build(),
+            titles.Add(new TitleBuilder(leaders)
+                .ForLeader(l => l.LeastDamageTaken, Req.LeastDamageTaken)
+                .WithName("Shadow")
+                .WithDescription("Least Damage Taken")
+                .WithPriority(defaultPriority)
+                .Build());
 
-                new TitleBuilder(leaders)
+            if ((leaders.MostFriendlyFire.Value.FriendlyKills + leaders.MostFriendlyFire.Value.FriendlyShieldsHit) > 0)
+            {
+                titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostFriendlyFire, Req.MostFriendlyFire)
                     .WithName("Confused")
                     .WithDescription("Most Friendly Fire")
                     .WithPriority(defaultPriority)
-                    .Build(),
+                    .Build());
+            }
 
-                new TitleBuilder(leaders)
-                    .ForLeader(l => l.LeastFriendlyFire, Req.LeastFriendlyFire)
-                    .WithName("Team Player")
-                    .WithDescription("Least Friendly Fire")
-                    .WithPriority(defaultPriority)
-                    .Build(),
+            titles.Add(new TitleBuilder(leaders)
+                .ForLeader(l => l.LeastFriendlyFire, Req.LeastFriendlyFire)
+                .WithName("Team Player")
+                .WithDescription("Least Friendly Fire")
+                .WithPriority(defaultPriority)
+                .Build());
 
-                new TitleBuilder(leaders)
-                    .ForLeader(l => l.LeastOffense, Req.LeastOffense)
-                    .WithName("Pacifist")
-                    .WithDescription("Least Offense")
-                    .WithPriority(defaultPriority)
-                    .Build(),
+            titles.Add(new TitleBuilder(leaders)
+                .ForLeader(l => l.LeastOffense, Req.LeastOffense)
+                .WithName("Pacifist")
+                .WithDescription("Least Offense")
+                .WithPriority(defaultPriority)
+                .Build());
 
-                new TitleBuilder(leaders)
+            var gunKills = leaders.MostGunsKills.Value.WeaponHits["Shotgun"] +
+                           leaders.MostGunsKills.Value.WeaponHits["RailShot"] +
+                           leaders.MostGunsKills.Value.WeaponHits["DeathRay"] +
+                           leaders.MostGunsKills.Value.WeaponHits["EnergyBall"] +
+                           leaders.MostGunsKills.Value.WeaponHits["Laser Cannon"] +
+                           leaders.MostGunsKills.Value.WeaponHits["SawDisc"];
+
+            if (gunKills > 0)
+            {
+                titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostGunsKills, Req.MostGunsKills)
                     .WithName("Gunslinger")
                     .WithDescription("Most Gun Kills")
                     .WithPriority(defaultPriority)
-                    .Build(),
+                    .Build());
+            }
 
-                new TitleBuilder(leaders)
+            var explosionKills = leaders.MostExplosionsKills.Value.WeaponHits["Explosions"] +
+                                 leaders.MostExplosionsKills.Value.WeaponHits["Laser Cube"] +
+                                 leaders.MostExplosionsKills.Value.WeaponHits["DeathCube"];
+
+            if (explosionKills > 0)
+            {
+                titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostExplosionsKills, Req.MostExplosionsKills)
                     .WithName("Demolitionist")
                     .WithDescription("Most Explosive Kills")
                     .WithPriority(defaultPriority)
-                    .Build(),
+                    .Build());
+            }
 
-                new TitleBuilder(leaders)
+            var bladeKills = leaders.MostBladeKills.Value.WeaponHits["Particle Blade"] +
+                             leaders.MostBladeKills.Value.WeaponHits["KhepriStaff"];
+
+            if (bladeKills > 0)
+            {
+                titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostBladeKills, Req.MostBladeKills)
                     .WithName("Blade Master")
                     .WithDescription("Most Blade Kills")
                     .WithPriority(defaultPriority)
-                    .Build()
-            };
+                    .Build());
+            }
 
             return titles;
         }
@@ -466,7 +524,27 @@ namespace StatsMod
         {
             var titles = new List<TitleEntry>();
 
-            if (TitleBuilder.SamePlayer(leaders.MostOffense, leaders.HighestPoint))
+            bool hasMostOffense = (leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown) > 0;
+            bool hasHighestPoint = leaders.HighestPoint.Value.HighestPoint > 0;
+            bool hasMostAirborneTime = leaders.MostAirborneTime.Value.AirborneTime > TimeSpan.Zero;
+            bool hasMostDamageTaken = (leaders.MostDamageTaken.Value.Deaths + leaders.MostDamageTaken.Value.ShieldsLost) > 0;
+            bool hasMostShieldsLost = leaders.MostShieldsLost.Value.ShieldsLost > 0;
+            bool hasMostFriendlyFire = (leaders.MostFriendlyFire.Value.FriendlyKills + leaders.MostFriendlyFire.Value.FriendlyShieldsHit) > 0;
+            bool hasMostWebSwings = leaders.MostWebSwings.Value.WebSwings > 0;
+            bool hasMostWaveClutches = leaders.MostWaveClutches.Value.WaveClutches > 0;
+            bool hasMostKillsWhileSolo = leaders.MostKillsWhileSolo.Value.KillsWhileSolo > 0;
+            bool hasMostAliveTime = leaders.MostAliveTime.Value.TotalAliveTime > TimeSpan.Zero;
+
+            var expl = leaders.MostExplosionsKills.Value.WeaponHits;
+            bool hasMostExplosionsKills = (expl["Explosions"] + expl["Laser Cube"] + expl["DeathCube"]) > 0;
+
+            var guns = leaders.MostGunsKills.Value.WeaponHits;
+            bool hasMostGunsKills = (guns["Shotgun"] + guns["RailShot"] + guns["DeathRay"] + guns["EnergyBall"] + guns["Laser Cannon"] + guns["SawDisc"]) > 0;
+
+            var blades = leaders.MostBladeKills.Value.WeaponHits;
+            bool hasMostBladeKills = (blades["Particle Blade"] + blades["KhepriStaff"]) > 0;
+
+            if (hasMostOffense && hasHighestPoint && TitleBuilder.SamePlayer(leaders.MostOffense, leaders.HighestPoint))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostOffense, Req.MostOffense)
@@ -477,7 +555,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.MostAirborneTime, leaders.HighestPoint))
+            if (hasMostAirborneTime && hasHighestPoint && TitleBuilder.SamePlayer(leaders.MostAirborneTime, leaders.HighestPoint))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostAirborneTime, Req.MostAirborneTime)
@@ -488,7 +566,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.MostOffense, leaders.MostDamageTaken))
+            if (hasMostOffense && hasMostDamageTaken && TitleBuilder.SamePlayer(leaders.MostOffense, leaders.MostDamageTaken))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostOffense, Req.MostOffense)
@@ -499,7 +577,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.MostOffense, leaders.LeastDamageTaken))
+            if (hasMostOffense && TitleBuilder.SamePlayer(leaders.MostOffense, leaders.LeastDamageTaken))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostOffense, Req.MostOffense)
@@ -510,18 +588,18 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.LeastOffense, leaders.LeastDamageTaken))
+            if (TitleBuilder.SamePlayer(leaders.LeastOffense, leaders.LeastFriendlyFire))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.LeastOffense, Req.LeastOffense)
-                    .AndLeader(Req.LeastDamageTaken)
+                    .AndLeader(Req.LeastFriendlyFire)
                     .WithName("Nothing Burger")
-                    .WithDescription("Least Offense, Damage Taken")
+                    .WithDescription("Least Offense, Friendly Fire")
                     .WithPriority(defaultPriority)
                     .Build());
             }
 
-            if (leaders.MostShieldsLost.Value.ShieldsLost > 0 &&
+            if (hasMostShieldsLost &&
                 TitleBuilder.SamePlayer(leaders.MostShieldsLost, leaders.LeastDeaths))
             {
                 titles.Add(new TitleBuilder(leaders)
@@ -533,7 +611,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.MostOffense, leaders.MostFriendlyFire))
+            if (hasMostOffense && hasMostFriendlyFire && TitleBuilder.SamePlayer(leaders.MostOffense, leaders.MostFriendlyFire))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostOffense, Req.MostOffense)
@@ -544,7 +622,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.MostWebSwings, leaders.MostAirborneTime))
+            if (hasMostWebSwings && hasMostAirborneTime && TitleBuilder.SamePlayer(leaders.MostWebSwings, leaders.MostAirborneTime))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostWebSwings, Req.MostWebSwings)
@@ -555,7 +633,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.MostOffense, leaders.LowestPoint))
+            if (hasMostOffense && TitleBuilder.SamePlayer(leaders.MostOffense, leaders.LowestPoint))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostOffense, Req.MostOffense)
@@ -566,7 +644,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.MostWebSwings, leaders.MostOffense))
+            if (hasMostWebSwings && hasMostOffense && TitleBuilder.SamePlayer(leaders.MostWebSwings, leaders.MostOffense))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostOffense, Req.MostOffense)
@@ -577,7 +655,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.MostWaveClutches, leaders.MostKillsWhileSolo))
+            if (hasMostWaveClutches && hasMostKillsWhileSolo && TitleBuilder.SamePlayer(leaders.MostWaveClutches, leaders.MostKillsWhileSolo))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostWaveClutches, Req.MostWaveClutches)
@@ -588,7 +666,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.MostExplosionsKills, leaders.MostDamageTaken))
+            if (hasMostExplosionsKills && hasMostDamageTaken && TitleBuilder.SamePlayer(leaders.MostExplosionsKills, leaders.MostDamageTaken))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostExplosionsKills, Req.MostExplosionsKills)
@@ -599,7 +677,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.MostGunsKills, leaders.MostOffense))
+            if (hasMostGunsKills && hasMostOffense && TitleBuilder.SamePlayer(leaders.MostGunsKills, leaders.MostOffense))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostGunsKills, Req.MostGunsKills)
@@ -610,7 +688,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.MostBladeKills, leaders.LeastDamageTaken))
+            if (hasMostBladeKills && TitleBuilder.SamePlayer(leaders.MostBladeKills, leaders.LeastDamageTaken))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostBladeKills, Req.MostBladeKills)
@@ -621,7 +699,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.MostBladeKills, leaders.HighestPoint))
+            if (hasMostBladeKills && hasHighestPoint && TitleBuilder.SamePlayer(leaders.MostBladeKills, leaders.HighestPoint))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostBladeKills, Req.MostBladeKills)
@@ -632,7 +710,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.MostDamageTaken, leaders.MostAliveTime))
+            if (hasMostDamageTaken && hasMostAliveTime && TitleBuilder.SamePlayer(leaders.MostDamageTaken, leaders.MostAliveTime))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostDamageTaken, Req.MostDamageTaken)
@@ -650,7 +728,25 @@ namespace StatsMod
         {
             var titles = new List<TitleEntry>();
 
-            if (TitleBuilder.SamePlayer(leaders.MostExplosionsKills, leaders.HighestPoint, leaders.MostAirborneTime))
+            bool hasMostOffense = (leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown) > 0;
+            bool hasHighestPoint = leaders.HighestPoint.Value.HighestPoint > 0;
+            bool hasMostAirborneTime = leaders.MostAirborneTime.Value.AirborneTime > TimeSpan.Zero;
+            bool hasMostDamageTaken = (leaders.MostDamageTaken.Value.Deaths + leaders.MostDamageTaken.Value.ShieldsLost) > 0;
+            bool hasMostFriendlyFire = (leaders.MostFriendlyFire.Value.FriendlyKills + leaders.MostFriendlyFire.Value.FriendlyShieldsHit) > 0;
+            bool hasMostWebSwings = leaders.MostWebSwings.Value.WebSwings > 0;
+            bool hasMostWaveClutches = leaders.MostWaveClutches.Value.WaveClutches > 0;
+            bool hasMaxKillStreakWhileSolo = leaders.MaxKillStreakWhileSolo.Value.MaxKillStreakWhileSolo > 0;
+
+            var expl = leaders.MostExplosionsKills.Value.WeaponHits;
+            bool hasMostExplosionsKills = (expl["Explosions"] + expl["Laser Cube"] + expl["DeathCube"]) > 0;
+
+            var guns = leaders.MostGunsKills.Value.WeaponHits;
+            bool hasMostGunsKills = (guns["Shotgun"] + guns["RailShot"] + guns["DeathRay"] + guns["EnergyBall"] + guns["Laser Cannon"] + guns["SawDisc"]) > 0;
+
+            var blades = leaders.MostBladeKills.Value.WeaponHits;
+            bool hasMostBladeKills = (blades["Particle Blade"] + blades["KhepriStaff"]) > 0;
+
+            if (hasMostExplosionsKills && hasHighestPoint && hasMostAirborneTime && TitleBuilder.SamePlayer(leaders.MostExplosionsKills, leaders.HighestPoint, leaders.MostAirborneTime))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostExplosionsKills, Req.MostExplosionsKills)
@@ -662,7 +758,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.MostBladeKills, leaders.HighestPoint, leaders.LeastDamageTaken))
+            if (hasMostBladeKills && hasHighestPoint && TitleBuilder.SamePlayer(leaders.MostBladeKills, leaders.HighestPoint, leaders.LeastDamageTaken))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostBladeKills, Req.MostBladeKills)
@@ -674,7 +770,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.MostOffense, leaders.MostDamageTaken, leaders.LeastFriendlyFire))
+            if (hasMostOffense && hasMostDamageTaken && TitleBuilder.SamePlayer(leaders.MostOffense, leaders.MostDamageTaken, leaders.LeastFriendlyFire))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostOffense, Req.MostOffense)
@@ -686,7 +782,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.MostOffense, leaders.LeastDamageTaken, leaders.LeastFriendlyFire))
+            if (hasMostOffense && TitleBuilder.SamePlayer(leaders.MostOffense, leaders.LeastDamageTaken, leaders.LeastFriendlyFire))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostOffense, Req.MostOffense)
@@ -698,7 +794,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.MostOffense, leaders.LeastDamageTaken, leaders.MostFriendlyFire))
+            if (hasMostOffense && hasMostFriendlyFire && TitleBuilder.SamePlayer(leaders.MostOffense, leaders.LeastDamageTaken, leaders.MostFriendlyFire))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostOffense, Req.MostOffense)
@@ -710,7 +806,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.MaxKillStreakWhileSolo, leaders.MostWaveClutches, leaders.MostFriendlyFire))
+            if (hasMaxKillStreakWhileSolo && hasMostWaveClutches && hasMostFriendlyFire && TitleBuilder.SamePlayer(leaders.MaxKillStreakWhileSolo, leaders.MostWaveClutches, leaders.MostFriendlyFire))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostFriendlyFire, Req.MostFriendlyFire)
@@ -722,7 +818,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.LeastOffense, leaders.LeastDamageTaken, leaders.MostFriendlyFire))
+            if (hasMostFriendlyFire && TitleBuilder.SamePlayer(leaders.LeastOffense, leaders.LeastDamageTaken, leaders.MostFriendlyFire))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.LeastOffense, Req.LeastOffense)
@@ -734,7 +830,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.MostWebSwings, leaders.MostAirborneTime, leaders.MostDamageTaken))
+            if (hasMostWebSwings && hasMostAirborneTime && hasMostDamageTaken && TitleBuilder.SamePlayer(leaders.MostWebSwings, leaders.MostAirborneTime, leaders.MostDamageTaken))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostWebSwings, Req.MostWebSwings)
@@ -758,7 +854,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.MostGunsKills, leaders.MostOffense, leaders.LeastFriendlyFire))
+            if (hasMostGunsKills && hasMostOffense && TitleBuilder.SamePlayer(leaders.MostGunsKills, leaders.MostOffense, leaders.LeastFriendlyFire))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostGunsKills, Req.MostGunsKills)
@@ -770,7 +866,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.MostExplosionsKills, leaders.MostOffense, leaders.MostFriendlyFire))
+            if (hasMostExplosionsKills && hasMostOffense && hasMostFriendlyFire && TitleBuilder.SamePlayer(leaders.MostExplosionsKills, leaders.MostOffense, leaders.MostFriendlyFire))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostExplosionsKills, Req.MostExplosionsKills)
@@ -782,7 +878,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.MostBladeKills, leaders.MostExplosionsKills, leaders.MostGunsKills))
+            if (hasMostBladeKills && hasMostExplosionsKills && hasMostGunsKills && TitleBuilder.SamePlayer(leaders.MostBladeKills, leaders.MostExplosionsKills, leaders.MostGunsKills))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostExplosionsKills, Req.MostExplosionsKills)
@@ -801,7 +897,19 @@ namespace StatsMod
         {
             var titles = new List<TitleEntry>();
 
-            if (TitleBuilder.SamePlayer(leaders.MostOffense, leaders.LeastDamageTaken, leaders.HighestPoint, leaders.LeastFriendlyFire))
+            bool hasMostOffense = (leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown) > 0;
+            bool hasHighestPoint = leaders.HighestPoint.Value.HighestPoint > 0;
+            bool hasMostAirborneTime = leaders.MostAirborneTime.Value.AirborneTime > TimeSpan.Zero;
+            bool hasMostFriendlyFire = (leaders.MostFriendlyFire.Value.FriendlyKills + leaders.MostFriendlyFire.Value.FriendlyShieldsHit) > 0;
+            bool hasMostWebSwings = leaders.MostWebSwings.Value.WebSwings > 0;
+
+            var expl = leaders.MostExplosionsKills.Value.WeaponHits;
+            bool hasMostExplosionsKills = (expl["Explosions"] + expl["Laser Cube"] + expl["DeathCube"]) > 0;
+
+            var guns = leaders.MostGunsKills.Value.WeaponHits;
+            bool hasMostGunsKills = (guns["Shotgun"] + guns["RailShot"] + guns["DeathRay"] + guns["EnergyBall"] + guns["Laser Cannon"] + guns["SawDisc"]) > 0;
+
+            if (hasMostOffense && hasHighestPoint && TitleBuilder.SamePlayer(leaders.MostOffense, leaders.LeastDamageTaken, leaders.HighestPoint, leaders.LeastFriendlyFire))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostOffense, Req.MostOffense)
@@ -814,7 +922,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.HighestPoint, leaders.MostAirborneTime, leaders.LeastDamageTaken, leaders.MostWebSwings))
+            if (hasHighestPoint && hasMostAirborneTime && hasMostWebSwings && TitleBuilder.SamePlayer(leaders.HighestPoint, leaders.MostAirborneTime, leaders.LeastDamageTaken, leaders.MostWebSwings))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.HighestPoint, Req.HighestPoint)
@@ -827,7 +935,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.MostOffense, leaders.HighestPoint, leaders.MostAirborneTime, leaders.MostExplosionsKills))
+            if (hasMostOffense && hasHighestPoint && hasMostAirborneTime && hasMostExplosionsKills && TitleBuilder.SamePlayer(leaders.MostOffense, leaders.HighestPoint, leaders.MostAirborneTime, leaders.MostExplosionsKills))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostOffense, Req.MostOffense)
@@ -840,7 +948,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.LeastOffense, leaders.LeastDamageTaken, leaders.MostFriendlyFire, leaders.MostExplosionsKills))
+            if (hasMostFriendlyFire && hasMostExplosionsKills && TitleBuilder.SamePlayer(leaders.LeastOffense, leaders.LeastDamageTaken, leaders.MostFriendlyFire, leaders.MostExplosionsKills))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.LeastOffense, Req.LeastOffense)
@@ -853,7 +961,7 @@ namespace StatsMod
                     .Build());
             }
 
-            if (TitleBuilder.SamePlayer(leaders.MostOffense, leaders.LeastDamageTaken, leaders.LeastFriendlyFire, leaders.MostGunsKills))
+            if (hasMostOffense && hasMostGunsKills && TitleBuilder.SamePlayer(leaders.MostOffense, leaders.LeastDamageTaken, leaders.LeastFriendlyFire, leaders.MostGunsKills))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostOffense, Req.MostOffense)
@@ -873,7 +981,14 @@ namespace StatsMod
         {
             var titles = new List<TitleEntry>();
 
-            if (TitleBuilder.SamePlayer(leaders.MostOffense, leaders.LeastDamageTaken, leaders.HighestPoint, leaders.MostFriendlyFire, leaders.MostExplosionsKills))
+            bool hasMostOffense = (leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown) > 0;
+            bool hasHighestPoint = leaders.HighestPoint.Value.HighestPoint > 0;
+            bool hasMostFriendlyFire = (leaders.MostFriendlyFire.Value.FriendlyKills + leaders.MostFriendlyFire.Value.FriendlyShieldsHit) > 0;
+
+            var expl = leaders.MostExplosionsKills.Value.WeaponHits;
+            bool hasMostExplosionsKills = (expl["Explosions"] + expl["Laser Cube"] + expl["DeathCube"]) > 0;
+
+            if (hasMostOffense && hasHighestPoint && hasMostFriendlyFire && hasMostExplosionsKills && TitleBuilder.SamePlayer(leaders.MostOffense, leaders.LeastDamageTaken, leaders.HighestPoint, leaders.MostFriendlyFire, leaders.MostExplosionsKills))
             {
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostOffense, Req.MostOffense)
