@@ -17,6 +17,10 @@ A statistics tracking mod for Spiderheck that monitors player performance and ga
 - **Updater**: The mod will automatically check for updates when the game starts
 - **Versus Mode Support**: The mod will track stats in versus mode, but as this was developed with the survival mode in mind, some features may not work as intended
 
+
+### Titles
+<img width="2485" height="1288" alt="Pasted image 20260109102238" src="https://github.com/user-attachments/assets/ea9b7aa7-9b15-408d-88d9-dd35c2679eff" />
+
 ### Small version:
 <img width="2510" height="1393" alt="image" src="https://github.com/user-attachments/assets/70784ca7-bda0-478f-864d-ce39e5b6dae1" />
 
