@@ -13,9 +13,9 @@ namespace StatsMod
         public int MAX_TITLES = 8;
         public int GRID_COLUMNS = 4;
         public int GRID_ROWS = 2;
-        public float CARD_WIDTH = 280f;
+        public float CARD_WIDTH = 350f;
         public float CARD_HEIGHT = 300f;
-        public float CARD_SPACING_X = 20f;
+        public float CARD_SPACING_X = 50f;
         public float CARD_SPACING_Y = 100f;
         public float GRID_MARGIN_X = 0f;
         public float GRID_MARGIN_Y = 0f;

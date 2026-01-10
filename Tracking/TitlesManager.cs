@@ -337,7 +337,7 @@ namespace StatsMod
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostWebSwings, Req.MostWebSwings)
                     .WithName("Peter Parker")
-                    .WithDescription("Most Web Swings")
+                    .WithDescription($"Most Web Swings ({leaders.MostWebSwings.Value.WebSwings})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -357,7 +357,7 @@ namespace StatsMod
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostAirborneTime, Req.MostAirborneTime)
                     .WithName("Air Dancer")
-                    .WithDescription("Most Airborne Time")
+                    .WithDescription($"Most Airborne Time ({leaders.MostAirborneTime.Value.AirborneTime.TotalSeconds:F1}s)")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -367,7 +367,7 @@ namespace StatsMod
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostKillsWhileAirborne, Req.MostKillsWhileAirborne)
                     .WithName("Sky Hunter")
-                    .WithDescription("Most Kills While Airborne")
+                    .WithDescription($"Most Kills While Airborne ({leaders.MostKillsWhileAirborne.Value.KillsWhileAirborne})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -417,7 +417,7 @@ namespace StatsMod
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostAliveTime, Req.MostAliveTime)
                     .WithName("Survivor")
-                    .WithDescription("Most Alive Time")
+                    .WithDescription($"Most Alive Time ({leaders.MostAliveTime.Value.TotalAliveTime.TotalSeconds:F1}s)")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -427,7 +427,7 @@ namespace StatsMod
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostOffense, Req.MostOffense)
                     .WithName("Destroyer")
-                    .WithDescription("Most Offense")
+                    .WithDescription($"Most Offense ({leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -437,7 +437,7 @@ namespace StatsMod
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostDamageTaken, Req.MostDamageTaken)
                     .WithName("Punching Bag")
-                    .WithDescription("Most Damage Taken")
+                    .WithDescription($"Most Damage Taken ({leaders.MostDamageTaken.Value.Deaths + leaders.MostDamageTaken.Value.ShieldsLost})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -445,7 +445,7 @@ namespace StatsMod
             titles.Add(new TitleBuilder(leaders)
                 .ForLeader(l => l.LeastDamageTaken, Req.LeastDamageTaken)
                 .WithName("Shadow")
-                .WithDescription("Least Damage Taken")
+                .WithDescription($"Least Damage Taken ({leaders.LeastDamageTaken.Value.Deaths + leaders.LeastDamageTaken.Value.ShieldsLost})")
                 .WithPriority(defaultPriority)
                 .Build());
 
@@ -454,7 +454,7 @@ namespace StatsMod
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostFriendlyFire, Req.MostFriendlyFire)
                     .WithName("Confused")
-                    .WithDescription("Most Friendly Fire")
+                    .WithDescription($"Most Friendly Fire ({leaders.MostFriendlyFire.Value.FriendlyKills + leaders.MostFriendlyFire.Value.FriendlyShieldsHit})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -462,14 +462,14 @@ namespace StatsMod
             titles.Add(new TitleBuilder(leaders)
                 .ForLeader(l => l.LeastFriendlyFire, Req.LeastFriendlyFire)
                 .WithName("Team Player")
-                .WithDescription("Least Friendly Fire")
+                .WithDescription($"Least Friendly Fire ({leaders.LeastFriendlyFire.Value.FriendlyKills + leaders.LeastFriendlyFire.Value.FriendlyShieldsHit})")
                 .WithPriority(defaultPriority)
                 .Build());
 
             titles.Add(new TitleBuilder(leaders)
                 .ForLeader(l => l.LeastOffense, Req.LeastOffense)
                 .WithName("Pacifist")
-                .WithDescription("Least Offense")
+                .WithDescription($"Least Offense ({leaders.LeastOffense.Value.Kills + leaders.LeastOffense.Value.EnemyShieldsTakenDown})")
                 .WithPriority(defaultPriority)
                 .Build());
 
@@ -485,7 +485,7 @@ namespace StatsMod
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostGunsKills, Req.MostGunsKills)
                     .WithName("Gunslinger")
-                    .WithDescription("Most Gun Kills")
+                    .WithDescription($"Most Gun Kills ({gunKills})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -499,7 +499,7 @@ namespace StatsMod
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostExplosionsKills, Req.MostExplosionsKills)
                     .WithName("Demolitionist")
-                    .WithDescription("Most Explosive Kills")
+                    .WithDescription($"Most Explosive Kills ({explosionKills})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -512,7 +512,7 @@ namespace StatsMod
                 titles.Add(new TitleBuilder(leaders)
                     .ForLeader(l => l.MostBladeKills, Req.MostBladeKills)
                     .WithName("Blade Master")
-                    .WithDescription("Most Blade Kills")
+                    .WithDescription($"Most Blade Kills ({bladeKills})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -550,7 +550,7 @@ namespace StatsMod
                     .ForLeader(l => l.MostOffense, Req.MostOffense)
                     .AndLeader(Req.HighestPoint)
                     .WithName("Orbital Strike")
-                    .WithDescription("Most Offense, Highest Point")
+                    .WithDescription($"Most Offense ({leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown})\nHighest Point ({leaders.HighestPoint.Value.HighestPoint:F1}m)")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -561,7 +561,7 @@ namespace StatsMod
                     .ForLeader(l => l.MostAirborneTime, Req.MostAirborneTime)
                     .AndLeader(Req.HighestPoint)
                     .WithName("Satellite")
-                    .WithDescription("Highest Point, Most Airborne Time")
+                    .WithDescription($"Highest Point ({leaders.HighestPoint.Value.HighestPoint:F1}m)\nMost Airborne Time ({leaders.MostAirborneTime.Value.AirborneTime.TotalSeconds:F1}s)")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -572,7 +572,7 @@ namespace StatsMod
                     .ForLeader(l => l.MostOffense, Req.MostOffense)
                     .AndLeader(Req.MostDamageTaken)
                     .WithName("Glass Cannon")
-                    .WithDescription("Most Offense, Damage Taken")
+                    .WithDescription($"Most Offense ({leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown})\nMost Damage Taken ({leaders.MostDamageTaken.Value.Deaths + leaders.MostDamageTaken.Value.ShieldsLost})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -583,7 +583,7 @@ namespace StatsMod
                     .ForLeader(l => l.MostOffense, Req.MostOffense)
                     .AndLeader(Req.LeastDamageTaken)
                     .WithName("Sword and Shield")
-                    .WithDescription("Most Offense, Least Damage Taken")
+                    .WithDescription($"Most Offense ({leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown})\nLeast Damage Taken ({leaders.LeastDamageTaken.Value.Deaths + leaders.LeastDamageTaken.Value.ShieldsLost})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -594,7 +594,7 @@ namespace StatsMod
                     .ForLeader(l => l.LeastOffense, Req.LeastOffense)
                     .AndLeader(Req.LeastFriendlyFire)
                     .WithName("Nothing Burger")
-                    .WithDescription("Least Offense, Friendly Fire")
+                    .WithDescription($"Least Offense ({leaders.LeastOffense.Value.Kills + leaders.LeastOffense.Value.EnemyShieldsTakenDown})\nLeast Friendly Fire ({leaders.LeastFriendlyFire.Value.FriendlyKills + leaders.LeastFriendlyFire.Value.FriendlyShieldsHit})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -606,7 +606,7 @@ namespace StatsMod
                     .ForLeader(l => l.MostShieldsLost, Req.MostShieldsLost)
                     .AndLeader(Req.LeastDeaths)
                     .WithName("On Death's Bed")
-                    .WithDescription("Most Shields Lost, Least Deaths")
+                    .WithDescription($"Most Shields Lost ({leaders.MostShieldsLost.Value.ShieldsLost})\nLeast Deaths ({leaders.LeastDeaths.Value.Deaths})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -617,7 +617,7 @@ namespace StatsMod
                     .ForLeader(l => l.MostOffense, Req.MostOffense)
                     .AndLeader(Req.MostFriendlyFire)
                     .WithName("Perfectly Balanced")
-                    .WithDescription("Most Offense, Friendly Fire")
+                    .WithDescription($"Most Offense ({leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown})\nMost Friendly Fire ({leaders.MostFriendlyFire.Value.FriendlyKills + leaders.MostFriendlyFire.Value.FriendlyShieldsHit})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -628,7 +628,7 @@ namespace StatsMod
                     .ForLeader(l => l.MostWebSwings, Req.MostWebSwings)
                     .AndLeader(Req.MostAirborneTime)
                     .WithName("Spider-Man")
-                    .WithDescription("Most Web Swings, Airborne Time")
+                    .WithDescription($"Most Web Swings ({leaders.MostWebSwings.Value.WebSwings})\nMost Airborne Time ({leaders.MostAirborneTime.Value.AirborneTime.TotalSeconds:F1}s)")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -639,7 +639,7 @@ namespace StatsMod
                     .ForLeader(l => l.MostOffense, Req.MostOffense)
                     .AndLeader(Req.LowestPoint)
                     .WithName("Lawn-mower")
-                    .WithDescription("Most Offense, Lowest Point")
+                    .WithDescription($"Most Offense ({leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown})\nLowest Point ({leaders.LowestPoint.Value.HighestPoint:F1}m)")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -650,7 +650,7 @@ namespace StatsMod
                     .ForLeader(l => l.MostOffense, Req.MostOffense)
                     .AndLeader(Req.MostWebSwings)
                     .WithName("Hit & Run")
-                    .WithDescription("Most Offense, Web Swings")
+                    .WithDescription($"Most Offense ({leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown})\nMost Web Swings ({leaders.MostWebSwings.Value.WebSwings})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -661,7 +661,7 @@ namespace StatsMod
                     .ForLeader(l => l.MostWaveClutches, Req.MostWaveClutches)
                     .AndLeader(Req.MostKillsWhileSolo)
                     .WithName("Last Stand Hero")
-                    .WithDescription($"Most Wave Clutches ({leaders.MostWaveClutches.Value.WaveClutches}), Kills While Solo ({leaders.MostKillsWhileSolo.Value.KillsWhileSolo})")
+                    .WithDescription($"Most Wave Clutches ({leaders.MostWaveClutches.Value.WaveClutches})\nMost Kills While Solo ({leaders.MostKillsWhileSolo.Value.KillsWhileSolo})")
                     .WithPriority(defaultPriority + 20)
                     .Build());
             }
@@ -672,7 +672,7 @@ namespace StatsMod
                     .ForLeader(l => l.MostExplosionsKills, Req.MostExplosionsKills)
                     .AndLeader(Req.MostDamageTaken)
                     .WithName("Kamikaze")
-                    .WithDescription("Most Explosive Kills, Damage Taken")
+                    .WithDescription($"Most Explosive Kills ({expl["Explosions"] + expl["Laser Cube"] + expl["DeathCube"]})\nMost Damage Taken ({leaders.MostDamageTaken.Value.Deaths + leaders.MostDamageTaken.Value.ShieldsLost})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -683,7 +683,7 @@ namespace StatsMod
                     .ForLeader(l => l.MostGunsKills, Req.MostGunsKills)
                     .AndLeader(Req.MostOffense)
                     .WithName("War Machine")
-                    .WithDescription("Most Gun Kills, Offense")
+                    .WithDescription($"Most Gun Kills ({guns["Shotgun"] + guns["RailShot"] + guns["DeathRay"] + guns["EnergyBall"] + guns["Laser Cannon"] + guns["SawDisc"]})\nMost Offense ({leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -694,7 +694,7 @@ namespace StatsMod
                     .ForLeader(l => l.MostBladeKills, Req.MostBladeKills)
                     .AndLeader(Req.LeastDamageTaken)
                     .WithName("Silent Assassin")
-                    .WithDescription("Most Blade Kills, Least Damage Taken")
+                    .WithDescription($"Most Blade Kills ({blades["Particle Blade"] + blades["KhepriStaff"]})\nLeast Damage Taken ({leaders.LeastDamageTaken.Value.Deaths + leaders.LeastDamageTaken.Value.ShieldsLost})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -705,7 +705,7 @@ namespace StatsMod
                     .ForLeader(l => l.MostBladeKills, Req.MostBladeKills)
                     .AndLeader(Req.HighestPoint)
                     .WithName("I have the High Ground")
-                    .WithDescription("Most Blade Kills, Highest Point")
+                    .WithDescription($"Most Blade Kills ({blades["Particle Blade"] + blades["KhepriStaff"]})\nHighest Point ({leaders.HighestPoint.Value.HighestPoint:F1}m)")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -716,7 +716,7 @@ namespace StatsMod
                     .ForLeader(l => l.MostDamageTaken, Req.MostDamageTaken)
                     .AndLeader(Req.MostAliveTime)
                     .WithName("Nine Lives")
-                    .WithDescription("Most Damage Taken, Alive Time")
+                    .WithDescription($"Most Damage Taken ({leaders.MostDamageTaken.Value.Deaths + leaders.MostDamageTaken.Value.ShieldsLost})\nMost Alive Time ({leaders.MostAliveTime.Value.TotalAliveTime.TotalSeconds:F1}s)")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -753,7 +753,7 @@ namespace StatsMod
                     .AndLeader(Req.HighestPoint)
                     .AndLeader(Req.MostAirborneTime)
                     .WithName("ICBM")
-                    .WithDescription("Most explosion Kills, Airborne Time, Highest Point")
+                    .WithDescription($"Most Explosive Kills ({expl["Explosions"] + expl["Laser Cube"] + expl["DeathCube"]})\nMost Airborne Time ({leaders.MostAirborneTime.Value.AirborneTime.TotalSeconds:F1}s)\nHighest Point ({leaders.HighestPoint.Value.HighestPoint:F1}m)")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -765,7 +765,7 @@ namespace StatsMod
                     .AndLeader(Req.HighestPoint)
                     .AndLeader(Req.LeastDamageTaken)
                     .WithName("Phantom Blade")
-                    .WithDescription("Most blade kills, Highest Point, Least Damage Taken")
+                    .WithDescription($"Most Blade Kills ({blades["Particle Blade"] + blades["KhepriStaff"]})\nHighest Point ({leaders.HighestPoint.Value.HighestPoint:F1}m)\nLeast Damage Taken ({leaders.LeastDamageTaken.Value.Deaths + leaders.LeastDamageTaken.Value.ShieldsLost})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -777,7 +777,7 @@ namespace StatsMod
                     .AndLeader(Req.MostDamageTaken)
                     .AndLeader(Req.LeastFriendlyFire)
                     .WithName("Elegant Barbarian")
-                    .WithDescription("Most Offense, Damage Taken, Least Friendly Fire")
+                    .WithDescription($"Most Offense ({leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown})\nMost Damage Taken ({leaders.MostDamageTaken.Value.Deaths + leaders.MostDamageTaken.Value.ShieldsLost})\nLeast Friendly Fire ({leaders.LeastFriendlyFire.Value.FriendlyKills + leaders.LeastFriendlyFire.Value.FriendlyShieldsHit})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -789,7 +789,7 @@ namespace StatsMod
                     .AndLeader(Req.LeastDamageTaken)
                     .AndLeader(Req.LeastFriendlyFire)
                     .WithName("MVP")
-                    .WithDescription("Most Offense, Least Damage Taken, Friendly Fire")
+                    .WithDescription($"Most Offense ({leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown})\nLeast Damage Taken ({leaders.LeastDamageTaken.Value.Deaths + leaders.LeastDamageTaken.Value.ShieldsLost})\nLeast Friendly Fire ({leaders.LeastFriendlyFire.Value.FriendlyKills + leaders.LeastFriendlyFire.Value.FriendlyShieldsHit})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -801,7 +801,7 @@ namespace StatsMod
                     .AndLeader(Req.LeastDamageTaken)
                     .AndLeader(Req.MostFriendlyFire)
                     .WithName("Agent of Chaos")
-                    .WithDescription("Most Offense, Friendly Fire, Least Damage Taken")
+                    .WithDescription($"Most Offense ({leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown})\nMost Friendly Fire ({leaders.MostFriendlyFire.Value.FriendlyKills + leaders.MostFriendlyFire.Value.FriendlyShieldsHit})\nLeast Damage Taken ({leaders.LeastDamageTaken.Value.Deaths + leaders.LeastDamageTaken.Value.ShieldsLost})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -813,7 +813,7 @@ namespace StatsMod
                     .AndLeader(Req.MaxKillStreakWhileSolo)
                     .AndLeader(Req.MostWaveClutches)
                     .WithName("Ordered Chaos")
-                    .WithDescription("Most Friendly Fire, Wave Clutches, Max Kill Streak While Solo")
+                    .WithDescription($"Most Friendly Fire ({leaders.MostFriendlyFire.Value.FriendlyKills + leaders.MostFriendlyFire.Value.FriendlyShieldsHit})\nMost Wave Clutches ({leaders.MostWaveClutches.Value.WaveClutches})\nMax Kill Streak While Solo ({leaders.MaxKillStreakWhileSolo.Value.MaxKillStreakWhileSolo})")
                     .WithPriority(defaultPriority + 10)
                     .Build());
             }
@@ -825,7 +825,7 @@ namespace StatsMod
                     .AndLeader(Req.LeastDamageTaken)
                     .AndLeader(Req.MostFriendlyFire)
                     .WithName("Traitor")
-                    .WithDescription("Least Offense, Damage Taken, Most Friendly Fire")
+                    .WithDescription($"Least Offense ({leaders.LeastOffense.Value.Kills + leaders.LeastOffense.Value.EnemyShieldsTakenDown})\nLeast Damage Taken ({leaders.LeastDamageTaken.Value.Deaths + leaders.LeastDamageTaken.Value.ShieldsLost})\nMost Friendly Fire ({leaders.MostFriendlyFire.Value.FriendlyKills + leaders.MostFriendlyFire.Value.FriendlyShieldsHit})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -837,7 +837,7 @@ namespace StatsMod
                     .AndLeader(Req.MostAirborneTime)
                     .AndLeader(Req.MostDamageTaken)
                     .WithName("Spooderman")
-                    .WithDescription("Most Web Swings, Airborne Time, Damage Taken")
+                    .WithDescription($"Most Web Swings ({leaders.MostWebSwings.Value.WebSwings})\nMost Airborne Time ({leaders.MostAirborneTime.Value.AirborneTime.TotalSeconds:F1}s)\nMost Damage Taken ({leaders.MostDamageTaken.Value.Deaths + leaders.MostDamageTaken.Value.ShieldsLost})")
                     .WithPriority(defaultPriority + 10)
                     .Build());
             }
@@ -849,7 +849,7 @@ namespace StatsMod
                     .AndLeader(Req.LeastAirborneTime)
                     .AndLeader(Req.LeastWebSwings)
                     .WithName("Basement Dweller")
-                    .WithDescription("Lowest Point, Least Airborne Time, Web Swings")
+                    .WithDescription($"Lowest Point ({leaders.LowestPoint.Value.HighestPoint:F1}m)\nLeast Airborne Time ({leaders.LeastAirborneTime.Value.AirborneTime.TotalSeconds:F1}s)\nLeast Web Swings ({leaders.LeastWebSwings.Value.WebSwings})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -861,7 +861,7 @@ namespace StatsMod
                     .AndLeader(Req.MostOffense)
                     .AndLeader(Req.LeastFriendlyFire)
                     .WithName("Marksman")
-                    .WithDescription("Most Gun Kills, Offense, Least Friendly Fire")
+                    .WithDescription($"Most Gun Kills ({guns["Shotgun"] + guns["RailShot"] + guns["DeathRay"] + guns["EnergyBall"] + guns["Laser Cannon"] + guns["SawDisc"]})\nMost Offense ({leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown})\nLeast Friendly Fire ({leaders.LeastFriendlyFire.Value.FriendlyKills + leaders.LeastFriendlyFire.Value.FriendlyShieldsHit})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -873,7 +873,7 @@ namespace StatsMod
                     .AndLeader(Req.MostOffense)
                     .AndLeader(Req.MostFriendlyFire)
                     .WithName("Mutually Assured Destruction")
-                    .WithDescription("Most Explosive Kills, Offense, Friendly Fire")
+                    .WithDescription($"Most Explosive Kills ({expl["Explosions"] + expl["Laser Cube"] + expl["DeathCube"]})\nMost Offense ({leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown})\nMost Friendly Fire ({leaders.MostFriendlyFire.Value.FriendlyKills + leaders.MostFriendlyFire.Value.FriendlyShieldsHit})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -885,7 +885,7 @@ namespace StatsMod
                     .AndLeader(Req.MostGunsKills)
                     .AndLeader(Req.MostBladeKills)
                     .WithName("Master of Arms")
-                    .WithDescription("Most Explosive Kills, Gun Kills, Blade Kills")
+                    .WithDescription($"Most Explosive Kills ({expl["Explosions"] + expl["Laser Cube"] + expl["DeathCube"]})\nMost Gun Kills ({guns["Shotgun"] + guns["RailShot"] + guns["DeathRay"] + guns["EnergyBall"] + guns["Laser Cannon"] + guns["SawDisc"]})\nMost Blade Kills ({blades["Particle Blade"] + blades["KhepriStaff"]})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -917,7 +917,7 @@ namespace StatsMod
                     .AndLeader(Req.HighestPoint)
                     .AndLeader(Req.LeastFriendlyFire)
                     .WithName("God Complex")
-                    .WithDescription("Most Offense, Least Damage Taken, Friendly Fire, Highest Point")
+                    .WithDescription($"Most Offense ({leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown})\nLeast Damage Taken ({leaders.LeastDamageTaken.Value.Deaths + leaders.LeastDamageTaken.Value.ShieldsLost})\nLeast Friendly Fire ({leaders.LeastFriendlyFire.Value.FriendlyKills + leaders.LeastFriendlyFire.Value.FriendlyShieldsHit})\nHighest Point ({leaders.HighestPoint.Value.HighestPoint:F1}m)")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -930,7 +930,7 @@ namespace StatsMod
                     .AndLeader(Req.LeastDamageTaken)
                     .AndLeader(Req.MostWebSwings)
                     .WithName("The Untouchable")
-                    .WithDescription("Highest Point, Most Airborne Time, Web Swings, Least Damage Taken")
+                    .WithDescription($"Highest Point ({leaders.HighestPoint.Value.HighestPoint:F1}m)\nMost Airborne Time ({leaders.MostAirborneTime.Value.AirborneTime.TotalSeconds:F1}s)\nMost Web Swings ({leaders.MostWebSwings.Value.WebSwings})\nLeast Damage Taken ({leaders.LeastDamageTaken.Value.Deaths + leaders.LeastDamageTaken.Value.ShieldsLost})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -943,7 +943,7 @@ namespace StatsMod
                     .AndLeader(Req.MostAirborneTime)
                     .AndLeader(Req.MostExplosionsKills)
                     .WithName("Nuclear Warhead")
-                    .WithDescription("Most Offense, Airborne Time, Explosive Kills, Highest Point")
+                    .WithDescription($"Most Offense ({leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown})\nMost Airborne Time ({leaders.MostAirborneTime.Value.AirborneTime.TotalSeconds:F1}s)\nMost Explosive Kills ({expl["Explosions"] + expl["Laser Cube"] + expl["DeathCube"]})\nHighest Point ({leaders.HighestPoint.Value.HighestPoint:F1}m)")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -956,7 +956,7 @@ namespace StatsMod
                     .AndLeader(Req.MostFriendlyFire)
                     .AndLeader(Req.MostExplosionsKills)
                     .WithName("Inside Job")
-                    .WithDescription("Least Offense, Damage Taken, Most Friendly Fire, Explosive Kills")
+                    .WithDescription($"Least Offense ({leaders.LeastOffense.Value.Kills + leaders.LeastOffense.Value.EnemyShieldsTakenDown})\nLeast Damage Taken ({leaders.LeastDamageTaken.Value.Deaths + leaders.LeastDamageTaken.Value.ShieldsLost})\nMost Friendly Fire ({leaders.MostFriendlyFire.Value.FriendlyKills + leaders.MostFriendlyFire.Value.FriendlyShieldsHit})\nMost Explosive Kills ({expl["Explosions"] + expl["Laser Cube"] + expl["DeathCube"]})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -969,7 +969,7 @@ namespace StatsMod
                     .AndLeader(Req.LeastFriendlyFire)
                     .AndLeader(Req.MostGunsKills)
                     .WithName("Rambo")
-                    .WithDescription("Most Offense, Gun Kills, Least Damage Taken, Friendly Fire")
+                    .WithDescription($"Most Offense ({leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown})\nMost Gun Kills ({guns["Shotgun"] + guns["RailShot"] + guns["DeathRay"] + guns["EnergyBall"] + guns["Laser Cannon"] + guns["SawDisc"]})\nLeast Damage Taken ({leaders.LeastDamageTaken.Value.Deaths + leaders.LeastDamageTaken.Value.ShieldsLost})\nLeast Friendly Fire ({leaders.LeastFriendlyFire.Value.FriendlyKills + leaders.LeastFriendlyFire.Value.FriendlyShieldsHit})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
@@ -997,7 +997,7 @@ namespace StatsMod
                     .AndLeader(Req.MostFriendlyFire)
                     .AndLeader(Req.MostExplosionsKills)
                     .WithName("Supernova")
-                    .WithDescription("Most Offense, Friendly Fire, Explosive Kills, Least Damage Taken, Highest Point")
+                    .WithDescription($"Most Offense ({leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown})\nMost Friendly Fire ({leaders.MostFriendlyFire.Value.FriendlyKills + leaders.MostFriendlyFire.Value.FriendlyShieldsHit})\nMost Explosive Kills ({expl["Explosions"] + expl["Laser Cube"] + expl["DeathCube"]})\nLeast Damage Taken ({leaders.LeastDamageTaken.Value.Deaths + leaders.LeastDamageTaken.Value.ShieldsLost})\nHighest Point ({leaders.HighestPoint.Value.HighestPoint:F1}m)")
                     .WithPriority(defaultPriority)
                     .Build());
             }
