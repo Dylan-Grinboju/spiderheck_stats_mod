@@ -1,249 +1,86 @@
 using UnityEngine;
-using Silk;
+using UnityEngine.InputSystem;
 using Logger = Silk.Logger;
 using HarmonyLib;
-using System;
 using Interfaces;
-using UnityEngine.InputSystem;
-using System.Collections.Generic;
-using System.Linq;
 using Unity.Netcode;
+using System.Reflection;
 
 
 namespace StatsMod
 {
-    public static class EnemyDeathHelper
+    // All AccessTools calls are done once at static initialization to avoid per-call overhead.
+    internal static class EnemyReflectionCache
     {
-        private static HashSet<int> recentlyKilledEnemies = new HashSet<int>();
-        private static float lastCleanupTime = 0f;
-        private static float cleanupInterval = 10f; // Clean up 10 seconds after nobody acquires the lock
-        private static readonly object recentlyKilledLock = new object();
+        // NetworkBehaviour
+        public static readonly PropertyInfo IsHostProperty =
+            AccessTools.Property(typeof(NetworkBehaviour), "IsHost");
 
-        private static Dictionary<int, int> rollerBrainHealthTracker = new Dictionary<int, int>();
-        private static readonly object rollerBrainLock = new object();
+        // DeathCube fields
+        public static readonly FieldInfo DeathCubeLaserColliderLayers =
+            AccessTools.Field(typeof(DeathCube), "laserColliderLayers");
+        public static readonly FieldInfo DeathCubeBeamWidth =
+            AccessTools.Field(typeof(DeathCube), "beamWidth");
 
-        // Dictionary to track disc projectiles and their owners
-        private static Dictionary<int, PlayerInput> discOwnerTracker = new Dictionary<int, PlayerInput>();
-        private static readonly object discOwnerLock = new object();
+        // DeathRay fields
+        public static readonly FieldInfo DeathRayDamageLayers =
+            AccessTools.Field(typeof(DeathRay), "damageLayers");
+        public static readonly FieldInfo DeathRayBeamWidth =
+            AccessTools.Field(typeof(DeathRay), "beamWidth");
+        public static readonly FieldInfo DeathRayBeamLength =
+            AccessTools.Field(typeof(DeathRay), "beamLength");
+        public static readonly FieldInfo DeathRayPoint =
+            AccessTools.Field(typeof(DeathRay), "point");
 
-        // Cached reflection fields to avoid expensive lookups
-        private static System.Reflection.PropertyInfo _isHostProperty;
-        public static System.Reflection.PropertyInfo IsHostProperty
-        {
-            get
-            {
-                if (_isHostProperty == null)
-                    _isHostProperty = AccessTools.Property(typeof(Unity.Netcode.NetworkBehaviour), "IsHost");
-                return _isHostProperty;
-            }
-        }
+        // EnergyBall fields and methods
+        public static readonly FieldInfo EnergyBallDamageEnemies =
+            AccessTools.Field(typeof(EnergyBall), "damageEnemies");
+        public static readonly MethodInfo EnergyBallIsEnemy =
+            AccessTools.Method(typeof(EnergyBall), "IsEnemy");
+        public static readonly MethodInfo EnergyBallIsDamageable =
+            AccessTools.Method(typeof(EnergyBall), "IsDamageable");
 
-        public static bool IsFirstTimeEnemyDies(GameObject enemy)
-        {
-            if (enemy == null) return false;
+        // DiscLauncher methods
+        public static readonly MethodInfo DiscLauncherLaunchDiscClientRpc =
+            AccessTools.Method(typeof(DiscLauncher), "LaunchDiscClientRpc");
+        public static readonly MethodInfo DiscLauncherImpact =
+            AccessTools.Method(typeof(DiscLauncher), "Impact");
 
-            // Find the EnemyBrain component in the enemy or its parents
-            EnemyBrain enemyBrain = enemy.GetComponent<EnemyBrain>();
-            if (enemyBrain == null)
-            {
-                enemyBrain = enemy.GetComponentInParent<EnemyBrain>();
-            }
+        // SpiderHealthSystem fields
+        public static readonly FieldInfo SpiderKnockBackRadius =
+            AccessTools.Field(typeof(SpiderHealthSystem), "knockBackRadius");
+        public static readonly FieldInfo SpiderLayers =
+            AccessTools.Field(typeof(SpiderHealthSystem), "layers");
+        public static readonly FieldInfo SpiderDeathRadius =
+            AccessTools.Field(typeof(SpiderHealthSystem), "_deathRadius");
 
-            if (enemyBrain == null)
-            {
-                Logger.LogError($"Could not find EnemyHealthSystem for enemy {enemy.name}");
-                return false;
-            }
+        // Explosion fields
+        public static readonly FieldInfo ExplosionKnockBackRadius =
+            AccessTools.Field(typeof(Explosion), "knockBackRadius");
+        public static readonly FieldInfo ExplosionLayers =
+            AccessTools.Field(typeof(Explosion), "layers");
+        public static readonly FieldInfo ExplosionDeathRadius =
+            AccessTools.Field(typeof(Explosion), "deathRadius");
+        public static readonly FieldInfo ExplosionPlayerDeathRadius =
+            AccessTools.Field(typeof(Explosion), "_playerDeathRadius");
+        public static readonly FieldInfo ExplosionIsBoomSpear =
+            AccessTools.Field(typeof(Explosion), "isBoomSpear");
+        public static readonly FieldInfo ExplosionPlayerExplosionID =
+            AccessTools.Field(typeof(Explosion), "playerExplosionID");
+        public static readonly FieldInfo ExplosionOwnerId =
+            AccessTools.Field(typeof(Explosion), "explosionOwnerId");
 
-            // Use the EnemyBrain's GameObject ID instead of the individual part's ID
-            int enemyId = enemyBrain.gameObject.GetInstanceID();
-            float currentTime = Time.time;
-
-            lock (recentlyKilledLock)
-            {
-                // Clean up the set if enough time has passed since last lock acquisition
-                if (currentTime - lastCleanupTime > cleanupInterval)
-                {
-                    recentlyKilledEnemies.Clear();
-                }
-                lastCleanupTime = currentTime;
-
-                // Check if this enemy was already killed recently
-                if (recentlyKilledEnemies.Contains(enemyId))
-                {
-                    return false; // Already recorded this kill
-                }
-
-                recentlyKilledEnemies.Add(enemyId);
-                Logger.LogInfo($"Recording kill for enemy {enemyId}, name:{enemy.name} at time {Time.time}");
-                return true;
-            }
-        }
-
-        public static bool WillRollerStrutKillCauseRollerBrainDeath(RollerBrain rollerBrain)
-        {
-            // Use the rollerBrain's GameObject ID for tracking
-            int rollerBrainId = rollerBrain.gameObject.GetInstanceID();
-
-            lock (rollerBrainLock)
-            {
-                // Check if we've seen this brain before
-                if (!rollerBrainHealthTracker.ContainsKey(rollerBrainId))
-                {
-                    // First time seeing this brain - get its actual health from the game
-                    int currentAliveStrutCount = 0;
-                    if (rollerBrain.struts != null)
-                    {
-                        for (int i = 0; i < rollerBrain.struts.transform.childCount; i++)
-                        {
-                            if (rollerBrain.struts.transform.GetChild(i).gameObject.activeSelf)
-                            {
-                                currentAliveStrutCount++;
-                            }
-                        }
-                    }
-                    // Initialize with current alive strut count
-                    rollerBrainHealthTracker[rollerBrainId] = currentAliveStrutCount - 1;
-                }
-                else
-                {
-                    // We've seen this strut before - decrement its tracked health
-                    rollerBrainHealthTracker[rollerBrainId]--;
-                }
-
-                // Check if this will cause the main enemy to die
-                bool willCauseMainDeath = rollerBrainHealthTracker[rollerBrainId] < rollerBrain.minStrutCount;
-                // Clean up the tracker if the main enemy will die
-                if (willCauseMainDeath)
-                {
-                    rollerBrainHealthTracker.Remove(rollerBrainId);
-                }
-
-                return willCauseMainDeath;
-            }
-        }
-
-        private static readonly string[] namesOfEnemiesThatCanDie = new string[]
-        {
-            "Wasp(Clone)",
-            "Wasp Shielded(Clone)",
-            "PowerWasp Variant(Clone)",
-            "PowerWasp Variant Shield(Clone)",
-            //no need as they are checked separately
-            // "Strut1",
-            // "Strut2",
-            // "Strut3",
-            "Whisp(Clone)",
-            "PowerWhisp Variant(Clone)",
-            "MeleeWhisp(Clone)",
-            "PowerMeleeWhisp Variant(Clone)",
-            "Head", //butterfly
-            "Hornet_Shaman Variant(Clone)", //black hole
-            "Shielded Hornet_Shaman Variant(Clone)", //not confirmed
-            "Hornet Variant(Clone)", //darth maul
-            "Shielded Hornet Variant(Clone)",
-        };
-        public static bool WillDieToDamage(GameObject enemy)
-        {
-            if (enemy == null)
-            {
-                Logger.LogError("Enemy is null, cannot check if it will die to damage.");
-                return false;
-            }
-
-            EnemyHealthSystem enemyHealthSystem = enemy.GetComponent<EnemyHealthSystem>();
-            if (enemyHealthSystem == null)
-            {
-                enemyHealthSystem = enemy.GetComponentInParent<EnemyHealthSystem>();
-            }
-
-            if (enemyHealthSystem != null)
-            {
-                var immuneTimeField = AccessTools.Field(typeof(EnemyHealthSystem), "_immuneTime");
-                if (immuneTimeField != null)
-                {
-                    float immuneTime = (float)immuneTimeField.GetValue(enemyHealthSystem);
-                    if (Time.time < immuneTime)
-                    {
-                        //currently immune
-                        return false;
-                    }
-                }
-                if (enemyHealthSystem.shield != null && enemyHealthSystem.shield.activeInHierarchy)
-                {
-                    //has shield
-                    return false;
-                }
-
-            }
-            RollerBrain rollerBrain = enemy.GetComponentInParent<RollerBrain>();
-            if (rollerBrain != null)
-            {
-                return WillRollerStrutKillCauseRollerBrainDeath(rollerBrain);
-            }
-            return namesOfEnemiesThatCanDie.Contains(enemy.name);
-        }
-
-        public static void RegisterDiscOwner(GameObject discProjectile, PlayerInput owner)
-        {
-            if (discProjectile == null || owner == null) return;
-
-            int discId = discProjectile.GetInstanceID();
-            lock (discOwnerLock)
-            {
-                discOwnerTracker[discId] = owner;
-                Logger.LogInfo($"Registered disc owner for disc {discId}, owner: {owner.name}");
-            }
-        }
-
-        public static PlayerInput GetDiscOwner(GameObject discProjectile)
-        {
-            if (discProjectile == null) return null;
-
-            int discId = discProjectile.GetInstanceID();
-            lock (discOwnerLock)
-            {
-                if (discOwnerTracker.TryGetValue(discId, out PlayerInput owner))
-                {
-                    return owner;
-                }
-            }
-            return null;
-        }
-
-        public static void CleanupDiscOwner(GameObject discProjectile)
-        {
-            if (discProjectile == null) return;
-
-            int discId = discProjectile.GetInstanceID();
-            lock (discOwnerLock)
-            {
-                if (discOwnerTracker.Remove(discId))
-                {
-                    Logger.LogInfo($"Cleaned up disc owner for disc {discId}");
-                }
-            }
-        }
-
-        public static PlayerInput FindPlayerInputByPlayerId(ulong playerId)
-        {
-            // Delegate to the cached version in PlayerTracker
-            return PlayerTracker.FindPlayerInputByPlayerId(playerId);
-        }
-
-        public static void TryRecordKill(GameObject target, PlayerInput playerInput, string weaponName = "weapon")
-        {
-            if (target == null || playerInput == null) return;
-
-            if (WillDieToDamage(target) && IsFirstTimeEnemyDies(target))
-            {
-                StatsManager.Instance.IncrementPlayerKill(playerInput);
-            }
-        }
+        // ProjectileLauncher fields and methods
+        public static readonly MethodInfo ProjectileLauncherShotClientRpc =
+            AccessTools.Method(typeof(ProjectileLauncher), "ShotClientRpc");
+        public static readonly MethodInfo ProjectileLauncherImpact =
+            AccessTools.Method(typeof(ProjectileLauncher), "Impact");
+        public static readonly FieldInfo ProjectileLauncherCollider =
+            AccessTools.Field(typeof(ProjectileLauncher), "_launcherCollider");
+        public static readonly FieldInfo ProjectileLauncherReloadOffset =
+            AccessTools.Field(typeof(ProjectileLauncher), "reloadOffset");
     }
 
-
-    //death function of an enemy, no matter the cause (even lava)
     [HarmonyPatch(typeof(EnemyHealthSystem), "Explode")]
     class EnemyDeathCountPatch
     {
@@ -251,7 +88,7 @@ namespace StatsMod
         {
             try
             {
-                StatsManager.Instance.IncrementEnemyKilled();
+                EnemiesTracker.Instance.IncrementEnemiesKilled();
             }
             catch (System.Exception ex)
             {
@@ -268,14 +105,14 @@ namespace StatsMod
         {
             try
             {
-                if (other == __instance.ignoreWeapon.gameObject || other == __instance.ignoreWeapon.owner.healthSystem.gameObject)
+                if (other == __instance.ignoreWeapon?.gameObject || other == __instance.ignoreWeapon?.owner?.healthSystem?.gameObject)
                     return;
 
                 IDamageable component = other.GetComponent<IDamageable>();
                 if (component != null)
                 {
-                    PlayerInput playerInput = __instance.ignoreWeapon.owner.healthSystem.GetComponentInParent<PlayerInput>();
-                    EnemyDeathHelper.TryRecordKill(other, playerInput, "shotgun");
+                    PlayerInput playerInput = __instance.ignoreWeapon?.owner?.healthSystem?.GetComponentInParent<PlayerInput>();
+                    HitLogic.RecordHit(other, playerInput, "Shotgun");
                 }
             }
             catch (System.Exception ex)
@@ -293,13 +130,13 @@ namespace StatsMod
         {
             try
             {
-                if (!(bool)EnemyDeathHelper.IsHostProperty.GetValue(__instance)) return;
+                if (!(bool)EnemyReflectionCache.IsHostProperty.GetValue(__instance)) return;
 
                 IDamageable component = hit.transform.GetComponent<IDamageable>();
                 if (component != null)
                 {
                     PlayerInput ownerPlayer = FindOwnerPlayerFromIgnoreList(__instance.ignore.ToArray());
-                    EnemyDeathHelper.TryRecordKill(hit.transform.gameObject, ownerPlayer, "railgun");
+                    HitLogic.RecordHit(hit.transform.gameObject, ownerPlayer, "RailShot");
                 }
             }
             catch (System.Exception ex)
@@ -347,19 +184,15 @@ namespace StatsMod
         {
             try
             {
-                if (!(bool)EnemyDeathHelper.IsHostProperty.GetValue(__instance)) return;
+                if (!(bool)EnemyReflectionCache.IsHostProperty.GetValue(__instance)) return;
 
-                var laserColliderLayersField = AccessTools.Field(typeof(DeathCube), "laserColliderLayers");
-                var beamWidthField = AccessTools.Field(typeof(DeathCube), "beamWidth");
-
-                if (laserColliderLayersField == null || beamWidthField == null)
+                if (EnemyReflectionCache.DeathCubeLaserColliderLayers == null || EnemyReflectionCache.DeathCubeBeamWidth == null)
                 {
-                    Logger.LogWarning("Could not access DeathCube fields for laser damage tracking");
                     return;
                 }
 
-                LayerMask laserColliderLayers = (LayerMask)laserColliderLayersField.GetValue(__instance);
-                float beamWidth = (float)beamWidthField.GetValue(__instance);
+                LayerMask laserColliderLayers = (LayerMask)EnemyReflectionCache.DeathCubeLaserColliderLayers.GetValue(__instance);
+                float beamWidth = (float)EnemyReflectionCache.DeathCubeBeamWidth.GetValue(__instance);
 
                 RaycastHit2D[] hits = Physics2D.CircleCastAll(
                     laser.transform.position + direction * beamWidth,
@@ -369,13 +202,13 @@ namespace StatsMod
                     laserColliderLayers
                 );
 
-                PlayerInput ownerPlayer = __instance.owner.GetComponentInParent<PlayerInput>();
+                PlayerInput ownerPlayer = __instance.owner?.GetComponentInParent<PlayerInput>();
                 foreach (RaycastHit2D hit in hits)
                 {
                     IDamageable component = hit.transform.GetComponent<IDamageable>();
                     if (component != null)
                     {
-                        EnemyDeathHelper.TryRecordKill(hit.transform.gameObject, ownerPlayer, "DeathCube");
+                        HitLogic.RecordHit(hit.transform.gameObject, ownerPlayer, "DeathCube");
                     }
                 }
             }
@@ -394,23 +227,18 @@ namespace StatsMod
         {
             try
             {
-                if (!(bool)EnemyDeathHelper.IsHostProperty.GetValue(__instance)) return;
+                if (!(bool)EnemyReflectionCache.IsHostProperty.GetValue(__instance)) return;
 
-                var damageLayersField = AccessTools.Field(typeof(DeathRay), "damageLayers");
-                var beamWidthField = AccessTools.Field(typeof(DeathRay), "beamWidth");
-                var beamLengthField = AccessTools.Field(typeof(DeathRay), "beamLength");
-                var pointField = AccessTools.Field(typeof(DeathRay), "point");
-
-                if (damageLayersField == null || beamWidthField == null || beamLengthField == null || pointField == null)
+                if (EnemyReflectionCache.DeathRayDamageLayers == null || EnemyReflectionCache.DeathRayBeamWidth == null ||
+                    EnemyReflectionCache.DeathRayBeamLength == null || EnemyReflectionCache.DeathRayPoint == null)
                 {
-                    Logger.LogWarning("Could not access DeathRay fields for laser damage tracking");
                     return;
                 }
 
-                LayerMask damageLayers = (LayerMask)damageLayersField.GetValue(__instance);
-                float beamWidth = (float)beamWidthField.GetValue(__instance);
-                float beamLength = (float)beamLengthField.GetValue(__instance);
-                Transform point = (Transform)pointField.GetValue(__instance);
+                LayerMask damageLayers = (LayerMask)EnemyReflectionCache.DeathRayDamageLayers.GetValue(__instance);
+                float beamWidth = (float)EnemyReflectionCache.DeathRayBeamWidth.GetValue(__instance);
+                float beamLength = (float)EnemyReflectionCache.DeathRayBeamLength.GetValue(__instance);
+                Transform point = (Transform)EnemyReflectionCache.DeathRayPoint.GetValue(__instance);
 
                 RaycastHit2D[] hits = Physics2D.CircleCastAll(
                     point.position + __instance.transform.up * beamWidth / 4f,
@@ -420,13 +248,13 @@ namespace StatsMod
                     damageLayers
                 );
 
-                PlayerInput ownerPlayer = __instance.owner.GetComponentInParent<PlayerInput>();
+                PlayerInput ownerPlayer = __instance.owner?.GetComponentInParent<PlayerInput>();
                 foreach (RaycastHit2D hit in hits)
                 {
                     IDamageable component = hit.transform.GetComponent<IDamageable>();
                     if (component != null)
                     {
-                        EnemyDeathHelper.TryRecordKill(hit.transform.gameObject, ownerPlayer, "DeathRay");
+                        HitLogic.RecordHit(hit.transform.gameObject, ownerPlayer, "DeathRay");
                     }
                 }
             }
@@ -445,40 +273,30 @@ namespace StatsMod
         {
             try
             {
-                if (!(bool)EnemyDeathHelper.IsHostProperty.GetValue(__instance)) return;
+                if (!(bool)EnemyReflectionCache.IsHostProperty.GetValue(__instance)) return;
 
                 if (other.gameObject == __instance.ignore) return;
 
                 IDamageable component = other.gameObject.GetComponent<IDamageable>();
                 if (component == null) return;
 
-                var damageEnemiesField = AccessTools.Field(typeof(EnergyBall), "damageEnemies");
-                if (damageEnemiesField == null)
+                if (EnemyReflectionCache.EnergyBallDamageEnemies == null ||
+                    EnemyReflectionCache.EnergyBallIsEnemy == null ||
+                    EnemyReflectionCache.EnergyBallIsDamageable == null)
                 {
-                    Logger.LogWarning("Could not access EnergyBall damageEnemies field for damage tracking");
                     return;
                 }
 
-                bool damageEnemies = (bool)damageEnemiesField.GetValue(__instance);
+                bool damageEnemies = (bool)EnemyReflectionCache.EnergyBallDamageEnemies.GetValue(__instance);
 
-                // Use reflection to access private methods
-                var isEnemyMethod = AccessTools.Method(typeof(EnergyBall), "IsEnemy");
-                var isDamageableMethod = AccessTools.Method(typeof(EnergyBall), "IsDamageable");
-
-                if (isEnemyMethod == null || isDamageableMethod == null)
-                {
-                    Logger.LogWarning("Could not access EnergyBall IsEnemy or IsDamageable methods");
-                    return;
-                }
-
-                bool isEnemy = (bool)isEnemyMethod.Invoke(__instance, new object[] { other.gameObject });
+                bool isEnemy = (bool)EnemyReflectionCache.EnergyBallIsEnemy.Invoke(__instance, new object[] { other.gameObject });
                 if (isEnemy && !damageEnemies) return;
 
-                bool isDamageable = (bool)isDamageableMethod.Invoke(__instance, new object[] { other.gameObject });
+                bool isDamageable = (bool)EnemyReflectionCache.EnergyBallIsDamageable.Invoke(__instance, new object[] { other.gameObject });
                 if (isDamageable)
                 {
-                    PlayerInput ownerPlayer = __instance.owner.GetComponentInParent<PlayerInput>();
-                    EnemyDeathHelper.TryRecordKill(other.gameObject, ownerPlayer, "EnergyBall");
+                    PlayerInput ownerPlayer = __instance.owner?.GetComponentInParent<PlayerInput>();
+                    HitLogic.RecordHit(other.gameObject, ownerPlayer, "EnergyBall");
                 }
             }
             catch (System.Exception ex)
@@ -505,8 +323,8 @@ namespace StatsMod
                     Weapon parentWeapon = __instance.GetComponentInParent<Weapon>();
                     if (parentWeapon != null && parentWeapon.owner != null)
                     {
-                        PlayerInput playerInput = parentWeapon.owner.healthSystem.GetComponentInParent<PlayerInput>();
-                        EnemyDeathHelper.TryRecordKill(other.gameObject, playerInput, "sword");
+                        PlayerInput playerInput = parentWeapon.owner?.healthSystem?.GetComponentInParent<PlayerInput>();
+                        HitLogic.RecordHit(other.gameObject, playerInput, "Particle Blade");
                     }
                 }
             }
@@ -525,19 +343,19 @@ namespace StatsMod
         {
             try
             {
-                if (target == __instance.owner.healthSystem.gameObject) return;
+                if (target == __instance.owner?.healthSystem?.gameObject) return;
 
                 IDamageable component = target.GetComponent<IDamageable>();
                 if (component == null) return;
 
-                bool willCallDamage = (target.layer == LayerMask.NameToLayer("Enemy") ||
+                bool willCallDamage = target.layer == LayerMask.NameToLayer("Enemy") ||
                                      target.layer == LayerMask.NameToLayer("EnemyWeapon") ||
-                                     target.CompareTag("PlayerRigidbody"));
+                                     target.CompareTag("PlayerRigidbody");
 
                 if (willCallDamage)
                 {
-                    PlayerInput ownerPlayer = __instance.owner.healthSystem.GetComponentInParent<PlayerInput>();
-                    EnemyDeathHelper.TryRecordKill(target, ownerPlayer, "KhepriStaff");
+                    PlayerInput ownerPlayer = __instance.owner?.healthSystem?.GetComponentInParent<PlayerInput>();
+                    HitLogic.RecordHit(target, ownerPlayer, "KhepriStaff");
                 }
             }
             catch (System.Exception ex)
@@ -557,8 +375,8 @@ namespace StatsMod
             {
                 if (damageable != null)
                 {
-                    PlayerInput ownerPlayer = __instance.owner.GetComponentInParent<PlayerInput>();
-                    EnemyDeathHelper.TryRecordKill(hit.collider.gameObject, ownerPlayer, "LaserCannon");
+                    PlayerInput ownerPlayer = __instance.owner?.GetComponentInParent<PlayerInput>();
+                    HitLogic.RecordHit(hit.collider.gameObject, ownerPlayer, "Laser Cannon");
                 }
             }
             catch (System.Exception ex)
@@ -576,7 +394,7 @@ namespace StatsMod
         {
             try
             {
-                if (!(bool)EnemyDeathHelper.IsHostProperty.GetValue(__instance)) return;
+                if (!(bool)EnemyReflectionCache.IsHostProperty.GetValue(__instance)) return;
 
                 RaycastHit2D hit = Physics2D.CircleCast(
                     lineRenderer.transform.position + direction * __instance.beamWidth / 2f,
@@ -591,8 +409,8 @@ namespace StatsMod
                     IDamageable component = hit.collider.gameObject.GetComponent<IDamageable>();
                     if (component != null)
                     {
-                        PlayerInput ownerPlayer = __instance.owner.GetComponentInParent<PlayerInput>();
-                        EnemyDeathHelper.TryRecordKill(hit.collider.gameObject, ownerPlayer, "LaserCube");
+                        PlayerInput ownerPlayer = __instance.owner?.GetComponentInParent<PlayerInput>();
+                        HitLogic.RecordHit(hit.collider.gameObject, ownerPlayer, "Laser Cube");
                     }
                 }
             }
@@ -618,7 +436,7 @@ namespace StatsMod
                 if (willCallDamage)
                 {
                     // First try to get the owner from disc tracking
-                    PlayerInput ownerPlayer = EnemyDeathHelper.GetDiscOwner(__instance.gameObject);
+                    PlayerInput ownerPlayer = HitLogic.GetDiscOwner(__instance.gameObject);
 
                     // Fallback to getting from parent (may not work for projectiles)
                     if (ownerPlayer == null)
@@ -626,7 +444,7 @@ namespace StatsMod
                         ownerPlayer = __instance.GetComponentInParent<PlayerInput>();
                     }
 
-                    EnemyDeathHelper.TryRecordKill(other.gameObject, ownerPlayer, "SawDisc");
+                    HitLogic.RecordHit(other.gameObject, ownerPlayer, "SawDisc");
                 }
             }
             catch (System.Exception ex)
@@ -654,35 +472,27 @@ namespace StatsMod
                 __instance.ammo = ammo - 1f;
 
                 // Create the disc projectile
-                GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(__instance.discProjectile, __instance.mountedDisc.transform.position, __instance.point.rotation);
+                GameObject gameObject = Object.Instantiate(__instance.discProjectile, __instance.mountedDisc.transform.position, __instance.point.rotation);
                 gameObject.GetComponent<NetworkObject>().Spawn(true);
                 gameObject.GetComponent<Rigidbody2D>().AddForce(__instance.transform.up * __instance.shotForce, ForceMode2D.Impulse);
 
                 // **THIS IS OUR ADDITION** - Track the disc owner
-                PlayerInput ownerPlayer = __instance.owner.healthSystem.GetComponentInParent<PlayerInput>();
-                EnemyDeathHelper.RegisterDiscOwner(gameObject, ownerPlayer);
+                PlayerInput ownerPlayer = __instance.owner?.healthSystem?.GetComponentInParent<PlayerInput>();
+                HitLogic.RegisterDiscOwner(gameObject, ownerPlayer);
 
                 // Reset phase effect and visual elements
                 __instance.discPhaseEffect.ResetEffect();
                 __instance.mountedDisc.SetActive(false);
                 __instance.targetingLasers.SetActive(false);
 
-                if ((bool)EnemyDeathHelper.IsHostProperty.GetValue(__instance))
+                if ((bool)EnemyReflectionCache.IsHostProperty.GetValue(__instance))
                 {
-                    // Call LaunchDiscClientRpc using reflection
-                    var launchDiscClientRpcMethod = AccessTools.Method(typeof(DiscLauncher), "LaunchDiscClientRpc");
-                    if (launchDiscClientRpcMethod != null)
-                    {
-                        launchDiscClientRpcMethod.Invoke(__instance, null);
-                    }
+                    // Call LaunchDiscClientRpc using cached reflection
+                    EnemyReflectionCache.DiscLauncherLaunchDiscClientRpc?.Invoke(__instance, null);
                 }
 
-                // Call Impact method
-                var impactMethod = AccessTools.Method(typeof(DiscLauncher), "Impact");
-                if (impactMethod != null)
-                {
-                    impactMethod.Invoke(__instance, new object[] { __instance.transform.up * -__instance.recoil, __instance.point.position, false, true });
-                }
+                // Call Impact method using cached reflection
+                EnemyReflectionCache.DiscLauncherImpact?.Invoke(__instance, new object[] { __instance.transform.up * -__instance.recoil, __instance.point.position, false, true });
 
                 return false; // Skip the original method
             }
@@ -703,7 +513,7 @@ namespace StatsMod
             try
             {
                 // Clean up the disc owner tracking when the disc is about to be destroyed
-                EnemyDeathHelper.CleanupDiscOwner(__instance.gameObject);
+                HitLogic.CleanupDiscOwner(__instance.gameObject);
             }
             catch (System.Exception ex)
             {
@@ -720,19 +530,15 @@ namespace StatsMod
         {
             try
             {
-                var knockBackRadiusField = AccessTools.Field(typeof(SpiderHealthSystem), "knockBackRadius");
-                var layersField = AccessTools.Field(typeof(SpiderHealthSystem), "layers");
-                var deathRadiusField = AccessTools.Field(typeof(SpiderHealthSystem), "_deathRadius");
-
-                if (knockBackRadiusField == null || layersField == null || deathRadiusField == null)
+                if (EnemyReflectionCache.SpiderKnockBackRadius == null || EnemyReflectionCache.SpiderLayers == null || EnemyReflectionCache.SpiderDeathRadius == null)
                 {
                     Logger.LogWarning("Could not access SpiderHealthSystem fields for afterlife explosion tracking");
                     return;
                 }
 
-                float knockBackRadius = (float)knockBackRadiusField.GetValue(__instance);
-                LayerMask layers = (LayerMask)layersField.GetValue(__instance);
-                float deathRadius = (float)deathRadiusField.GetValue(__instance);
+                float knockBackRadius = (float)EnemyReflectionCache.SpiderKnockBackRadius.GetValue(__instance);
+                LayerMask layers = (LayerMask)EnemyReflectionCache.SpiderLayers.GetValue(__instance);
+                float deathRadius = (float)EnemyReflectionCache.SpiderDeathRadius.GetValue(__instance);
 
                 Collider2D[] colliders = Physics2D.OverlapCircleAll(__instance.transform.position, knockBackRadius, layers);
                 PlayerInput ownerPlayer = __instance.GetComponentInParent<PlayerInput>();
@@ -750,7 +556,7 @@ namespace StatsMod
 
                     if (distance <= deathRadius)
                     {
-                        EnemyDeathHelper.TryRecordKill(collider2D.gameObject, ownerPlayer, "afterlife explosion");
+                        HitLogic.RecordHit(collider2D.gameObject, ownerPlayer, "Explosions");
                     }
                 }
             }
@@ -783,8 +589,8 @@ namespace StatsMod
 
                     if (WillCallExplosionDamage(__instance.transform.position, collider2D, fields))
                     {
-                        PlayerInput ownerPlayer = EnemyDeathHelper.FindPlayerInputByPlayerId(fields.explosionOwnerId);
-                        EnemyDeathHelper.TryRecordKill(collider2D.gameObject, ownerPlayer, "explosion");
+                        PlayerInput ownerPlayer = HitLogic.FindPlayerInputByPlayerId(fields.explosionOwnerId);
+                        HitLogic.RecordHit(collider2D.gameObject, ownerPlayer, "Explosions");
                     }
                 }
             }
@@ -796,16 +602,7 @@ namespace StatsMod
 
         private static ExplosionFields GetExplosionFields(Explosion instance)
         {
-            var knockBackRadiusField = AccessTools.Field(typeof(Explosion), "knockBackRadius");
-            var layersField = AccessTools.Field(typeof(Explosion), "layers");
-            var deathRadiusField = AccessTools.Field(typeof(Explosion), "deathRadius");
-            var playerDeathRadiusField = AccessTools.Field(typeof(Explosion), "_playerDeathRadius");
-            var isBoomSpearField = AccessTools.Field(typeof(Explosion), "isBoomSpear");
-            var playerExplosionIDField = AccessTools.Field(typeof(Explosion), "playerExplosionID");
-            var explosionOwnerIdField = AccessTools.Field(typeof(Explosion), "explosionOwnerId");
-
-            if (knockBackRadiusField == null || layersField == null || deathRadiusField == null ||
-                playerDeathRadiusField == null || isBoomSpearField == null || playerExplosionIDField == null || explosionOwnerIdField == null)
+            if (EnemyReflectionCache.ExplosionKnockBackRadius == null || EnemyReflectionCache.ExplosionLayers == null || EnemyReflectionCache.ExplosionDeathRadius == null || EnemyReflectionCache.ExplosionPlayerDeathRadius == null || EnemyReflectionCache.ExplosionIsBoomSpear == null || EnemyReflectionCache.ExplosionPlayerExplosionID == null || EnemyReflectionCache.ExplosionOwnerId == null)
             {
                 Logger.LogWarning("Could not access Explosion fields for damage tracking");
                 return null;
@@ -813,13 +610,13 @@ namespace StatsMod
 
             return new ExplosionFields
             {
-                knockBackRadius = (float)knockBackRadiusField.GetValue(instance),
-                layers = (LayerMask)layersField.GetValue(instance),
-                deathRadius = (float)deathRadiusField.GetValue(instance),
-                playerDeathRadius = (float)playerDeathRadiusField.GetValue(instance),
-                isBoomSpear = (bool)isBoomSpearField.GetValue(instance),
-                playerExplosionId = (int)playerExplosionIDField.GetValue(instance),
-                explosionOwnerId = (ulong)explosionOwnerIdField.GetValue(instance)
+                knockBackRadius = (float)EnemyReflectionCache.ExplosionKnockBackRadius.GetValue(instance),
+                layers = (LayerMask)EnemyReflectionCache.ExplosionLayers.GetValue(instance),
+                deathRadius = (float)EnemyReflectionCache.ExplosionDeathRadius.GetValue(instance),
+                playerDeathRadius = (float)EnemyReflectionCache.ExplosionPlayerDeathRadius.GetValue(instance),
+                isBoomSpear = (bool)EnemyReflectionCache.ExplosionIsBoomSpear.GetValue(instance),
+                playerExplosionId = (int)EnemyReflectionCache.ExplosionPlayerExplosionID.GetValue(instance),
+                explosionOwnerId = (ulong)EnemyReflectionCache.ExplosionOwnerId.GetValue(instance)
             };
         }
 
@@ -858,7 +655,6 @@ namespace StatsMod
         }
     }
 
-
     // ParticleBladeLauncher - Track particle blade projectiles and their owners
     [HarmonyPatch(typeof(ProjectileLauncher), "Shoot")]
     class ProjectileLauncherShootPatch
@@ -880,24 +676,20 @@ namespace StatsMod
                     return false; // Skip original
                 }
 
-                if ((bool)EnemyDeathHelper.IsHostProperty.GetValue(__instance))
+                if ((bool)EnemyReflectionCache.IsHostProperty.GetValue(__instance))
                 {
-                    // Call ShotClientRpc using reflection
-                    var shotClientRpcMethod = AccessTools.Method(typeof(ProjectileLauncher), "ShotClientRpc");
-                    if (shotClientRpcMethod != null)
-                    {
-                        shotClientRpcMethod.Invoke(__instance, null);
-                    }
+                    // Call ShotClientRpc using cached reflection
+                    EnemyReflectionCache.ProjectileLauncherShotClientRpc?.Invoke(__instance, null);
                 }
 
                 GameObject gameObject;
                 if (CustomMapEditor.ParkourActive())
                 {
-                    gameObject = UnityEngine.Object.Instantiate<GameObject>(__instance.projectile, __instance.point.position, __instance.transform.rotation, CustomMapEditor.instance.objParent);
+                    gameObject = Object.Instantiate(__instance.projectile, __instance.point.position, __instance.transform.rotation, CustomMapEditor.instance.objParent);
                 }
                 else
                 {
-                    gameObject = UnityEngine.Object.Instantiate<GameObject>(__instance.projectile, __instance.point.position, __instance.transform.rotation);
+                    gameObject = Object.Instantiate(__instance.projectile, __instance.point.position, __instance.transform.rotation);
                 }
 
                 BasicProjectile basicProjectileComponent = gameObject.GetComponent<BasicProjectile>();
@@ -919,43 +711,34 @@ namespace StatsMod
 
                 gameObject.GetComponent<NetworkObject>().Spawn(true);
                 PickupEffects componentInChildren = gameObject.GetComponentInChildren<PickupEffects>();
-                if (componentInChildren != null)
-                {
-                    componentInChildren.StopFloat();
-                }
+                componentInChildren?.StopFloat();
 
                 Rigidbody2D rigidbody = gameObject.GetComponent<Rigidbody2D>();
                 rigidbody.AddForce(__instance.transform.up * __instance.shotForce, ForceMode2D.Impulse);
                 rigidbody.AddTorque(__instance.rotationForce, ForceMode2D.Impulse);
 
-                // Call Impact method using reflection
-                var impactMethod = AccessTools.Method(typeof(ProjectileLauncher), "Impact");
-                if (impactMethod != null)
-                {
-                    impactMethod.Invoke(__instance, new object[] { -__instance.recoil * __instance.transform.up, __instance.point.position, false, true });
-                }
+                // Call Impact method using cached reflection
+                EnemyReflectionCache.ProjectileLauncherImpact?.Invoke(__instance, new object[] { -__instance.recoil * __instance.transform.up, __instance.point.position, false, true });
 
                 // Handle collision ignoring
-                var launcherColliderField = AccessTools.Field(typeof(ProjectileLauncher), "_launcherCollider");
-                if (launcherColliderField != null)
+                if (EnemyReflectionCache.ProjectileLauncherCollider != null)
                 {
-                    Collider2D launcherCollider = (Collider2D)launcherColliderField.GetValue(__instance);
+                    Collider2D launcherCollider = (Collider2D)EnemyReflectionCache.ProjectileLauncherCollider.GetValue(__instance);
                     Physics2D.IgnoreCollision(launcherCollider, gameObject.GetComponent<Collider2D>(), true);
                 }
 
                 if (__instance.equipped)
                 {
-                    Physics2D.IgnoreCollision(__instance.owner.healthSystem.GetComponent<Collider2D>(), gameObject.GetComponent<Collider2D>(), true);
+                    Physics2D.IgnoreCollision(__instance.owner?.healthSystem?.GetComponent<Collider2D>(), gameObject.GetComponent<Collider2D>(), true);
                 }
 
                 float ammo = __instance.ammo;
                 __instance.ammo = ammo - 1f;
 
-                // Set hold offset using reflection
-                var reloadOffsetField = AccessTools.Field(typeof(ProjectileLauncher), "reloadOffset");
-                if (reloadOffsetField != null)
+                // Set hold offset using cached reflection
+                if (EnemyReflectionCache.ProjectileLauncherReloadOffset != null)
                 {
-                    __instance.holdOffset = (Vector2)reloadOffsetField.GetValue(__instance);
+                    __instance.holdOffset = (Vector2)EnemyReflectionCache.ProjectileLauncherReloadOffset.GetValue(__instance);
                 }
 
                 return false; // Skip the original method
@@ -985,7 +768,6 @@ namespace StatsMod
                     {
                         // Override the ulong.MaxValue that was set by the original method
                         __instance.ownerWeaponClientId = (ulong)playerController.playerID.Value;
-                        Logger.LogInfo($"Fixed weapon {__instance.serializationWeaponName} owner to: {playerController.playerID.Value}");
                     }
 
                 }

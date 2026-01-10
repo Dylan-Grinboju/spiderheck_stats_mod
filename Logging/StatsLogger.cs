@@ -2,12 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEngine.InputSystem;
-using Silk;
 using Logger = Silk.Logger;
 
 namespace StatsMod
 {
+    // Handles logging game statistics to files.
     public class StatsLogger
     {
         private static readonly Lazy<StatsLogger> _lazy = new Lazy<StatsLogger>(() => new StatsLogger());
@@ -61,10 +60,12 @@ namespace StatsMod
 
         private string FormatGameStats(GameStatsSnapshot statsSnapshot)
         {
+            string modeHeader = statsSnapshot.GameMode == GameMode.Versus ? "VERSUS MODE" : "SURVIVAL MODE";
+
             var lines = new List<string>
             {
                 "=".PadRight(60, '='),
-                "SPIDERHECK SURVIVAL MODE STATISTICS",
+                $"SPIDERHECK {modeHeader} STATISTICS",
                 "=".PadRight(60, '='),
                 "",
                 "GAME INFORMATION:",
@@ -85,10 +86,18 @@ namespace StatsMod
 
                 int totalKills = statsSnapshot.ActivePlayers.Sum(p => p.Value.Kills);
                 int totalDeaths = statsSnapshot.ActivePlayers.Sum(p => p.Value.Deaths);
+                int totalFriendlyKills = statsSnapshot.ActivePlayers.Sum(p => p.Value.FriendlyKills);
+                int totalEnemyShieldsTakenDown = statsSnapshot.ActivePlayers.Sum(p => p.Value.EnemyShieldsTakenDown);
+                int totalFriendlyShieldsHit = statsSnapshot.ActivePlayers.Sum(p => p.Value.FriendlyShieldsHit);
+                int totalShieldsLost = statsSnapshot.ActivePlayers.Sum(p => p.Value.ShieldsLost);
 
                 lines.Add($"  Total Players: {statsSnapshot.ActivePlayers.Count}");
                 lines.Add($"  Total Player Kills: {totalKills}");
+                lines.Add($"  Total Friendly Kills (PvP): {totalFriendlyKills}");
                 lines.Add($"  Total Player Deaths: {totalDeaths}");
+                lines.Add($"  Total Enemy Shields Taken Down: {totalEnemyShieldsTakenDown}");
+                lines.Add($"  Total Friendly Shields Hit: {totalFriendlyShieldsHit}");
+                lines.Add($"  Total Shields Lost: {totalShieldsLost}");
                 lines.Add("");
 
                 lines.Add("  Individual Player Performance:");
@@ -102,14 +111,61 @@ namespace StatsMod
                     lines.Add($"    Player ID: {playerData.PlayerId}");
                     lines.Add($"    Color: R={playerData.PlayerColor.r:F2}, G={playerData.PlayerColor.g:F2}, B={playerData.PlayerColor.b:F2}, A={playerData.PlayerColor.a:F2}");
                     lines.Add($"    Kills: {playerData.Kills}");
+                    lines.Add($"    Kills While Airborne: {playerData.KillsWhileAirborne}");
+                    lines.Add($"    Kills While Solo: {playerData.KillsWhileSolo}");
+                    lines.Add($"    Wave Clutches: {playerData.WaveClutches}");
+                    lines.Add($"    Max Kill Streak: {playerData.MaxKillStreak}");
+                    lines.Add($"    Max Solo Kill Streak: {playerData.MaxKillStreakWhileSolo}");
+                    lines.Add($"    Friendly Kills (PvP): {playerData.FriendlyKills}");
                     lines.Add($"    Deaths: {playerData.Deaths}");
+                    lines.Add($"    Enemy Shields Taken Down: {playerData.EnemyShieldsTakenDown}");
+                    lines.Add($"    Friendly Shields Hit: {playerData.FriendlyShieldsHit}");
+                    lines.Add($"    Shields Lost: {playerData.ShieldsLost}");
                     lines.Add($"    Alive Time: {FormatTimeSpan(playerData.GetCurrentAliveTime())}");
+                    lines.Add($"    Web Swings: {playerData.WebSwings}");
+                    lines.Add($"    Time Swinging: {FormatTimeSpan(playerData.GetCurrentWebSwingTime())}");
+                    lines.Add($"    Time Airborne: {FormatTimeSpan(playerData.GetCurrentAirborneTime())}");
+                    lines.Add($"    Highest Point: {playerData.HighestPoint:F1}m");
+
+                    // Weapon hits breakdown
+                    if (playerData.WeaponHits != null && playerData.WeaponHits.Any())
+                    {
+                        lines.Add($"    Weapon Hits (Kills + Shield Hits):");
+                        var sortedWeaponHits = playerData.WeaponHits
+                            .Where(w => w.Value > 0)
+                            .OrderByDescending(w => w.Value)
+                            .ToList();
+
+                        if (sortedWeaponHits.Any())
+                        {
+                            foreach (var weapon in sortedWeaponHits)
+                            {
+                                lines.Add($"      {weapon.Key}: {weapon.Value}");
+                            }
+                        }
+                        else
+                        {
+                            lines.Add($"      No weapon hits recorded");
+                        }
+                    }
+
                     lines.Add("");
                 }
             }
             else
             {
                 lines.Add("  No player data available");
+                lines.Add("");
+            }
+
+            // Add titles section
+            if (statsSnapshot.Titles != null && statsSnapshot.Titles.Count > 0)
+            {
+                lines.Add("TITLES AWARDED:");
+                foreach (var title in statsSnapshot.Titles)
+                {
+                    lines.Add($"  {title.TitleName}: {title.PlayerName}");
+                }
                 lines.Add("");
             }
 

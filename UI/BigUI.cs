@@ -7,11 +7,62 @@ namespace StatsMod
 {
     public class BigUI : MonoBehaviour
     {
-        #region Constants
-        private const float BASE_SECTION_SPACING = 25f;
-        private const float BASE_CARD_PADDING = 20f;
-        private const float BASE_PLAYER_ROW_HEIGHT = 40f;
-        private const float BASE_SURVIVAL_SECTION_HEIGHT = 100f;
+        #region Base Dimensions
+        public float BASE_SECTION_SPACING = 25f;
+        public float BASE_CARD_PADDING = 20f;
+        public float BASE_PLAYER_ROW_HEIGHT = 40f;
+        public float BASE_SURVIVAL_SECTION_HEIGHT = 100f;
+        public float BASE_CONTENT_PADDING = 40f;
+        public float BASE_MARGIN_PERCENT = 0.15f;
+        public float BASE_MAX_HEIGHT_PERCENT = 0.9f;
+        public float BASE_BACKGROUND_PADDING = 80f;
+        #endregion
+
+        #region Column Widths
+        public float COL_WIDTH_PLAYER_NAME = 120f;
+        public float COL_WIDTH_DEATHS = 90f;
+        public float COL_WIDTH_KILLS = 70f;
+        public float COL_WIDTH_PVP = 110f;
+        public float COL_WIDTH_ENEMY_SHIELDS = 120f;
+        public float COL_WIDTH_PLAYER_SHIELDS = 110f;
+        public float COL_WIDTH_SHIELDS_LOST = 100f;
+        public float COL_WIDTH_ALIVE_TIME = 120f;
+        public float COL_WIDTH_KILL_STREAK = 100f;
+        public float COL_WIDTH_INDENT = 30f;
+        #endregion
+
+        #region Text Labels
+        public string LABEL_PLAYER = "Player";
+        public string LABEL_DEATHS = "Deaths";
+        public string LABEL_KILLS = "Kills";
+        public string LABEL_PVP = "Friendly Kills";
+        public string LABEL_ENEMY_SHIELDS = "Enemy Shields";
+        public string LABEL_PLAYER_SHIELDS = "Friendly Shields";
+        public string LABEL_SHIELDS_LOST = "Shields Lost";
+        public string LABEL_ALIVE_TIME = "Alive Time";
+        public string LABEL_KILL_STREAK = "Max Kill Streak";
+        public string LABEL_SURVIVAL_MODE = "Survival Mode";
+        public string LABEL_ENEMY_STATISTICS = "Enemy Statistics";
+        public string LABEL_TIME = "Time:";
+        public string LABEL_LAST_GAME = "Last Game:";
+        public string LABEL_ENEMIES_KILLED = "Enemies Killed:";
+        public string LABEL_NO_PLAYERS = "No players connected";
+        public string LABEL_NO_GAMES = "No games yet";
+        #endregion
+
+        #region Spacing Values
+        public float SPACING_BETWEEN_HEADERS = 10f;
+        public float SPACING_BETWEEN_PLAYERS = 15f;
+        public float SPACING_CARD_PERCENT = 0.04f;
+        public float SPACING_ENEMIES_VALUE = 25f;
+        #endregion
+
+        #region Other Widths
+        public float WIDTH_TIME_LABEL = 150f;
+        public float WIDTH_LAST_GAME_LABEL = 300f;
+
+        public float WIDTH_CARD_HALF = 0.48f;
+        #endregion
 
         // Scaled properties
         private float SectionSpacing => UIManager.ScaleValue(BASE_SECTION_SPACING);
@@ -20,12 +71,10 @@ namespace StatsMod
         private float SurvivalSectionHeight => UIManager.ScaleValue(BASE_SURVIVAL_SECTION_HEIGHT);
 
         private float Total_Height = 0f;
-        #endregion
 
         #region UI State
         private bool isDisplayVisible = false;
         private bool isDisplayVisibleAtAll = true;
-
         #endregion
 
         #region GUI Styles
@@ -35,6 +84,17 @@ namespace StatsMod
         private GUIStyle valueStyle;
         private GUIStyle cardStyle;
         private GUIStyle errorStyle;
+        private GUIStyle timerStyle;
+        private GUIStyle statusStyle;
+        private GUIStyle killsGreenStyle;
+        private GUIStyle killsWhiteStyle;
+        private GUIStyle deathsRedStyle;
+        private GUIStyle deathsWhiteStyle;
+        private GUIStyle friendlyKillsOrangeStyle;
+        private GUIStyle friendlyKillsWhiteStyle;
+        private GUIStyle centeredWhiteStyle;
+        private GUIStyle dynamicPlayerNameStyle;
+
         private bool stylesInitialized = false;
         #endregion
 
@@ -68,7 +128,6 @@ namespace StatsMod
         }
         #endregion
 
-        #region Style Management
         private void InitializeStyles()
         {
             if (stylesInitialized) return;
@@ -79,6 +138,7 @@ namespace StatsMod
             };
 
             headerStyle = UIManager.Instance.CreateHeaderStyle(UIManager.BIG_HEADER_SIZE);
+            headerStyle.alignment = TextAnchor.MiddleCenter;
             labelStyle = UIManager.Instance.CreateLabelStyle(UIManager.BIG_LABEL_SIZE);
             valueStyle = UIManager.Instance.CreateValueStyle(UIManager.BIG_LABEL_SIZE);
             cardStyle = UIManager.Instance.CreateCardStyle(UIManager.Instance.GetMediumTexture());
@@ -86,9 +146,20 @@ namespace StatsMod
 
             cardStyle.padding = new RectOffset((int)CardPadding, (int)CardPadding, (int)CardPadding, (int)CardPadding);
 
+            timerStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.Green } };
+            statusStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.Gray } };
+            killsGreenStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.Green }, alignment = TextAnchor.MiddleCenter };
+            killsWhiteStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.White }, alignment = TextAnchor.MiddleCenter };
+            deathsRedStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.Red }, alignment = TextAnchor.MiddleCenter };
+            deathsWhiteStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.White }, alignment = TextAnchor.MiddleCenter };
+            friendlyKillsOrangeStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.Orange }, alignment = TextAnchor.MiddleCenter };
+            friendlyKillsWhiteStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.White }, alignment = TextAnchor.MiddleCenter };
+            centeredWhiteStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.White }, alignment = TextAnchor.MiddleCenter };
+            dynamicPlayerNameStyle = new GUIStyle(valueStyle) { alignment = TextAnchor.MiddleCenter };
+
+
             stylesInitialized = true;
         }
-        #endregion
 
         #region GUI Drawing
         private void OnGUI()
@@ -97,36 +168,40 @@ namespace StatsMod
 
             InitializeStyles();
 
+            Color originalColor = GUI.color;
+            float opacity = ModConfig.BigUIOpacity / 100f;
+            GUI.color = new Color(originalColor.r, originalColor.g, originalColor.b, opacity);
+
             // Calculate background rect with dynamic height based on content
-            float marginX = Screen.width * 0.2f;
+            float marginX = Screen.width * BASE_MARGIN_PERCENT;
             CalculateContentHeight();
-            float backgroundHeight = Mathf.Min(Total_Height + 80f, Screen.height * 0.8f); // Add padding and cap at 80% of screen
-            float backgroundY = (Screen.height - backgroundHeight) * 0.5f; // Center vertically
+            float backgroundHeight = Mathf.Min(Total_Height + BASE_BACKGROUND_PADDING, Screen.height * BASE_MAX_HEIGHT_PERCENT);
+            float backgroundY = (Screen.height - backgroundHeight) * 0.5f;
 
             Rect backgroundRect = new Rect(marginX, backgroundY, Screen.width - (marginX * 2), backgroundHeight);
 
             GUI.Box(backgroundRect, "", backgroundStyle);
 
             // Calculate content area within the background
-            float contentPadding = 40f;
+            float contentPadding = BASE_CONTENT_PADDING;
             float contentWidth = backgroundRect.width - (contentPadding * 2);
             float availableContentHeight = backgroundRect.height - (contentPadding * 2);
 
             GUILayout.BeginArea(new Rect(backgroundRect.x + contentPadding, backgroundRect.y + contentPadding, contentWidth, availableContentHeight));
 
-            var statsSnapshot = StatsManager.Instance.GetStatsSnapshot();
+            var statsSnapshot = GameSessionManager.Instance.GetStatsSnapshot();
 
             // Draw survival and enemy stats horizontally if both are enabled
             if (ModConfig.ShowPlayTime && ModConfig.ShowEnemyDeaths)
             {
                 GUILayout.BeginHorizontal();
-                GUILayout.BeginVertical(GUILayout.Width(contentWidth * 0.48f));
+                GUILayout.BeginVertical(GUILayout.Width(contentWidth * WIDTH_CARD_HALF));
                 DrawSurvivalModeStats(statsSnapshot);
                 GUILayout.EndVertical();
 
-                GUILayout.Space(contentWidth * 0.04f); // 4% spacing between cards
+                GUILayout.Space(contentWidth * SPACING_CARD_PERCENT);
 
-                GUILayout.BeginVertical(GUILayout.Width(contentWidth * 0.48f));
+                GUILayout.BeginVertical(GUILayout.Width(contentWidth * WIDTH_CARD_HALF));
                 DrawEnemyStats(statsSnapshot);
                 GUILayout.EndVertical();
                 GUILayout.EndHorizontal();
@@ -150,6 +225,8 @@ namespace StatsMod
             }
 
             GUILayout.EndArea();
+
+            GUI.color = originalColor;
         }
 
         private void CalculateContentHeight()
@@ -163,7 +240,7 @@ namespace StatsMod
 
             if (ModConfig.ShowPlayers)
             {
-                var statsSnapshot = StatsManager.Instance?.GetStatsSnapshot();
+                var statsSnapshot = GameSessionManager.Instance?.GetStatsSnapshot();
                 float playerSectionHeight = UIManager.ScaleValue(120f); // Base height for player section
                 if (statsSnapshot?.ActivePlayers != null)
                 {
@@ -178,20 +255,18 @@ namespace StatsMod
         private void DrawSurvivalModeStats(GameStatsSnapshot statsSnapshot)
         {
             GUILayout.BeginVertical(cardStyle);
-            GUILayout.Label("Survival Mode", headerStyle);
+            GUILayout.Label(LABEL_SURVIVAL_MODE, headerStyle);
 
             GUILayout.BeginHorizontal();
             if (statsSnapshot.IsSurvivalActive)
             {
-                GUILayout.Label("Time:", labelStyle, GUILayout.Width(100));
-                var timerStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.Green } };
-                GUILayout.Label(FormatTimeSpan(statsSnapshot.CurrentSessionTime), timerStyle);
+                GUILayout.Label(LABEL_TIME, labelStyle, GUILayout.Width(WIDTH_TIME_LABEL));
+                GUILayout.Label(TimeFormatUtils.FormatTimeSpan(statsSnapshot.CurrentSessionTime), timerStyle);
             }
             else
             {
-                GUILayout.Label("Last Game:", labelStyle, GUILayout.Width(300));
-                var statusStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.Gray } };
-                GUILayout.Label(statsSnapshot.LastGameDuration.TotalSeconds > 0 ? FormatTimeSpan(statsSnapshot.LastGameDuration) : "No games yet", statusStyle);
+                GUILayout.Label(LABEL_LAST_GAME, labelStyle, GUILayout.Width(WIDTH_LAST_GAME_LABEL));
+                GUILayout.Label(statsSnapshot.LastGameDuration.TotalSeconds > 0 ? TimeFormatUtils.FormatTimeSpan(statsSnapshot.LastGameDuration) : LABEL_NO_GAMES, statusStyle);
             }
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
@@ -200,15 +275,15 @@ namespace StatsMod
         private void DrawEnemyStats(GameStatsSnapshot statsSnapshot)
         {
             GUILayout.BeginVertical(cardStyle);
-            GUILayout.Label("Enemy Statistics", headerStyle);
+            GUILayout.Label(LABEL_ENEMY_STATISTICS, headerStyle);
 
             try
             {
                 int enemiesKilled = statsSnapshot.EnemiesKilled;
                 GUILayout.BeginHorizontal();
-                GUILayout.Label("Enemies Killed:", labelStyle, GUILayout.Width(300));
-                var killsStyle = new GUIStyle(valueStyle) { normal = { textColor = enemiesKilled > 0 ? UIManager.Green : UIManager.White } };
-                GUILayout.Label(enemiesKilled.ToString(), killsStyle);
+                GUILayout.Label(LABEL_ENEMIES_KILLED, labelStyle, GUILayout.ExpandWidth(false));
+                GUILayout.Space(SPACING_ENEMIES_VALUE);
+                GUILayout.Label(enemiesKilled.ToString(), enemiesKilled > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.ExpandWidth(false));
                 GUILayout.EndHorizontal();
             }
             catch (System.Exception ex)
@@ -227,40 +302,42 @@ namespace StatsMod
                 if (statsSnapshot.ActivePlayers != null && statsSnapshot.ActivePlayers.Count > 0)
                 {
                     GUILayout.BeginHorizontal();
-                    GUILayout.Label("Player", headerStyle, GUILayout.Width(UIManager.ScaleValue(180)));
-                    GUILayout.Label("Deaths", headerStyle, GUILayout.Width(UIManager.ScaleValue(150)));
-                    GUILayout.Label("Kills", headerStyle, GUILayout.Width(UIManager.ScaleValue(90)));
-                    GUILayout.Label("Alive Time", headerStyle, GUILayout.Width(UIManager.ScaleValue(150)));
+                    GUILayout.Label(LABEL_PLAYER, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_PLAYER_NAME)));
+                    GUILayout.Label(LABEL_KILLS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_KILLS)));
+                    GUILayout.Label(LABEL_DEATHS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_DEATHS)));
+                    GUILayout.Label(LABEL_KILL_STREAK, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_KILL_STREAK)));
+                    GUILayout.Label(LABEL_PVP, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_PVP)));
+                    GUILayout.Label(LABEL_ENEMY_SHIELDS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_SHIELDS)));
+                    GUILayout.Label(LABEL_SHIELDS_LOST, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_SHIELDS_LOST)));
+                    GUILayout.Label(LABEL_PLAYER_SHIELDS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_PLAYER_SHIELDS)));
                     GUILayout.EndHorizontal();
 
-                    GUILayout.Space(10);
+                    GUILayout.Space(SPACING_BETWEEN_HEADERS);
 
                     foreach (var playerEntry in statsSnapshot.ActivePlayers)
                     {
                         var playerData = playerEntry.Value;
 
                         GUILayout.BeginHorizontal();
-                        GUILayout.Label("", valueStyle, GUILayout.Width(UIManager.ScaleValue(5)));
+                        // Player name style needs dynamic color per-player
+                        dynamicPlayerNameStyle.normal.textColor = playerData.PlayerColor;
+                        GUILayout.Label(playerData.PlayerName, dynamicPlayerNameStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_PLAYER_NAME)));
 
-                        var playerNameStyle = new GUIStyle(valueStyle) { normal = { textColor = playerData.PlayerColor } };
-                        GUILayout.Label(playerData.PlayerName, playerNameStyle, GUILayout.Width(UIManager.ScaleValue(205)));
-
-                        var deathsStyle = new GUIStyle(valueStyle) { normal = { textColor = playerData.Deaths > 0 ? UIManager.Red : UIManager.White } };
-                        GUILayout.Label(playerData.Deaths.ToString(), deathsStyle, GUILayout.Width(UIManager.ScaleValue(140)));
-
-                        var killsStyle = new GUIStyle(valueStyle) { normal = { textColor = playerData.Kills > 0 ? UIManager.Green : UIManager.White } };
-                        GUILayout.Label(playerData.Kills.ToString(), killsStyle, GUILayout.Width(UIManager.ScaleValue(90)));
-
-                        var aliveTimeStyle = new GUIStyle(valueStyle) { normal = { textColor = UIManager.White } };
-                        GUILayout.Label(FormatTimeSpan(playerData.GetCurrentAliveTime()), aliveTimeStyle, GUILayout.Width(UIManager.ScaleValue(150)));
+                        GUILayout.Label(playerData.Kills.ToString(), playerData.Kills > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_KILLS)));
+                        GUILayout.Label(playerData.Deaths.ToString(), playerData.Deaths > 0 ? deathsRedStyle : deathsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_DEATHS)));
+                        GUILayout.Label(playerData.MaxKillStreak.ToString(), playerData.MaxKillStreak > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_KILL_STREAK)));
+                        GUILayout.Label(playerData.FriendlyKills.ToString(), playerData.FriendlyKills > 0 ? friendlyKillsOrangeStyle : friendlyKillsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_PVP)));
+                        GUILayout.Label(playerData.EnemyShieldsTakenDown.ToString(), playerData.EnemyShieldsTakenDown > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_SHIELDS)));
+                        GUILayout.Label(playerData.ShieldsLost.ToString(), playerData.ShieldsLost > 0 ? deathsRedStyle : deathsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_SHIELDS_LOST)));
+                        GUILayout.Label(playerData.FriendlyShieldsHit.ToString(), playerData.FriendlyShieldsHit > 0 ? friendlyKillsOrangeStyle : friendlyKillsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_PLAYER_SHIELDS)));
                         GUILayout.EndHorizontal();
 
-                        GUILayout.Space(15);
+                        GUILayout.Space(SPACING_BETWEEN_PLAYERS);
                     }
                 }
                 else
                 {
-                    GUILayout.Label("No players connected", labelStyle);
+                    GUILayout.Label(LABEL_NO_PLAYERS, labelStyle);
                 }
             }
             catch (System.Exception ex)
@@ -271,13 +348,6 @@ namespace StatsMod
             GUILayout.EndVertical();
         }
 
-        #endregion
-
-        #region Utility Methods
-        private string FormatTimeSpan(TimeSpan timeSpan)
-        {
-            return $"{timeSpan.Hours:00}:{timeSpan.Minutes:00}:{timeSpan.Seconds:00}";
-        }
         #endregion
 
         #region Event Handling

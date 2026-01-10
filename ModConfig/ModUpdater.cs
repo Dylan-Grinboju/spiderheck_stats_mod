@@ -9,11 +9,11 @@ namespace StatsMod
     public static class ModUpdater
     {
         private const string ModId = StatsMod.ModId;
-        private const string CurrentVersion = "1.3.1";
+        private static string CurrentVersion => StatsMod.Version;
 
         private static string LatestVersionUrl = "https://raw.githubusercontent.com/Dylan-Grinboju/spiderheck_stats_mod/main/version.txt";
         private static string DownloadUrl = "https://github.com/Dylan-Grinboju/spiderheck_stats_mod/releases/tag/v{0}";
-        private static bool CheckForUpdates => Config.GetModConfigValue<bool>(ModId, "updater.checkForUpdates", true);
+        private static bool CheckForUpdates => ModConfig.CheckForUpdates;
 
         public static async Task CheckForUpdatesAsync()
         {
@@ -43,7 +43,7 @@ namespace StatsMod
 
         private static async Task<string> GetLatestVersionAsync()
         {
-            using (var client = new WebClient())
+            using (var client = new TimeoutWebClient(5000)) // 5 second timeout limit
             {
                 var response = await Task.Run(() => client.DownloadString(LatestVersionUrl));
                 return response.Trim();
@@ -103,6 +103,17 @@ namespace StatsMod
                 },
                 null
             );
+        }
+        private class TimeoutWebClient : WebClient
+        {
+            private readonly int _timeout;
+            public TimeoutWebClient(int timeout) => _timeout = timeout;
+            protected override WebRequest GetWebRequest(Uri uri)
+            {
+                var request = base.GetWebRequest(uri);
+                request.Timeout = _timeout;
+                return request;
+            }
         }
     }
 }

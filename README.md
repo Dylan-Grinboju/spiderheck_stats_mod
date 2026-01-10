@@ -5,11 +5,21 @@ A statistics tracking mod for Spiderheck that monitors player performance and ga
 
 ## Features
 
-- **Player Statistics**: Monitors player deaths and kills. Supports all 4 players!
+- **Extensive Player Statistics**: Tracks a wide range of player stats including kills, deaths, friendly kills, shield interactions, web swings, airborne time, kill streaks, and weapon-specific kills.
 - **Enemy Tracking**: Counts enemies killed during survival gameplay
-- **In-Game Display**: Press F1 to toggle the small stats display window, F2 for the large
+- **Player Titles**: At the end of each game, players are awarded fun titles based on their performance (e.g., "The Survivor", "Phantom Blade", "Lone Wolf")
+- **In-Game Display**: 
+  - Press **F1** to toggle the small stats display window
+  - Press **F2** for the large stats overlay
+  - Press **F3** to view player titles (only after the game ends)
 - **Log File**: All the stats are saved to a local txt file when the game ends 
 - **Configurable**: Using the Yaml file, various aspects of the mod can be changed
+- **Updater**: The mod will automatically check for updates when the game starts
+- **Versus Mode Support**: The mod will track stats in versus mode, but as this was developed with the survival mode in mind, some features may not work as intended
+
+
+### Titles
+<img width="2485" height="1288" alt="Pasted image 20260109102238" src="https://github.com/user-attachments/assets/ea9b7aa7-9b15-408d-88d9-dd35c2679eff" />
 
 ### Small version:
 <img width="2510" height="1393" alt="image" src="https://github.com/user-attachments/assets/70784ca7-bda0-478f-864d-ce39e5b6dae1" />
@@ -34,6 +44,7 @@ display:
   showEnemyDeaths: true
   autoScale: true
   uiScale: 1
+  bigUIOpacity: 100
   position:
     x: 10
     y: 10
@@ -42,11 +53,14 @@ tracking:
   saveStatsToFile: true
 updater:
   checkForUpdates: true
+titles:
+  enabled: true
+  revealDelaySeconds: 2.0
 ```
 After every change to the file, you need to relaunch the game for it to take effect. If you enter an incorrect value, for example 5 to a boolean field, the mod will throw a bunch of errors at you. You can change it back or just delete the file and it will be created again with the next game launch. 
 Some explanation of the fields:
 
-`showStatsWindow`: shows the mod UI. If false then pressing F1 or F2 will do nothing. Note that the tracking will still work, it will just not show you anything.
+`showStatsWindow`: shows the mod UI. If false then pressing F1, F2, or F3 will do nothing. Note that the tracking will still work, it will just not show you anything.
 
 `showPlayers`, `showPlayTime` and `showEnemyDeaths`: Exactly what this sounds. Will hide/show the corresponding parts of the UI.
 
@@ -54,7 +68,9 @@ Some explanation of the fields:
 
 `uiScale`: You can use this to manually scale the UI. 1 is normal size, 2 is double size, 0.5 is half size and so on. You can use this with conjunction with autoScale or by itself.
 
-`position`: You can use this to manually set the position of the small UI. The coordinates are in pixels, with 0,0 being the top left corner of the screen. This value will be saved every time you move the UI with the mouse. If the UI doesn't show up on your screen, you can try setting the x and y values to 10 again.
+`bigUIOpacity`: Controls the transparency of the Big UI overlay (F2). Values range from 0 (fully transparent) to 100 (fully opaque). Default is 100. 
+
+`position`: You can use this to manually set the position of the small UI. The coordinates are in pixels, with 0,0 being the top left corner of the screen. This value will be saved every time you click and drag the UI. If the UI doesn't show up on your screen, you can try setting the x and y values to 10 again.
 
 `enabled`: If false, the mod will not track any stats. This is as if the mod is not installed at all.
 
@@ -64,10 +80,12 @@ Some explanation of the fields:
 
 `checkForUpdates`: If true, the mod will automatically check for updates when the game starts.
 
-## Automatic Updates
-When you launch the game, the mod will check if there is a newer version available and prompt you to update if there is.
+### Titles Configuration:
 
-You can disable update checking by setting `checkForUpdates: false` in your configuration file.
+`titles.enabled`: If true, player titles will be calculated and displayed at the end of each game. Press F3 to view them.
+
+`titles.revealDelaySeconds`: Controls the delay between revealing each title card in the titles screen animation. Default is 2.0 seconds. Set to 0 for instant reveal.
+
 
 ## Notes and disclaimers
 - Stats reset when starting a new game. After the game ending you can return to the lobby and the overlay will show the last game's stats
@@ -76,7 +94,6 @@ You can disable update checking by setting `checkForUpdates: false` in your conf
 - This probably won't work with multiplayer, you are welcome to try and send me feedback, but I don't plan to support it anytime soon
 
 ## The Future
-- I plan to continue expanding this mod
-- Some of the immediate ideas are expanding on the stats themselves, like types of enemies killed, how many shields destroyed, and fun stuff like greatest height reached by a player in game
+- I plan to continue expanding this mod with more fun titles and statistics
 - I welcome any help or feedback! You can send me a message on Discord or Reddit, open a PR or try to send me a bug report using smoke signals. Some options are better than others
 

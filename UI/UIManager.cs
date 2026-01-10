@@ -8,13 +8,13 @@ namespace StatsMod
     public class UIManager : MonoBehaviour
     {
         #region Singleton
-        private static UIManager _instance;
         public static UIManager Instance { get; private set; }
         #endregion
 
         #region UI Components
         private SmallUI smallUI;
         private BigUI bigUI;
+        private TitlesUI titlesUI;
         #endregion
 
         #region Shared Constants
@@ -34,6 +34,7 @@ namespace StatsMod
         public static readonly Color DarkGray = new Color(0.18f, 0.18f, 0.18f, 0.95f);
         public static readonly Color MediumGray = new Color(0.25f, 0.25f, 0.25f, 0.95f);
         public static readonly Color LightGray = new Color(0.35f, 0.35f, 0.35f, 0.95f);
+        public static readonly Color Orange = new Color(1f, 0.647f, 0f, 1f);
         #endregion
 
         #region Shared Textures
@@ -108,12 +109,11 @@ namespace StatsMod
         #region Initialization
         public static void Initialize()
         {
-            if (_instance == null)
+            if (Instance == null)
             {
                 GameObject uiManagerObj = new GameObject("UIManager");
-                _instance = uiManagerObj.AddComponent<UIManager>();
+                Instance = uiManagerObj.AddComponent<UIManager>();
                 DontDestroyOnLoad(uiManagerObj);
-                Instance = _instance;
 
                 Instance.InitializeComponents();
                 Logger.LogInfo("UIManager initialized");
@@ -133,6 +133,11 @@ namespace StatsMod
             bigUIObj.transform.SetParent(transform);
             bigUI = bigUIObj.AddComponent<BigUI>();
             bigUI.Initialize();
+
+            GameObject titlesUIObj = new GameObject("TitlesUI");
+            titlesUIObj.transform.SetParent(transform);
+            titlesUI = titlesUIObj.AddComponent<TitlesUI>();
+            titlesUI.Initialize();
         }
         #endregion
 
@@ -151,12 +156,18 @@ namespace StatsMod
             {
                 HandleF2Press();
             }
+
+            if (keyboard.f3Key.wasPressedThisFrame)
+            {
+                HandleF3Press();
+            }
         }
 
         private void HandleF1Press()
         {
             bool isSmallVisible = smallUI != null && smallUI.IsVisible();
             HideBigUI();
+            HideTitlesUI();
             if (isSmallVisible)
             {
                 HideSmallUI();
@@ -166,10 +177,12 @@ namespace StatsMod
                 ShowSmallUI();
             }
         }
+
         private void HandleF2Press()
         {
             bool isBigVisible = bigUI != null && bigUI.IsVisible();
             HideSmallUI();
+            HideTitlesUI();
             if (isBigVisible)
             {
                 HideBigUI();
@@ -177,6 +190,34 @@ namespace StatsMod
             else
             {
                 ShowBigUI();
+            }
+        }
+
+        private void HandleF3Press()
+        {
+            // If currently animating, skip the animation
+            if (titlesUI != null && titlesUI.IsAnimating())
+            {
+                titlesUI.SkipAnimation();
+                return;
+            }
+
+            // If in a game, clear titles and show empty titles screen
+            if (GameSessionManager.Instance.IsActive)
+            {
+                titlesUI?.ClearTitlesForNewGame();
+            }
+
+            bool isTitlesVisible = titlesUI != null && titlesUI.IsVisible();
+            HideSmallUI();
+            HideBigUI();
+            if (isTitlesVisible)
+            {
+                HideTitlesUI();
+            }
+            else
+            {
+                ShowTitlesUIWithoutAnimation();
             }
         }
 
@@ -226,6 +267,35 @@ namespace StatsMod
             {
                 bigUI.HideDisplay();
             }
+        }
+
+        public void ShowTitlesUI()
+        {
+            if (titlesUI != null)
+            {
+                titlesUI.ShowDisplay();
+            }
+        }
+
+        public void ShowTitlesUIWithoutAnimation()
+        {
+            if (titlesUI != null)
+            {
+                titlesUI.ShowDisplayWithoutAnimation();
+            }
+        }
+
+        public void HideTitlesUI()
+        {
+            if (titlesUI != null)
+            {
+                titlesUI.HideDisplay();
+            }
+        }
+
+        public TitlesUI GetTitlesUI()
+        {
+            return titlesUI;
         }
         #endregion
 
@@ -340,6 +410,20 @@ namespace StatsMod
         {
             Instance?.ShowBigUI();
             Instance?.HideSmallUI();
+            Instance?.HideTitlesUI();
+        }
+
+        public static void AutoShowTitles()
+        {
+            if (!ModConfig.TitlesEnabled) return;
+            Instance?.HideSmallUI();
+            Instance?.HideBigUI();
+            Instance?.ShowTitlesUI();
+        }
+
+        public static void ClearTitlesForNewGame()
+        {
+            Instance?.titlesUI?.ClearTitlesForNewGame();
         }
         #endregion
     }
