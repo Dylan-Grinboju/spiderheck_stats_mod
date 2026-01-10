@@ -91,7 +91,7 @@ namespace StatsMod
                 AirborneTime = TimeSpan.Zero;
                 CurrentAirborneStartTime = null;
                 WasAirborneWhenPaused = false;
-                HighestPoint = float.MinValue;
+                HighestPoint = 0;
                 SecondaryColor = Color.white;
                 WeaponHits = new Dictionary<string, int>
                 {
@@ -314,7 +314,7 @@ namespace StatsMod
                 entry.Value.KillStreakWhileSolo = 0;
                 entry.Value.MaxKillStreakWhileSolo = 0;
                 entry.Value.TotalAliveTime = TimeSpan.Zero;
-                entry.Value.HighestPoint = float.MinValue;
+                entry.Value.HighestPoint = 0;
                 foreach (var weaponKey in entry.Value.WeaponHits.Keys.ToList())
                 {
                     entry.Value.WeaponHits[weaponKey] = 0;
