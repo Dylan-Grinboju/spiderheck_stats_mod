@@ -46,7 +46,32 @@ namespace StatsMod
             // "Wasp Friendly(Clone)", don't count either as friendly or enemy
         };
 
-        private static bool IsFirstTimeKill(GameObject target, int instanceId, HashSet<int> recentlyKilledSet, ref float lastCleanupTime, object lockObject, string entityType)
+        // Maps game enemy names to display names for tracking
+        private static readonly Dictionary<string, string> enemyDisplayNames = new Dictionary<string, string>
+        {
+            { "Wasp(Clone)", "Wasp" },
+            { "Wasp Shielded(Clone)", "Wasp" },
+            { "PowerWasp Variant(Clone)", "Power Wasp" },
+            { "PowerWasp Variant Shield(Clone)", "Power Wasp" },
+            { "Strut1", "Roller" },
+            { "Strut2", "Roller" },
+            { "Strut3", "Roller" },
+            { "Roller(Clone)", "Roller" },
+            { "PowerRoller Variant(Clone)", "Roller" },
+            { "Whisp(Clone)", "Whisp" },
+            { "PowerWhisp Variant(Clone)", "Whisp" },
+            { "MeleeWhisp(Clone)", "Melee Whisp" },
+            { "PowerMeleeWhisp Variant(Clone)", "Power Melee Whisp" },
+            { "Khepri (Clone)", "Khepri" },
+            { "PowerKhepri Variant(Clone)", "Khepri" },
+            { "Hornet_Shaman Variant(Clone)", "Hornet Shaman" },
+            { "Shielded Hornet_Shaman Variant(Clone)", "Hornet Shaman" },
+            { "Hornet Variant(Clone)", "Hornet" },
+            { "Shielded Hornet Variant(Clone)", "Hornet" },
+            { "Player(Clone)", "Player" },
+        };
+
+        private static bool IsFirstTimeDeath(GameObject target, int instanceId, HashSet<int> recentlyKilledSet, ref float lastCleanupTime, object lockObject, string entityType)
         {
             lock (lockObject)
             {
@@ -63,7 +88,7 @@ namespace StatsMod
                 }
 
                 recentlyKilledSet.Add(instanceId);
-                Logger.LogInfo($"Recording kill for {entityType} {instanceId}, name:{target.name} at time {Time.time}");
+                Logger.LogInfo($"Recording death for {entityType} {instanceId}, name:{target.name} at time {Time.time}");
                 return true;
             }
         }
@@ -84,11 +109,18 @@ namespace StatsMod
 
                 int enemyId = enemyBrain.gameObject.GetInstanceID();
 
-                if (IsFirstTimeKill(target, enemyId, recentlyKilledEnemies, ref lastEnemiesCleanupTime, recentlyKilledLock, "enemy"))
+                if (IsFirstTimeDeath(target, enemyId, recentlyKilledEnemies, ref lastEnemiesCleanupTime, recentlyKilledLock, "enemy"))
                 {
                     Logger.LogInfo($"Recording kill for player {player.name}, target:{target.name}");
                     PlayerTracker.Instance.IncrementPlayerKill(player);
                     PlayerTracker.Instance.IncrementWeaponHit(player, weaponName);
+
+                    // Track kill by enemy type
+                    string targetName = enemyBrain.gameObject.name;
+                    if (enemyDisplayNames.TryGetValue(targetName, out string displayName))
+                    {
+                        PlayerTracker.Instance.IncrementEnemyKillByName(player, displayName);
+                    }
                 }
                 return;
             }
@@ -105,11 +137,12 @@ namespace StatsMod
             if (spiderHealth.transform.root == player.transform.root)
                 return;
             int playerId = spiderHealth.gameObject.GetInstanceID();
-            if (IsFirstTimeKill(target, playerId, recentlyKilledPlayers, ref lastPlayersCleanupTime, recentlyKilledPlayersLock, "player"))
+            if (IsFirstTimeDeath(target, playerId, recentlyKilledPlayers, ref lastPlayersCleanupTime, recentlyKilledPlayersLock, "player"))
             {
                 Logger.LogInfo($"Recording friendly kill for player {playerId}, name:{target.name}");
                 PlayerTracker.Instance.IncrementFriendlyKill(player);
                 PlayerTracker.Instance.IncrementWeaponHit(player, weaponName);
+                PlayerTracker.Instance.IncrementEnemyKillByName(player, "Player");
             }
         }
 

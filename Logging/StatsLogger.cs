@@ -149,6 +149,28 @@ namespace StatsMod
                         }
                     }
 
+                    // Enemy kills breakdown
+                    if (playerData.EnemyKills != null && playerData.EnemyKills.Any())
+                    {
+                        lines.Add($"    Kills by Enemy Type:");
+                        var sortedEnemyKills = playerData.EnemyKills
+                            .Where(e => e.Value > 0)
+                            .OrderByDescending(e => e.Value)
+                            .ToList();
+
+                        if (sortedEnemyKills.Any())
+                        {
+                            foreach (var enemy in sortedEnemyKills)
+                            {
+                                lines.Add($"      {enemy.Key}: {enemy.Value}");
+                            }
+                        }
+                        else
+                        {
+                            lines.Add($"      No enemy kills recorded");
+                        }
+                    }
+
                     lines.Add("");
                 }
             }

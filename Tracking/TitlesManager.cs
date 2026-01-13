@@ -118,6 +118,9 @@ namespace StatsMod
         public const string MostGunsKills = nameof(StatLeaders.MostGunsKills);
         public const string MostExplosionsKills = nameof(StatLeaders.MostExplosionsKills);
         public const string MostBladeKills = nameof(StatLeaders.MostBladeKills);
+        public const string MostHornetKills = nameof(StatLeaders.MostHornetKills);
+        public const string MostWhispKills = nameof(StatLeaders.MostWhispKills);
+        public const string MostKhepriKills = nameof(StatLeaders.MostKhepriKills);
     }
 
     public class StatLeaders
@@ -149,6 +152,9 @@ namespace StatsMod
         public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostGunsKills { get; set; }
         public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostExplosionsKills { get; set; }
         public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostBladeKills { get; set; }
+        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostHornetKills { get; set; }
+        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostWhispKills { get; set; }
+        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostKhepriKills { get; set; }
     }
 
     public class TitlesManager
@@ -193,6 +199,19 @@ namespace StatsMod
             currentTitles.AddRange(fiveCategoryTitles);
 
             RemoveDominatedTitles();
+
+            foreach (var player in players)
+            {
+                if (!currentTitles.Any(t => t.Player == player.Key))
+                {
+                    currentTitles.Add(new TitleEntry(player)
+                    {
+                        TitleName = "Average Joe",
+                        Description = "Participated",
+                        Priority = 100
+                    });
+                }
+            }
             BalanceTitlePriorities();
 
             currentTitles = currentTitles.OrderByDescending(t => t.Priority).ToList();
@@ -264,6 +283,15 @@ namespace StatsMod
 
             var bladeRanked = players.OrderByDescending(p => p.Value.WeaponHits["Particle Blade"] + p.Value.WeaponHits["KhepriStaff"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
             leaders.MostBladeKills = bladeRanked[0];
+
+            var hornetsRanked = players.OrderByDescending(p => p.Value.EnemyKills["Hornet"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+            leaders.MostHornetKills = hornetsRanked[0];
+
+            var whispsRanked = players.OrderByDescending(p => p.Value.EnemyKills["Whisp"] + p.Value.EnemyKills["Power Whisp"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+            leaders.MostWhispKills = whispsRanked[0];
+
+            var kheprisRanked = players.OrderByDescending(p => p.Value.EnemyKills["Khepri"] + p.Value.EnemyKills["Power Khepri"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+            leaders.MostKhepriKills = kheprisRanked[0];
 
             return leaders;
         }
@@ -544,6 +572,10 @@ namespace StatsMod
             var blades = leaders.MostBladeKills.Value.WeaponHits;
             bool hasMostBladeKills = (blades["Particle Blade"] + blades["KhepriStaff"]) > 0;
 
+            bool hasMostHornetKills = leaders.MostHornetKills.Value.EnemyKills["Hornet"] > 0;
+            bool hasMostWhispKills = (leaders.MostWhispKills.Value.EnemyKills["Whisp"] + leaders.MostWhispKills.Value.EnemyKills["Power Whisp"]) > 0;
+            bool hasMostKhepriKills = (leaders.MostKhepriKills.Value.EnemyKills["Khepri"] + leaders.MostKhepriKills.Value.EnemyKills["Power Khepri"]) > 0;
+
             if (hasMostOffense && hasHighestPoint && TitleBuilder.SamePlayer(leaders.MostOffense, leaders.HighestPoint))
             {
                 titles.Add(new TitleBuilder(leaders)
@@ -721,6 +753,56 @@ namespace StatsMod
                     .Build());
             }
 
+            if (hasMostHornetKills && hasMostBladeKills && TitleBuilder.SamePlayer(leaders.MostHornetKills, leaders.MostBladeKills))
+            {
+                titles.Add(new TitleBuilder(leaders)
+                    .ForLeader(l => l.MostHornetKills, Req.MostHornetKills)
+                    .AndLeader(Req.MostBladeKills)
+                    .WithName("Jedi Master")
+                    .WithDescription($"Most Hornets Killed ({leaders.MostHornetKills.Value.EnemyKills["Hornet"]})\nMost Blade Kills ({blades["Particle Blade"] + blades["KhepriStaff"]})")
+                    .WithPriority(defaultPriority)
+                    .Build());
+            }
+
+            if (hasMostWhispKills && hasMostGunsKills && TitleBuilder.SamePlayer(leaders.MostWhispKills, leaders.MostGunsKills))
+            {
+                var whispKills = leaders.MostWhispKills.Value.EnemyKills["Whisp"] + leaders.MostWhispKills.Value.EnemyKills["Power Whisp"];
+                var gunKills = guns["Shotgun"] + guns["RailShot"] + guns["DeathRay"] + guns["EnergyBall"] + guns["Laser Cannon"] + guns["SawDisc"];
+                                
+                titles.Add(new TitleBuilder(leaders)
+                    .ForLeader(l => l.MostWhispKills, Req.MostWhispKills)
+                    .AndLeader(Req.MostGunsKills)
+                    .WithName("Sharpshooter")
+                    .WithDescription($"Most Whisps Killed ({whispKills})\nMost Gun Kills ({gunKills})")
+                    .WithPriority(defaultPriority)
+                    .Build());
+            }
+
+            if (hasMostKhepriKills && hasMostDamageTaken && TitleBuilder.SamePlayer(leaders.MostKhepriKills, leaders.MostDamageTaken))
+            {
+                var khepriKills = leaders.MostKhepriKills.Value.EnemyKills["Khepri"] + leaders.MostKhepriKills.Value.EnemyKills["Power Khepri"];
+                
+                titles.Add(new TitleBuilder(leaders)
+                    .ForLeader(l => l.MostKhepriKills, Req.MostKhepriKills)
+                    .AndLeader(Req.MostDamageTaken)
+                    .WithName("Pharaoh")
+                    .WithDescription($"Most Khepris Killed ({khepriKills})\nMost Damage Taken ({leaders.MostDamageTaken.Value.Deaths + leaders.MostDamageTaken.Value.ShieldsLost})")
+                    .WithPriority(defaultPriority)
+                    .Build());
+            }
+
+
+            if (hasMostAliveTime && TitleBuilder.SamePlayer(leaders.MostAliveTime, leaders.LowestPoint))
+            {
+                titles.Add(new TitleBuilder(leaders)
+                    .ForLeader(l => l.MostAliveTime, Req.MostAliveTime)
+                    .AndLeader(Req.LowestPoint)
+                    .WithName("Cockroach")
+                    .WithDescription($"Most Alive Time ({leaders.MostAliveTime.Value.TotalAliveTime.TotalSeconds:F1}s)\nLowest Point ({leaders.LowestPoint.Value.HighestPoint:F1}m)")
+                    .WithPriority(defaultPriority)
+                    .Build());
+            }
+
             return titles;
         }
 
@@ -745,6 +827,8 @@ namespace StatsMod
 
             var blades = leaders.MostBladeKills.Value.WeaponHits;
             bool hasMostBladeKills = (blades["Particle Blade"] + blades["KhepriStaff"]) > 0;
+
+            bool hasMostHornetKills = leaders.MostHornetKills.Value.EnemyKills["Hornet"] > 0;
 
             if (hasMostExplosionsKills && hasHighestPoint && hasMostAirborneTime && TitleBuilder.SamePlayer(leaders.MostExplosionsKills, leaders.HighestPoint, leaders.MostAirborneTime))
             {
@@ -886,6 +970,18 @@ namespace StatsMod
                     .AndLeader(Req.MostBladeKills)
                     .WithName("Master of Arms")
                     .WithDescription($"Most Explosive Kills ({expl["Explosions"] + expl["Laser Cube"] + expl["DeathCube"]})\nMost Gun Kills ({guns["Shotgun"] + guns["RailShot"] + guns["DeathRay"] + guns["EnergyBall"] + guns["Laser Cannon"] + guns["SawDisc"]})\nMost Blade Kills ({blades["Particle Blade"] + blades["KhepriStaff"]})")
+                    .WithPriority(defaultPriority)
+                    .Build());
+            }
+
+            if (hasMostHornetKills && hasMostBladeKills && hasMostFriendlyFire && TitleBuilder.SamePlayer(leaders.MostHornetKills, leaders.MostBladeKills, leaders.MostFriendlyFire))
+            {
+                titles.Add(new TitleBuilder(leaders)
+                    .ForLeader(l => l.MostHornetKills, Req.MostHornetKills)
+                    .AndLeader(Req.MostBladeKills)
+                    .AndLeader(Req.MostFriendlyFire)
+                    .WithName("Sith Lord")
+                    .WithDescription($"Most Hornets Killed ({leaders.MostHornetKills.Value.EnemyKills["Hornet"]})\nMost Blade Kills ({blades["Particle Blade"] + blades["KhepriStaff"]})\nMost Friendly Fire ({leaders.MostFriendlyFire.Value.FriendlyKills + leaders.MostFriendlyFire.Value.FriendlyShieldsHit})")
                     .WithPriority(defaultPriority)
                     .Build());
             }

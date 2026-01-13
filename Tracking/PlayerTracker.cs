@@ -61,6 +61,7 @@ namespace StatsMod
             public float HighestPoint { get; set; }
             public Color SecondaryColor { get; set; }
             public Dictionary<string, int> WeaponHits { get; set; }
+            public Dictionary<string, int> EnemyKills { get; set; }
 
             public PlayerData(ulong id, string name = "Player")
             {
@@ -106,6 +107,21 @@ namespace StatsMod
                     { "Laser Cube", 0 },
                     { "SawDisc", 0 },
                     { "Explosions", 0 }
+                };
+                EnemyKills = new Dictionary<string, int>
+                {
+                    { "Wasp", 0 },
+                    { "Power Wasp", 0 },
+                    { "Roller", 0 },
+                    { "Whisp", 0 },
+                    { "Power Whisp", 0 },
+                    { "Melee Whisp", 0 },
+                    { "Power Melee Whisp", 0 },
+                    { "Khepri", 0 },
+                    { "Power Khepri", 0 },
+                    { "Hornet Shaman", 0 },
+                    { "Hornet", 0 },
+                    { "Player", 0 }
                 };
             }
 
@@ -319,6 +335,10 @@ namespace StatsMod
                 {
                     entry.Value.WeaponHits[weaponKey] = 0;
                 }
+                foreach (var enemyKey in entry.Value.EnemyKills.Keys.ToList())
+                {
+                    entry.Value.EnemyKills[enemyKey] = 0;
+                }
             }
         }
 
@@ -425,6 +445,21 @@ namespace StatsMod
                 else
                 {
                     Logger.LogError($"Unknown weapon name: {weaponName}. This weapon is not pre-populated in WeaponHits dictionary.");
+                }
+            }
+        }
+
+        public void IncrementEnemyKillByName(PlayerInput player, string enemyName)
+        {
+            if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
+            {
+                if (data.EnemyKills.ContainsKey(enemyName))
+                {
+                    data.EnemyKills[enemyName]++;
+                }
+                else
+                {
+                    Logger.LogError($"Unknown enemy name: {enemyName}. This enemy is not pre-populated in EnemyKills dictionary.");
                 }
             }
         }
