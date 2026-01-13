@@ -11,16 +11,16 @@ namespace StatsMod
     // Cache reflection field info for performance
     internal static class ReflectionCache
     {
-        public static readonly FieldInfo PrimaryColorField = 
+        public static readonly FieldInfo PrimaryColorField =
             typeof(SpiderCustomizer).GetField("_primaryColor", BindingFlags.NonPublic | BindingFlags.Instance);
-        
-        public static readonly FieldInfo SecondaryColorField = 
+
+        public static readonly FieldInfo SecondaryColorField =
             typeof(SpiderCustomizer).GetField("_secondaryColor", BindingFlags.NonPublic | BindingFlags.Instance);
-        
-        public static readonly FieldInfo EnemyImmuneTimeField = 
+
+        public static readonly FieldInfo EnemyImmuneTimeField =
             AccessTools.Field(typeof(EnemyHealthSystem), "_immuneTime");
-        
-        public static readonly FieldInfo SpiderImmuneTimeField = 
+
+        public static readonly FieldInfo SpiderImmuneTimeField =
             AccessTools.Field(typeof(SpiderHealthSystem), "_immuneTime");
     }
 
@@ -31,6 +31,14 @@ namespace StatsMod
         {
             try
             {
+                // Guard against race condition: if the player left before OnEnable completed
+                // Happens when playing with controllers and in the pause menu of a match you use mouse/keyboard
+                if (__instance == null || !__instance.enabled || !__instance.gameObject.activeInHierarchy)
+                {
+                    Logger.LogDebug($"Skipping registration for inactive/destroyed player: {__instance}");
+                    return;
+                }
+
                 PlayerTracker.Instance.RegisterPlayer(__instance);
             }
             catch (Exception ex)
@@ -249,7 +257,7 @@ namespace StatsMod
                 }
 
                 // Cache miss - do the expensive lookup once
-                if (stabilizer.TryGetComponent(out SpiderController spider) || 
+                if (stabilizer.TryGetComponent(out SpiderController spider) ||
                     (spider = stabilizer.GetComponentInParent<SpiderController>()) != null)
                 {
                     PlayerInput playerInput = spider.GetComponentInParent<PlayerInput>();
