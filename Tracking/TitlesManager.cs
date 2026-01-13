@@ -914,6 +914,18 @@ namespace StatsMod
                     .Build());
             }
 
+            if (hasMostDamageTaken && TitleBuilder.SamePlayer(leaders.MostDamageTaken, leaders.LeastOffense, leaders.LeastFriendlyFire))
+            {
+                titles.Add(new TitleBuilder(leaders)
+                    .ForLeader(l => l.MostDamageTaken, Req.MostDamageTaken)
+                    .AndLeader(Req.LeastOffense)
+                    .AndLeader(Req.LeastFriendlyFire)
+                    .WithName("AFK")
+                    .WithDescription($"Most Damage Taken ({leaders.MostDamageTaken.Value.Deaths + leaders.MostDamageTaken.Value.ShieldsLost})\nLeast Offense ({leaders.LeastOffense.Value.Kills + leaders.LeastOffense.Value.EnemyShieldsTakenDown})\nLeast Friendly Fire ({leaders.LeastFriendlyFire.Value.FriendlyKills + leaders.LeastFriendlyFire.Value.FriendlyShieldsHit})")
+                    .WithPriority(defaultPriority)
+                    .Build());
+            }
+
             if (hasMostWebSwings && hasMostAirborneTime && hasMostDamageTaken && TitleBuilder.SamePlayer(leaders.MostWebSwings, leaders.MostAirborneTime, leaders.MostDamageTaken))
             {
                 titles.Add(new TitleBuilder(leaders)

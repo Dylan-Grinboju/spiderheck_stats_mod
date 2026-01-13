@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Reflection;
+using StatsMod.Cheats;
 
 namespace StatsMod
 {
@@ -89,14 +90,14 @@ namespace StatsMod
 
             // Uncommenting this will not initialize anything as this is not pushed to github on purpose
             // Initialize cheat manager for testing
-            // try
-            // {
-            //     CheatManager.Initialize();
-            // }
-            // catch (System.Exception ex)
-            // {
-            //     Logger.LogError($"Error initializing CheatManager: {ex.Message}");
-            // }
+            try
+            {
+                CheatManager.Initialize();
+            }
+            catch (System.Exception ex)
+            {
+                Logger.LogError($"Error initializing CheatManager: {ex.Message}");
+            }
         }
 
         private void SetupConfiguration()
