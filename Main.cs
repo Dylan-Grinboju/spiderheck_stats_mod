@@ -114,6 +114,7 @@ namespace StatsMod
                         { "autoScale", true },
                         { "uiScale", 1.0f },
                         { "bigUIOpacity", 100f },
+                        { "smallUIShowBackground", false },
                         { "position", new Dictionary<string, object>
                             {
                                 { "x", 10 },

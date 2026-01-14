@@ -6,8 +6,8 @@ namespace StatsMod
 {
     public class SmallUI : MonoBehaviour
     {
-        #region Base Dimensions (Editable via Unity Explorer)
-        public float BASE_WINDOW_WIDTH = 300f;
+        #region Base Dimensions
+        public float BASE_WINDOW_WIDTH = 200f;
         public float BASE_WINDOW_HEIGHT = 15f;
         public float BASE_HEADER_HEIGHT = 35f;
         public float BASE_PLAYER_ROW_HEIGHT = 30f;
@@ -15,17 +15,11 @@ namespace StatsMod
         #endregion
 
         #region Column Widths
-        public float COL_WIDTH_PLAYER_MIN = 50f;
-        public float COL_WIDTH_PLAYER_PADDING = 10f;
-        public float COL_WIDTH_KILL = 60f;
-        public float COL_WIDTH_DEATH = 100f;
+        public float COL_WIDTH_KILL = 50f;
+        public float COL_WIDTH_DEATH = 80f;
         #endregion
 
-        // Cached dynamic width for player name column
-        private float cachedPlayerNameWidth = 0f;
-
         #region Text Labels
-        public string LABEL_PLAYER = "Player";
         public string LABEL_KILL = "Kills";
         public string LABEL_DEATH = "Deaths";
         public string LABEL_NO_PLAYERS = "No players";
@@ -50,10 +44,10 @@ namespace StatsMod
 
         #region GUI Styles
         private GUIStyle windowStyle;
+        private GUIStyle transparentWindowStyle;
         private GUIStyle headerStyle;
         private GUIStyle headerCenteredStyle;
         private GUIStyle labelStyle;
-        private GUIStyle playerColorStyle;
         private GUIStyle playerColorCenteredStyle;
         private bool stylesInitialized = false;
         #endregion
@@ -101,10 +95,17 @@ namespace StatsMod
             if (stylesInitialized) return;
 
             windowStyle = UIManager.Instance.CreateWindowStyle(UIManager.Instance.GetDarkTexture());
+            
+            // Create transparent window style for no-background mode
+            transparentWindowStyle = new GUIStyle(GUI.skin.window)
+            {
+                normal = { background = null },
+                padding = new RectOffset(UIManager.ScaleInt(UIManager.PADDING * 2), UIManager.ScaleInt(UIManager.PADDING * 2), UIManager.ScaleInt(UIManager.PADDING * 2), UIManager.ScaleInt(UIManager.PADDING * 2))
+            };
+            
             headerStyle = UIManager.Instance.CreateHeaderStyle();
             headerCenteredStyle = new GUIStyle(headerStyle) { alignment = TextAnchor.MiddleCenter };
             labelStyle = UIManager.Instance.CreateLabelStyle();
-            playerColorStyle = new GUIStyle(labelStyle); // Will set color dynamically
             playerColorCenteredStyle = new GUIStyle(labelStyle) { alignment = TextAnchor.MiddleCenter };
 
             stylesInitialized = true;
@@ -120,7 +121,8 @@ namespace StatsMod
             UpdateWindowSize();
 
             Vector2 oldPosition = new Vector2(windowRect.x, windowRect.y);
-            windowRect = GUI.Window(0, windowRect, DrawStatsWindow, "", windowStyle);
+            GUIStyle activeWindowStyle = ModConfig.SmallUIShowBackground ? windowStyle : transparentWindowStyle;
+            windowRect = GUI.Window(0, windowRect, DrawStatsWindow, "", activeWindowStyle);
 
             Vector2 newPosition = new Vector2(windowRect.x, windowRect.y);
             if (oldPosition != newPosition)
@@ -142,37 +144,12 @@ namespace StatsMod
         #endregion
 
         #region Drawing Methods
-        private float CalculatePlayerNameColumnWidth(GameStatsSnapshot statsSnapshot)
-        {
-            float maxWidth = UIManager.ScaleValue(COL_WIDTH_PLAYER_MIN);
-
-            // Measure the header label width
-            Vector2 headerSize = headerStyle.CalcSize(new GUIContent(LABEL_PLAYER));
-            if (headerSize.x > maxWidth) maxWidth = headerSize.x;
-
-            // Measure each player name
-            if (statsSnapshot?.ActivePlayers != null)
-            {
-                foreach (var playerEntry in statsSnapshot.ActivePlayers)
-                {
-                    Vector2 nameSize = playerColorStyle.CalcSize(new GUIContent(playerEntry.Value.PlayerName));
-                    if (nameSize.x > maxWidth) maxWidth = nameSize.x;
-                }
-            }
-
-            return maxWidth + UIManager.ScaleValue(COL_WIDTH_PLAYER_PADDING);
-        }
-
         private void DrawPlayerStats(GameStatsSnapshot statsSnapshot)
         {
             try
             {
-                // Calculate dynamic player name column width
-                cachedPlayerNameWidth = CalculatePlayerNameColumnWidth(statsSnapshot);
-
-                // Header row in white
+                // Header row
                 GUILayout.BeginHorizontal();
-                GUILayout.Label(LABEL_PLAYER, headerStyle, GUILayout.Width(cachedPlayerNameWidth));
                 GUILayout.Label(LABEL_KILL, headerCenteredStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_KILL)));
                 GUILayout.Label(LABEL_DEATH, headerCenteredStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_DEATH)));
                 GUILayout.EndHorizontal();
@@ -183,14 +160,12 @@ namespace StatsMod
                     {
                         var playerData = playerEntry.Value;
 
-                        // Set the player's color for both styles
-                        playerColorStyle.normal.textColor = playerData.PlayerColor;
+                        // Set the player's color for the style
                         playerColorCenteredStyle.normal.textColor = playerData.PlayerColor;
 
                         GUILayout.Space(UIManager.ScaleValue(SPACING_BETWEEN_ROWS));
 
                         GUILayout.BeginHorizontal();
-                        GUILayout.Label(playerData.PlayerName, playerColorStyle, GUILayout.Width(cachedPlayerNameWidth));
                         GUILayout.Label(playerData.Kills.ToString(), playerColorCenteredStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_KILL)));
                         GUILayout.Label(playerData.Deaths.ToString(), playerColorCenteredStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_DEATH)));
                         GUILayout.EndHorizontal();
@@ -226,9 +201,9 @@ namespace StatsMod
 
             windowRect.height = totalHeight;
 
-            // Calculate dynamic width based on player name column + other columns + padding
-            float dynamicWidth = cachedPlayerNameWidth + UIManager.ScaleValue(COL_WIDTH_KILL) + UIManager.ScaleValue(COL_WIDTH_DEATH) + Padding * 2;
-            windowRect.width = Mathf.Max(dynamicWidth, UIManager.ScaleValue(COL_WIDTH_PLAYER_MIN + COL_WIDTH_KILL + COL_WIDTH_DEATH + BASE_PADDING * 2));
+            // Calculate width based on kill + death columns + padding
+            float dynamicWidth = UIManager.ScaleValue(COL_WIDTH_KILL) + UIManager.ScaleValue(COL_WIDTH_DEATH) + Padding * 2;
+            windowRect.width = dynamicWidth;
         }
 
         public void OnPlayerJoined()

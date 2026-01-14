@@ -22,6 +22,7 @@ namespace StatsMod
         public static bool AutoScale => Config.GetModConfigValue(ModId, "display.autoScale", true);
         public static float UIScale => ValidateScale(Config.GetModConfigValue(ModId, "display.uiScale", 1.0f));
         public static float BigUIOpacity => ValidateOpacity(Config.GetModConfigValue(ModId, "display.bigUIOpacity", 100f));
+        public static bool SmallUIShowBackground => Config.GetModConfigValue(ModId, "display.smallUIShowBackground", true);
 
         // Tracking settings
         public static bool TrackingEnabled => Config.GetModConfigValue(ModId, "tracking.enabled", true);
