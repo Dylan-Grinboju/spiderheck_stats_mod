@@ -120,6 +120,66 @@ namespace StatsMod
                                 { "x", 10 },
                                 { "y", 10 }
                             }
+                        },
+                        { "bigUI", new Dictionary<string, object>
+                            {
+                                { "columns", new Dictionary<string, object>
+                                    {
+                                        // Computed stats
+                                        { "totalOffence", true },
+                                        { "totalFriendlyHits", true },
+                                        { "totalHitsTaken", true },
+                                        // Core stats
+                                        { "kills", false },
+                                        { "deaths", false },
+                                        { "maxKillStreak", true },
+                                        { "currentKillStreak", false },
+                                        { "maxSoloKillStreak", false },
+                                        { "currentSoloKillStreak", false },
+                                        { "friendlyKills", false },
+                                        { "enemyShields", false },
+                                        { "shieldsLost", false },
+                                        { "friendlyShields", false },
+                                        { "aliveTime", true },
+                                        { "waveClutches", true },
+                                        { "webSwings", false },
+                                        { "webSwingTime", false },
+                                        { "airborneTime", false },
+                                        // Enemy kills
+                                        { "enemyKills", new Dictionary<string, object>
+                                            {
+                                                { "wasp", false },
+                                                { "powerWasp", false },
+                                                { "roller", false },
+                                                { "whisp", false },
+                                                { "powerWhisp", false },
+                                                { "meleeWhisp", false },
+                                                { "powerMeleeWhisp", false },
+                                                { "khepri", false },
+                                                { "powerKhepri", false },
+                                                { "hornetShaman", false },
+                                                { "hornet", false },
+                                            }
+                                        },
+                                        // Weapon kills
+                                        { "weaponKills", new Dictionary<string, object>
+                                            {
+                                                { "shotgun", false },
+                                                { "railShot", false },
+                                                { "deathCube", false },
+                                                { "deathRay", false },
+                                                { "energyBall", false },
+                                                { "particleBlade", false },
+                                                { "khepriStaff", false },
+                                                { "laserCannon", false },
+                                                { "laserCube", false },
+                                                { "sawDisc", false },
+                                                { "explosions", false }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 },

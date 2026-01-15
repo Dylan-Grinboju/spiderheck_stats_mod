@@ -24,6 +24,54 @@ namespace StatsMod
         public static float BigUIOpacity => ValidateOpacity(Config.GetModConfigValue(ModId, "display.bigUIOpacity", 100f));
         public static bool SmallUIShowBackground => Config.GetModConfigValue(ModId, "display.smallUIShowBackground", true);
 
+        // BigUI Column settings (Player Name is always required, all others are optional)
+        public static bool BigUIShowKills => Config.GetModConfigValue(ModId, "display.bigUI.columns.kills", true);
+        public static bool BigUIShowDeaths => Config.GetModConfigValue(ModId, "display.bigUI.columns.deaths", true);
+        public static bool BigUIShowMaxKillStreak => Config.GetModConfigValue(ModId, "display.bigUI.columns.maxKillStreak", true);
+        public static bool BigUIShowCurrentKillStreak => Config.GetModConfigValue(ModId, "display.bigUI.columns.currentKillStreak", false);
+        public static bool BigUIShowMaxSoloKillStreak => Config.GetModConfigValue(ModId, "display.bigUI.columns.maxSoloKillStreak", false);
+        public static bool BigUIShowCurrentSoloKillStreak => Config.GetModConfigValue(ModId, "display.bigUI.columns.currentSoloKillStreak", false);
+        public static bool BigUIShowFriendlyKills => Config.GetModConfigValue(ModId, "display.bigUI.columns.friendlyKills", true);
+        public static bool BigUIShowEnemyShields => Config.GetModConfigValue(ModId, "display.bigUI.columns.enemyShields", true);
+        public static bool BigUIShowShieldsLost => Config.GetModConfigValue(ModId, "display.bigUI.columns.shieldsLost", true);
+        public static bool BigUIShowFriendlyShields => Config.GetModConfigValue(ModId, "display.bigUI.columns.friendlyShields", true);
+        public static bool BigUIShowAliveTime => Config.GetModConfigValue(ModId, "display.bigUI.columns.aliveTime", false);
+        public static bool BigUIShowWaveClutches => Config.GetModConfigValue(ModId, "display.bigUI.columns.waveClutches", false);
+        public static bool BigUIShowWebSwings => Config.GetModConfigValue(ModId, "display.bigUI.columns.webSwings", false);
+        public static bool BigUIShowWebSwingTime => Config.GetModConfigValue(ModId, "display.bigUI.columns.webSwingTime", false);
+        public static bool BigUIShowAirborneTime => Config.GetModConfigValue(ModId, "display.bigUI.columns.airborneTime", false);
+
+        // Computed stat columns
+        public static bool BigUIShowTotalOffence => Config.GetModConfigValue(ModId, "display.bigUI.columns.totalOffence", false);
+        public static bool BigUIShowTotalFriendlyHits => Config.GetModConfigValue(ModId, "display.bigUI.columns.totalFriendlyHits", false);
+        public static bool BigUIShowTotalHitsTaken => Config.GetModConfigValue(ModId, "display.bigUI.columns.totalHitsTaken", false);
+
+        // Enemy kill columns
+        public static bool BigUIShowWaspKills => Config.GetModConfigValue(ModId, "display.bigUI.columns.enemyKills.wasp", false);
+        public static bool BigUIShowPowerWaspKills => Config.GetModConfigValue(ModId, "display.bigUI.columns.enemyKills.powerWasp", false);
+        public static bool BigUIShowRollerKills => Config.GetModConfigValue(ModId, "display.bigUI.columns.enemyKills.roller", false);
+        public static bool BigUIShowWhispKills => Config.GetModConfigValue(ModId, "display.bigUI.columns.enemyKills.whisp", false);
+        public static bool BigUIShowPowerWhispKills => Config.GetModConfigValue(ModId, "display.bigUI.columns.enemyKills.powerWhisp", false);
+        public static bool BigUIShowMeleeWhispKills => Config.GetModConfigValue(ModId, "display.bigUI.columns.enemyKills.meleeWhisp", false);
+        public static bool BigUIShowPowerMeleeWhispKills => Config.GetModConfigValue(ModId, "display.bigUI.columns.enemyKills.powerMeleeWhisp", false);
+        public static bool BigUIShowKhepriKills => Config.GetModConfigValue(ModId, "display.bigUI.columns.enemyKills.khepri", false);
+        public static bool BigUIShowPowerKhepriKills => Config.GetModConfigValue(ModId, "display.bigUI.columns.enemyKills.powerKhepri", false);
+        public static bool BigUIShowHornetShamanKills => Config.GetModConfigValue(ModId, "display.bigUI.columns.enemyKills.hornetShaman", false);
+        public static bool BigUIShowHornetKills => Config.GetModConfigValue(ModId, "display.bigUI.columns.enemyKills.hornet", false);
+
+        // Weapon kill columns
+        public static bool BigUIShowShotgunKills => Config.GetModConfigValue(ModId, "display.bigUI.columns.weaponKills.shotgun", false);
+        public static bool BigUIShowRailShotKills => Config.GetModConfigValue(ModId, "display.bigUI.columns.weaponKills.railShot", false);
+        public static bool BigUIShowDeathCubeKills => Config.GetModConfigValue(ModId, "display.bigUI.columns.weaponKills.deathCube", false);
+        public static bool BigUIShowDeathRayKills => Config.GetModConfigValue(ModId, "display.bigUI.columns.weaponKills.deathRay", false);
+        public static bool BigUIShowEnergyBallKills => Config.GetModConfigValue(ModId, "display.bigUI.columns.weaponKills.energyBall", false);
+        public static bool BigUIShowParticleBladeKills => Config.GetModConfigValue(ModId, "display.bigUI.columns.weaponKills.particleBlade", false);
+        public static bool BigUIShowKhepriStaffKills => Config.GetModConfigValue(ModId, "display.bigUI.columns.weaponKills.khepriStaff", false);
+        public static bool BigUIShowLaserCannonKills => Config.GetModConfigValue(ModId, "display.bigUI.columns.weaponKills.laserCannon", false);
+        public static bool BigUIShowLaserCubeKills => Config.GetModConfigValue(ModId, "display.bigUI.columns.weaponKills.laserCube", false);
+        public static bool BigUIShowSawDiscKills => Config.GetModConfigValue(ModId, "display.bigUI.columns.weaponKills.sawDisc", false);
+        public static bool BigUIShowExplosionKills => Config.GetModConfigValue(ModId, "display.bigUI.columns.weaponKills.explosions", false);
+
         // Tracking settings
         public static bool TrackingEnabled => Config.GetModConfigValue(ModId, "tracking.enabled", true);
         public static bool SaveStatsToFile => Config.GetModConfigValue(ModId, "tracking.saveStatsToFile", true);

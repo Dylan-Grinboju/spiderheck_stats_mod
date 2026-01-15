@@ -28,6 +28,17 @@ namespace StatsMod
         public float COL_WIDTH_SHIELDS_LOST = 100f;
         public float COL_WIDTH_ALIVE_TIME = 120f;
         public float COL_WIDTH_KILL_STREAK = 100f;
+        public float COL_WIDTH_WAVE_CLUTCHES = 120f;
+        public float COL_WIDTH_WEB_SWINGS = 100f;
+        public float COL_WIDTH_WEB_SWING_TIME = 120f;
+        public float COL_WIDTH_AIRBORNE_TIME = 120f;
+        public float COL_WIDTH_CURRENT_STREAK = 100f;
+        public float COL_WIDTH_SOLO_STREAK = 120f;
+        public float COL_WIDTH_ENEMY_KILLS = 100f;
+        public float COL_WIDTH_WEAPON_KILLS = 100f;
+        public float COL_WIDTH_TOTAL_OFFENCE = 100f;
+        public float COL_WIDTH_TOTAL_FRIENDLY = 110f;
+        public float COL_WIDTH_TOTAL_HITS = 90f;
         public float COL_WIDTH_INDENT = 30f;
         #endregion
 
@@ -41,6 +52,46 @@ namespace StatsMod
         public string LABEL_SHIELDS_LOST = "Shields Lost";
         public string LABEL_ALIVE_TIME = "Alive Time";
         public string LABEL_KILL_STREAK = "Max Kill Streak";
+        public string LABEL_CURRENT_KILL_STREAK = "Kill Streak";
+        public string LABEL_MAX_SOLO_KILL_STREAK = "Max Solo Streak";
+        public string LABEL_CURRENT_SOLO_KILL_STREAK = "Solo Streak";
+        public string LABEL_WAVE_CLUTCHES = "Wave Clutches";
+        public string LABEL_WEB_SWINGS = "Web Swings";
+        public string LABEL_WEB_SWING_TIME = "Web Swing Time";
+        public string LABEL_AIRBORNE_TIME = "Airborne Time";
+
+        // Computed stat labels
+        public string LABEL_TOTAL_OFFENCE = "Total Offence";
+        public string LABEL_TOTAL_FRIENDLY_HITS = "Friendly Hits";
+        public string LABEL_TOTAL_HITS_TAKEN = "Hits Taken";
+
+        // Enemy kill labels
+        public string LABEL_WASP_KILLS = "Wasp";
+        public string LABEL_POWER_WASP_KILLS = "Power Wasp";
+        public string LABEL_ROLLER_KILLS = "Roller";
+        public string LABEL_WHISP_KILLS = "Whisp";
+        public string LABEL_POWER_WHISP_KILLS = "Power Whisp";
+        public string LABEL_MELEE_WHISP_KILLS = "Melee Whisp";
+        public string LABEL_POWER_MELEE_WHISP_KILLS = "Pwr Melee Whisp";
+        public string LABEL_KHEPRI_KILLS = "Khepri";
+        public string LABEL_POWER_KHEPRI_KILLS = "Power Khepri";
+        public string LABEL_HORNET_SHAMAN_KILLS = "Hornet Shaman";
+        public string LABEL_HORNET_KILLS = "Hornet";
+        public string LABEL_PLAYER_KILLS = "Player Kills";
+
+        // Weapon kill labels
+        public string LABEL_SHOTGUN_KILLS = "Shotgun";
+        public string LABEL_RAILSHOT_KILLS = "RailShot";
+        public string LABEL_DEATHCUBE_KILLS = "Death Cube";
+        public string LABEL_DEATHRAY_KILLS = "Death Ray";
+        public string LABEL_ENERGYBALL_KILLS = "Energy Ball";
+        public string LABEL_PARTICLEBLADE_KILLS = "Particle Blade";
+        public string LABEL_KHEPRISTAFF_KILLS = "Khepri Staff";
+        public string LABEL_LASERCANNON_KILLS = "Laser Cannon";
+        public string LABEL_LASERCUBE_KILLS = "Laser Cube";
+        public string LABEL_SAWDISC_KILLS = "Saw Disc";
+        public string LABEL_EXPLOSION_KILLS = "Explosions";
+
         public string LABEL_SURVIVAL_MODE = "Survival Mode";
         public string LABEL_ENEMY_STATISTICS = "Enemy Statistics";
         public string LABEL_TIME = "Time:";
@@ -59,7 +110,7 @@ namespace StatsMod
 
         #region Other Widths
         public float WIDTH_TIME_LABEL = 150f;
-        public float WIDTH_LAST_GAME_LABEL = 300f;
+        public float WIDTH_LAST_GAME_LABEL = 200f;
 
         public float WIDTH_CARD_HALF = 0.48f;
         #endregion
@@ -71,6 +122,11 @@ namespace StatsMod
         private float SurvivalSectionHeight => UIManager.ScaleValue(BASE_SURVIVAL_SECTION_HEIGHT);
 
         private float Total_Height = 0f;
+        private float Total_Width = 0f;
+
+        // Minimum width for top sections
+        public float BASE_MIN_WIDTH_ONE_SECTION = 400f;
+        public float BASE_MAX_WIDTH_PERCENT = 0.9f;
 
         #region UI State
         private bool isDisplayVisible = false;
@@ -161,6 +217,7 @@ namespace StatsMod
             stylesInitialized = true;
         }
 
+
         #region GUI Drawing
         private void OnGUI()
         {
@@ -172,13 +229,17 @@ namespace StatsMod
             float opacity = ModConfig.BigUIOpacity / 100f;
             GUI.color = new Color(originalColor.r, originalColor.g, originalColor.b, opacity);
 
-            // Calculate background rect with dynamic height based on content
-            float marginX = Screen.width * BASE_MARGIN_PERCENT;
+            // Calculate width based on content
+            CalculateContentWidth();
+            float backgroundWidth = Total_Width + (BASE_CONTENT_PADDING * 2) + BASE_BACKGROUND_PADDING;
+            backgroundWidth = Mathf.Min(backgroundWidth, Screen.width * BASE_MAX_WIDTH_PERCENT);
+            float marginX = (Screen.width - backgroundWidth) * 0.5f;
+
             CalculateContentHeight();
             float backgroundHeight = Mathf.Min(Total_Height + BASE_BACKGROUND_PADDING, Screen.height * BASE_MAX_HEIGHT_PERCENT);
             float backgroundY = (Screen.height - backgroundHeight) * 0.5f;
 
-            Rect backgroundRect = new Rect(marginX, backgroundY, Screen.width - (marginX * 2), backgroundHeight);
+            Rect backgroundRect = new Rect(marginX, backgroundY, backgroundWidth, backgroundHeight);
 
             GUI.Box(backgroundRect, "", backgroundStyle);
 
@@ -188,6 +249,9 @@ namespace StatsMod
             float availableContentHeight = backgroundRect.height - (contentPadding * 2);
 
             GUILayout.BeginArea(new Rect(backgroundRect.x + contentPadding, backgroundRect.y + contentPadding, contentWidth, availableContentHeight));
+
+            // Begin a horizontal group to capture actual content width
+            GUILayout.BeginVertical();
 
             var statsSnapshot = GameSessionManager.Instance.GetStatsSnapshot();
 
@@ -224,6 +288,8 @@ namespace StatsMod
                 DrawPlayerStats(statsSnapshot);
             }
 
+            GUILayout.EndVertical();
+
             GUILayout.EndArea();
 
             GUI.color = originalColor;
@@ -250,6 +316,79 @@ namespace StatsMod
             }
 
             Total_Height = totalHeight;
+        }
+
+        private void CalculateContentWidth()
+        {
+            float columnWidth = 0f;
+
+            // Player name column is always shown
+            columnWidth += COL_WIDTH_PLAYER_NAME;
+
+            // Computed stat columns
+            if (ModConfig.BigUIShowTotalOffence) columnWidth += COL_WIDTH_TOTAL_OFFENCE;
+            if (ModConfig.BigUIShowTotalFriendlyHits) columnWidth += COL_WIDTH_TOTAL_FRIENDLY;
+            if (ModConfig.BigUIShowTotalHitsTaken) columnWidth += COL_WIDTH_TOTAL_HITS;
+
+            // Basic stats columns
+            if (ModConfig.BigUIShowKills) columnWidth += COL_WIDTH_KILLS;
+            if (ModConfig.BigUIShowDeaths) columnWidth += COL_WIDTH_DEATHS;
+            if (ModConfig.BigUIShowMaxKillStreak) columnWidth += COL_WIDTH_KILL_STREAK;
+            if (ModConfig.BigUIShowCurrentKillStreak) columnWidth += COL_WIDTH_CURRENT_STREAK;
+            if (ModConfig.BigUIShowMaxSoloKillStreak) columnWidth += COL_WIDTH_SOLO_STREAK;
+            if (ModConfig.BigUIShowCurrentSoloKillStreak) columnWidth += COL_WIDTH_SOLO_STREAK;
+            if (ModConfig.BigUIShowFriendlyKills) columnWidth += COL_WIDTH_PVP;
+            if (ModConfig.BigUIShowEnemyShields) columnWidth += COL_WIDTH_ENEMY_SHIELDS;
+            if (ModConfig.BigUIShowShieldsLost) columnWidth += COL_WIDTH_SHIELDS_LOST;
+            if (ModConfig.BigUIShowFriendlyShields) columnWidth += COL_WIDTH_PLAYER_SHIELDS;
+            if (ModConfig.BigUIShowWaveClutches) columnWidth += COL_WIDTH_WAVE_CLUTCHES;
+            if (ModConfig.BigUIShowAliveTime) columnWidth += COL_WIDTH_ALIVE_TIME;
+            if (ModConfig.BigUIShowWebSwings) columnWidth += COL_WIDTH_WEB_SWINGS;
+            if (ModConfig.BigUIShowWebSwingTime) columnWidth += COL_WIDTH_WEB_SWING_TIME;
+            if (ModConfig.BigUIShowAirborneTime) columnWidth += COL_WIDTH_AIRBORNE_TIME;
+
+            // Enemy kill columns
+            if (ModConfig.BigUIShowWaspKills) columnWidth += COL_WIDTH_ENEMY_KILLS;
+            if (ModConfig.BigUIShowPowerWaspKills) columnWidth += COL_WIDTH_ENEMY_KILLS;
+            if (ModConfig.BigUIShowRollerKills) columnWidth += COL_WIDTH_ENEMY_KILLS;
+            if (ModConfig.BigUIShowWhispKills) columnWidth += COL_WIDTH_ENEMY_KILLS;
+            if (ModConfig.BigUIShowPowerWhispKills) columnWidth += COL_WIDTH_ENEMY_KILLS;
+            if (ModConfig.BigUIShowMeleeWhispKills) columnWidth += COL_WIDTH_ENEMY_KILLS;
+            if (ModConfig.BigUIShowPowerMeleeWhispKills) columnWidth += COL_WIDTH_ENEMY_KILLS;
+            if (ModConfig.BigUIShowKhepriKills) columnWidth += COL_WIDTH_ENEMY_KILLS;
+            if (ModConfig.BigUIShowPowerKhepriKills) columnWidth += COL_WIDTH_ENEMY_KILLS;
+            if (ModConfig.BigUIShowHornetShamanKills) columnWidth += COL_WIDTH_ENEMY_KILLS;
+            if (ModConfig.BigUIShowHornetKills) columnWidth += COL_WIDTH_ENEMY_KILLS;
+
+            // Weapon kill columns
+            if (ModConfig.BigUIShowShotgunKills) columnWidth += COL_WIDTH_WEAPON_KILLS;
+            if (ModConfig.BigUIShowRailShotKills) columnWidth += COL_WIDTH_WEAPON_KILLS;
+            if (ModConfig.BigUIShowDeathCubeKills) columnWidth += COL_WIDTH_WEAPON_KILLS;
+            if (ModConfig.BigUIShowDeathRayKills) columnWidth += COL_WIDTH_WEAPON_KILLS;
+            if (ModConfig.BigUIShowEnergyBallKills) columnWidth += COL_WIDTH_WEAPON_KILLS;
+            if (ModConfig.BigUIShowParticleBladeKills) columnWidth += COL_WIDTH_WEAPON_KILLS;
+            if (ModConfig.BigUIShowKhepriStaffKills) columnWidth += COL_WIDTH_WEAPON_KILLS;
+            if (ModConfig.BigUIShowLaserCannonKills) columnWidth += COL_WIDTH_WEAPON_KILLS;
+            if (ModConfig.BigUIShowLaserCubeKills) columnWidth += COL_WIDTH_WEAPON_KILLS;
+            if (ModConfig.BigUIShowSawDiscKills) columnWidth += COL_WIDTH_WEAPON_KILLS;
+            if (ModConfig.BigUIShowExplosionKills) columnWidth += COL_WIDTH_WEAPON_KILLS;
+
+            columnWidth = UIManager.ScaleValue(columnWidth);
+
+            float minWidth = 0f;
+            bool showSurvival = ModConfig.ShowPlayTime;
+            bool showEnemy = ModConfig.ShowEnemyDeaths;
+
+            if (showSurvival && showEnemy)
+            {
+                minWidth = BASE_MIN_WIDTH_ONE_SECTION * 2;
+            }
+            else if (showSurvival || showEnemy)
+            {
+                minWidth = BASE_MIN_WIDTH_ONE_SECTION;
+            }
+
+            Total_Width = Mathf.Max(columnWidth, minWidth);
         }
 
         private void DrawSurvivalModeStats(GameStatsSnapshot statsSnapshot)
@@ -301,15 +440,98 @@ namespace StatsMod
             {
                 if (statsSnapshot.ActivePlayers != null && statsSnapshot.ActivePlayers.Count > 0)
                 {
+                    // Draw column headers (Player is always shown)
                     GUILayout.BeginHorizontal();
                     GUILayout.Label(LABEL_PLAYER, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_PLAYER_NAME)));
-                    GUILayout.Label(LABEL_KILLS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_KILLS)));
-                    GUILayout.Label(LABEL_DEATHS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_DEATHS)));
-                    GUILayout.Label(LABEL_KILL_STREAK, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_KILL_STREAK)));
-                    GUILayout.Label(LABEL_PVP, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_PVP)));
-                    GUILayout.Label(LABEL_ENEMY_SHIELDS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_SHIELDS)));
-                    GUILayout.Label(LABEL_SHIELDS_LOST, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_SHIELDS_LOST)));
-                    GUILayout.Label(LABEL_PLAYER_SHIELDS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_PLAYER_SHIELDS)));
+
+                    // Computed stat columns
+                    if (ModConfig.BigUIShowTotalOffence)
+                        GUILayout.Label(LABEL_TOTAL_OFFENCE, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_TOTAL_OFFENCE)));
+                    if (ModConfig.BigUIShowTotalFriendlyHits)
+                        GUILayout.Label(LABEL_TOTAL_FRIENDLY_HITS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_TOTAL_FRIENDLY)));
+                    if (ModConfig.BigUIShowTotalHitsTaken)
+                        GUILayout.Label(LABEL_TOTAL_HITS_TAKEN, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_TOTAL_HITS)));
+
+                    // Basic stats columns
+                    if (ModConfig.BigUIShowKills)
+                        GUILayout.Label(LABEL_KILLS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_KILLS)));
+                    if (ModConfig.BigUIShowDeaths)
+                        GUILayout.Label(LABEL_DEATHS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_DEATHS)));
+                    if (ModConfig.BigUIShowMaxKillStreak)
+                        GUILayout.Label(LABEL_KILL_STREAK, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_KILL_STREAK)));
+                    if (ModConfig.BigUIShowCurrentKillStreak)
+                        GUILayout.Label(LABEL_CURRENT_KILL_STREAK, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_CURRENT_STREAK)));
+                    if (ModConfig.BigUIShowMaxSoloKillStreak)
+                        GUILayout.Label(LABEL_MAX_SOLO_KILL_STREAK, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_SOLO_STREAK)));
+                    if (ModConfig.BigUIShowCurrentSoloKillStreak)
+                        GUILayout.Label(LABEL_CURRENT_SOLO_KILL_STREAK, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_SOLO_STREAK)));
+                    if (ModConfig.BigUIShowFriendlyKills)
+                        GUILayout.Label(LABEL_PVP, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_PVP)));
+                    if (ModConfig.BigUIShowEnemyShields)
+                        GUILayout.Label(LABEL_ENEMY_SHIELDS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_SHIELDS)));
+                    if (ModConfig.BigUIShowShieldsLost)
+                        GUILayout.Label(LABEL_SHIELDS_LOST, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_SHIELDS_LOST)));
+                    if (ModConfig.BigUIShowFriendlyShields)
+                        GUILayout.Label(LABEL_PLAYER_SHIELDS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_PLAYER_SHIELDS)));
+                    if (ModConfig.BigUIShowWaveClutches)
+                        GUILayout.Label(LABEL_WAVE_CLUTCHES, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WAVE_CLUTCHES)));
+                    if (ModConfig.BigUIShowAliveTime)
+                        GUILayout.Label(LABEL_ALIVE_TIME, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ALIVE_TIME)));
+                    if (ModConfig.BigUIShowWebSwings)
+                        GUILayout.Label(LABEL_WEB_SWINGS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEB_SWINGS)));
+                    if (ModConfig.BigUIShowWebSwingTime)
+                        GUILayout.Label(LABEL_WEB_SWING_TIME, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEB_SWING_TIME)));
+                    if (ModConfig.BigUIShowAirborneTime)
+                        GUILayout.Label(LABEL_AIRBORNE_TIME, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_AIRBORNE_TIME)));
+
+                    // Enemy kill columns
+                    if (ModConfig.BigUIShowWaspKills)
+                        GUILayout.Label(LABEL_WASP_KILLS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_KILLS)));
+                    if (ModConfig.BigUIShowPowerWaspKills)
+                        GUILayout.Label(LABEL_POWER_WASP_KILLS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_KILLS)));
+                    if (ModConfig.BigUIShowRollerKills)
+                        GUILayout.Label(LABEL_ROLLER_KILLS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_KILLS)));
+                    if (ModConfig.BigUIShowWhispKills)
+                        GUILayout.Label(LABEL_WHISP_KILLS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_KILLS)));
+                    if (ModConfig.BigUIShowPowerWhispKills)
+                        GUILayout.Label(LABEL_POWER_WHISP_KILLS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_KILLS)));
+                    if (ModConfig.BigUIShowMeleeWhispKills)
+                        GUILayout.Label(LABEL_MELEE_WHISP_KILLS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_KILLS)));
+                    if (ModConfig.BigUIShowPowerMeleeWhispKills)
+                        GUILayout.Label(LABEL_POWER_MELEE_WHISP_KILLS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_KILLS)));
+                    if (ModConfig.BigUIShowKhepriKills)
+                        GUILayout.Label(LABEL_KHEPRI_KILLS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_KILLS)));
+                    if (ModConfig.BigUIShowPowerKhepriKills)
+                        GUILayout.Label(LABEL_POWER_KHEPRI_KILLS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_KILLS)));
+                    if (ModConfig.BigUIShowHornetShamanKills)
+                        GUILayout.Label(LABEL_HORNET_SHAMAN_KILLS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_KILLS)));
+                    if (ModConfig.BigUIShowHornetKills)
+                        GUILayout.Label(LABEL_HORNET_KILLS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_KILLS)));
+
+                    // Weapon kill columns
+                    if (ModConfig.BigUIShowShotgunKills)
+                        GUILayout.Label(LABEL_SHOTGUN_KILLS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEAPON_KILLS)));
+                    if (ModConfig.BigUIShowRailShotKills)
+                        GUILayout.Label(LABEL_RAILSHOT_KILLS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEAPON_KILLS)));
+                    if (ModConfig.BigUIShowDeathCubeKills)
+                        GUILayout.Label(LABEL_DEATHCUBE_KILLS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEAPON_KILLS)));
+                    if (ModConfig.BigUIShowDeathRayKills)
+                        GUILayout.Label(LABEL_DEATHRAY_KILLS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEAPON_KILLS)));
+                    if (ModConfig.BigUIShowEnergyBallKills)
+                        GUILayout.Label(LABEL_ENERGYBALL_KILLS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEAPON_KILLS)));
+                    if (ModConfig.BigUIShowParticleBladeKills)
+                        GUILayout.Label(LABEL_PARTICLEBLADE_KILLS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEAPON_KILLS)));
+                    if (ModConfig.BigUIShowKhepriStaffKills)
+                        GUILayout.Label(LABEL_KHEPRISTAFF_KILLS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEAPON_KILLS)));
+                    if (ModConfig.BigUIShowLaserCannonKills)
+                        GUILayout.Label(LABEL_LASERCANNON_KILLS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEAPON_KILLS)));
+                    if (ModConfig.BigUIShowLaserCubeKills)
+                        GUILayout.Label(LABEL_LASERCUBE_KILLS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEAPON_KILLS)));
+                    if (ModConfig.BigUIShowSawDiscKills)
+                        GUILayout.Label(LABEL_SAWDISC_KILLS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEAPON_KILLS)));
+                    if (ModConfig.BigUIShowExplosionKills)
+                        GUILayout.Label(LABEL_EXPLOSION_KILLS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEAPON_KILLS)));
+
                     GUILayout.EndHorizontal();
 
                     GUILayout.Space(SPACING_BETWEEN_HEADERS);
@@ -319,17 +541,173 @@ namespace StatsMod
                         var playerData = playerEntry.Value;
 
                         GUILayout.BeginHorizontal();
-                        // Player name style needs dynamic color per-player
+                        // Player name is always shown
                         dynamicPlayerNameStyle.normal.textColor = playerData.PlayerColor;
                         GUILayout.Label(playerData.PlayerName, dynamicPlayerNameStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_PLAYER_NAME)));
 
-                        GUILayout.Label(playerData.Kills.ToString(), playerData.Kills > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_KILLS)));
-                        GUILayout.Label(playerData.Deaths.ToString(), playerData.Deaths > 0 ? deathsRedStyle : deathsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_DEATHS)));
-                        GUILayout.Label(playerData.MaxKillStreak.ToString(), playerData.MaxKillStreak > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_KILL_STREAK)));
-                        GUILayout.Label(playerData.FriendlyKills.ToString(), playerData.FriendlyKills > 0 ? friendlyKillsOrangeStyle : friendlyKillsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_PVP)));
-                        GUILayout.Label(playerData.EnemyShieldsTakenDown.ToString(), playerData.EnemyShieldsTakenDown > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_SHIELDS)));
-                        GUILayout.Label(playerData.ShieldsLost.ToString(), playerData.ShieldsLost > 0 ? deathsRedStyle : deathsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_SHIELDS_LOST)));
-                        GUILayout.Label(playerData.FriendlyShieldsHit.ToString(), playerData.FriendlyShieldsHit > 0 ? friendlyKillsOrangeStyle : friendlyKillsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_PLAYER_SHIELDS)));
+                        // Computed stat data
+                        if (ModConfig.BigUIShowTotalOffence)
+                        {
+                            int totalOffence = playerData.Kills + playerData.EnemyShieldsTakenDown;
+                            GUILayout.Label(totalOffence.ToString(), totalOffence > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_TOTAL_OFFENCE)));
+                        }
+                        if (ModConfig.BigUIShowTotalFriendlyHits)
+                        {
+                            int totalFriendly = playerData.FriendlyKills + playerData.FriendlyShieldsHit;
+                            GUILayout.Label(totalFriendly.ToString(), totalFriendly > 0 ? friendlyKillsOrangeStyle : friendlyKillsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_TOTAL_FRIENDLY)));
+                        }
+                        if (ModConfig.BigUIShowTotalHitsTaken)
+                        {
+                            int totalHits = playerData.Deaths + playerData.ShieldsLost;
+                            GUILayout.Label(totalHits.ToString(), totalHits > 0 ? deathsRedStyle : deathsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_TOTAL_HITS)));
+                        }
+
+                        // Basic stats data
+                        if (ModConfig.BigUIShowKills)
+                            GUILayout.Label(playerData.Kills.ToString(), playerData.Kills > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_KILLS)));
+                        if (ModConfig.BigUIShowDeaths)
+                            GUILayout.Label(playerData.Deaths.ToString(), playerData.Deaths > 0 ? deathsRedStyle : deathsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_DEATHS)));
+                        if (ModConfig.BigUIShowMaxKillStreak)
+                            GUILayout.Label(playerData.MaxKillStreak.ToString(), playerData.MaxKillStreak > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_KILL_STREAK)));
+                        if (ModConfig.BigUIShowCurrentKillStreak)
+                            GUILayout.Label(playerData.KillStreak.ToString(), playerData.KillStreak > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_CURRENT_STREAK)));
+                        if (ModConfig.BigUIShowMaxSoloKillStreak)
+                            GUILayout.Label(playerData.MaxKillStreakWhileSolo.ToString(), playerData.MaxKillStreakWhileSolo > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_SOLO_STREAK)));
+                        if (ModConfig.BigUIShowCurrentSoloKillStreak)
+                            GUILayout.Label(playerData.KillStreakWhileSolo.ToString(), playerData.KillStreakWhileSolo > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_SOLO_STREAK)));
+                        if (ModConfig.BigUIShowFriendlyKills)
+                            GUILayout.Label(playerData.FriendlyKills.ToString(), playerData.FriendlyKills > 0 ? friendlyKillsOrangeStyle : friendlyKillsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_PVP)));
+                        if (ModConfig.BigUIShowEnemyShields)
+                            GUILayout.Label(playerData.EnemyShieldsTakenDown.ToString(), playerData.EnemyShieldsTakenDown > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_SHIELDS)));
+                        if (ModConfig.BigUIShowShieldsLost)
+                            GUILayout.Label(playerData.ShieldsLost.ToString(), playerData.ShieldsLost > 0 ? deathsRedStyle : deathsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_SHIELDS_LOST)));
+                        if (ModConfig.BigUIShowFriendlyShields)
+                            GUILayout.Label(playerData.FriendlyShieldsHit.ToString(), playerData.FriendlyShieldsHit > 0 ? friendlyKillsOrangeStyle : friendlyKillsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_PLAYER_SHIELDS)));
+                        if (ModConfig.BigUIShowWaveClutches)
+                            GUILayout.Label(playerData.WaveClutches.ToString(), playerData.WaveClutches > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WAVE_CLUTCHES)));
+                        if (ModConfig.BigUIShowAliveTime)
+                            GUILayout.Label(TimeFormatUtils.FormatTimeSpan(playerData.GetCurrentAliveTime()), centeredWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ALIVE_TIME)));
+                        if (ModConfig.BigUIShowWebSwings)
+                            GUILayout.Label(playerData.WebSwings.ToString(), playerData.WebSwings > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEB_SWINGS)));
+                        if (ModConfig.BigUIShowWebSwingTime)
+                            GUILayout.Label(TimeFormatUtils.FormatTimeSpan(playerData.GetCurrentWebSwingTime()), centeredWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEB_SWING_TIME)));
+                        if (ModConfig.BigUIShowAirborneTime)
+                            GUILayout.Label(TimeFormatUtils.FormatTimeSpan(playerData.GetCurrentAirborneTime()), centeredWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_AIRBORNE_TIME)));
+
+                        // Enemy kill data
+                        if (ModConfig.BigUIShowWaspKills)
+                        {
+                            int val = playerData.EnemyKills.TryGetValue("Wasp", out int v) ? v : 0;
+                            GUILayout.Label(val.ToString(), val > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_KILLS)));
+                        }
+                        if (ModConfig.BigUIShowPowerWaspKills)
+                        {
+                            int val = playerData.EnemyKills.TryGetValue("Power Wasp", out int v) ? v : 0;
+                            GUILayout.Label(val.ToString(), val > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_KILLS)));
+                        }
+                        if (ModConfig.BigUIShowRollerKills)
+                        {
+                            int val = playerData.EnemyKills.TryGetValue("Roller", out int v) ? v : 0;
+                            GUILayout.Label(val.ToString(), val > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_KILLS)));
+                        }
+                        if (ModConfig.BigUIShowWhispKills)
+                        {
+                            int val = playerData.EnemyKills.TryGetValue("Whisp", out int v) ? v : 0;
+                            GUILayout.Label(val.ToString(), val > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_KILLS)));
+                        }
+                        if (ModConfig.BigUIShowPowerWhispKills)
+                        {
+                            int val = playerData.EnemyKills.TryGetValue("Power Whisp", out int v) ? v : 0;
+                            GUILayout.Label(val.ToString(), val > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_KILLS)));
+                        }
+                        if (ModConfig.BigUIShowMeleeWhispKills)
+                        {
+                            int val = playerData.EnemyKills.TryGetValue("Melee Whisp", out int v) ? v : 0;
+                            GUILayout.Label(val.ToString(), val > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_KILLS)));
+                        }
+                        if (ModConfig.BigUIShowPowerMeleeWhispKills)
+                        {
+                            int val = playerData.EnemyKills.TryGetValue("Power Melee Whisp", out int v) ? v : 0;
+                            GUILayout.Label(val.ToString(), val > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_KILLS)));
+                        }
+                        if (ModConfig.BigUIShowKhepriKills)
+                        {
+                            int val = playerData.EnemyKills.TryGetValue("Khepri", out int v) ? v : 0;
+                            GUILayout.Label(val.ToString(), val > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_KILLS)));
+                        }
+                        if (ModConfig.BigUIShowPowerKhepriKills)
+                        {
+                            int val = playerData.EnemyKills.TryGetValue("Power Khepri", out int v) ? v : 0;
+                            GUILayout.Label(val.ToString(), val > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_KILLS)));
+                        }
+                        if (ModConfig.BigUIShowHornetShamanKills)
+                        {
+                            int val = playerData.EnemyKills.TryGetValue("Hornet Shaman", out int v) ? v : 0;
+                            GUILayout.Label(val.ToString(), val > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_KILLS)));
+                        }
+                        if (ModConfig.BigUIShowHornetKills)
+                        {
+                            int val = playerData.EnemyKills.TryGetValue("Hornet", out int v) ? v : 0;
+                            GUILayout.Label(val.ToString(), val > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_ENEMY_KILLS)));
+                        }
+
+                        // Weapon kill data
+                        if (ModConfig.BigUIShowShotgunKills)
+                        {
+                            int val = playerData.WeaponHits.TryGetValue("Shotgun", out int v) ? v : 0;
+                            GUILayout.Label(val.ToString(), val > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEAPON_KILLS)));
+                        }
+                        if (ModConfig.BigUIShowRailShotKills)
+                        {
+                            int val = playerData.WeaponHits.TryGetValue("RailShot", out int v) ? v : 0;
+                            GUILayout.Label(val.ToString(), val > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEAPON_KILLS)));
+                        }
+                        if (ModConfig.BigUIShowDeathCubeKills)
+                        {
+                            int val = playerData.WeaponHits.TryGetValue("DeathCube", out int v) ? v : 0;
+                            GUILayout.Label(val.ToString(), val > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEAPON_KILLS)));
+                        }
+                        if (ModConfig.BigUIShowDeathRayKills)
+                        {
+                            int val = playerData.WeaponHits.TryGetValue("DeathRay", out int v) ? v : 0;
+                            GUILayout.Label(val.ToString(), val > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEAPON_KILLS)));
+                        }
+                        if (ModConfig.BigUIShowEnergyBallKills)
+                        {
+                            int val = playerData.WeaponHits.TryGetValue("EnergyBall", out int v) ? v : 0;
+                            GUILayout.Label(val.ToString(), val > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEAPON_KILLS)));
+                        }
+                        if (ModConfig.BigUIShowParticleBladeKills)
+                        {
+                            int val = playerData.WeaponHits.TryGetValue("Particle Blade", out int v) ? v : 0;
+                            GUILayout.Label(val.ToString(), val > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEAPON_KILLS)));
+                        }
+                        if (ModConfig.BigUIShowKhepriStaffKills)
+                        {
+                            int val = playerData.WeaponHits.TryGetValue("KhepriStaff", out int v) ? v : 0;
+                            GUILayout.Label(val.ToString(), val > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEAPON_KILLS)));
+                        }
+                        if (ModConfig.BigUIShowLaserCannonKills)
+                        {
+                            int val = playerData.WeaponHits.TryGetValue("Laser Cannon", out int v) ? v : 0;
+                            GUILayout.Label(val.ToString(), val > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEAPON_KILLS)));
+                        }
+                        if (ModConfig.BigUIShowLaserCubeKills)
+                        {
+                            int val = playerData.WeaponHits.TryGetValue("Laser Cube", out int v) ? v : 0;
+                            GUILayout.Label(val.ToString(), val > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEAPON_KILLS)));
+                        }
+                        if (ModConfig.BigUIShowSawDiscKills)
+                        {
+                            int val = playerData.WeaponHits.TryGetValue("SawDisc", out int v) ? v : 0;
+                            GUILayout.Label(val.ToString(), val > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEAPON_KILLS)));
+                        }
+                        if (ModConfig.BigUIShowExplosionKills)
+                        {
+                            int val = playerData.WeaponHits.TryGetValue("Explosions", out int v) ? v : 0;
+                            GUILayout.Label(val.ToString(), val > 0 ? killsGreenStyle : killsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEAPON_KILLS)));
+                        }
+
                         GUILayout.EndHorizontal();
 
                         GUILayout.Space(SPACING_BETWEEN_PLAYERS);
