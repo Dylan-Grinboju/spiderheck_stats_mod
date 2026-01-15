@@ -44,7 +44,7 @@ namespace StatsMod
         public static readonly Color White = new Color(0.9f, 0.9f, 0.9f, 1f);
         public static readonly Color Gray = new Color(0.7f, 0.7f, 0.7f, 1f);
         public static readonly Color DarkGray = new Color(0.10f, 0.10f, 0.10f, 0.95f);
-        public static readonly Color MediumGray = new Color(0.25f, 0.25f, 0.25f, 0.95f);
+        public static readonly Color MediumGray = new Color(0.20f, 0.20f, 0.20f, 0.95f);
         public static readonly Color LightGray = new Color(0.35f, 0.35f, 0.35f, 0.95f);
         public static readonly Color Orange = new Color(1f, 0.647f, 0f, 1f);
         #endregion
