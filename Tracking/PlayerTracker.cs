@@ -33,6 +33,7 @@ namespace StatsMod
         {
             public ulong PlayerId { get; set; }
             public int Deaths { get; set; }
+            public int LavaDeaths { get; set; }
             public int Kills { get; set; }
             public int KillsWhileAirborne { get; set; }
             public int KillsWhileSolo { get; set; }
@@ -61,11 +62,13 @@ namespace StatsMod
             public float HighestPoint { get; set; }
             public Color SecondaryColor { get; set; }
             public Dictionary<string, int> WeaponHits { get; set; }
+            public Dictionary<string, int> EnemyKills { get; set; }
 
             public PlayerData(ulong id, string name = "Player")
             {
                 PlayerId = id;
                 Deaths = 0;
+                LavaDeaths = 0;
                 Kills = 0;
                 KillsWhileAirborne = 0;
                 KillsWhileSolo = 0;
@@ -106,6 +109,21 @@ namespace StatsMod
                     { "Laser Cube", 0 },
                     { "SawDisc", 0 },
                     { "Explosions", 0 }
+                };
+                EnemyKills = new Dictionary<string, int>
+                {
+                    { "Wasp", 0 },
+                    { "Power Wasp", 0 },
+                    { "Roller", 0 },
+                    { "Whisp", 0 },
+                    { "Power Whisp", 0 },
+                    { "Melee Whisp", 0 },
+                    { "Power Melee Whisp", 0 },
+                    { "Khepri", 0 },
+                    { "Power Khepri", 0 },
+                    { "Hornet Shaman", 0 },
+                    { "Hornet", 0 },
+                    { "Player", 0 }
                 };
             }
 
@@ -298,6 +316,7 @@ namespace StatsMod
             foreach (var entry in activePlayers)
             {
                 entry.Value.Deaths = 0;
+                entry.Value.LavaDeaths = 0;
                 entry.Value.Kills = 0;
                 entry.Value.KillsWhileAirborne = 0;
                 entry.Value.KillsWhileSolo = 0;
@@ -318,6 +337,10 @@ namespace StatsMod
                 foreach (var weaponKey in entry.Value.WeaponHits.Keys.ToList())
                 {
                     entry.Value.WeaponHits[weaponKey] = 0;
+                }
+                foreach (var enemyKey in entry.Value.EnemyKills.Keys.ToList())
+                {
+                    entry.Value.EnemyKills[enemyKey] = 0;
                 }
             }
         }
@@ -414,6 +437,14 @@ namespace StatsMod
             }
         }
 
+        public void IncrementLavaDeaths(PlayerInput player)
+        {
+            if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
+            {
+                data.LavaDeaths++;
+            }
+        }
+
         public void IncrementWeaponHit(PlayerInput player, string weaponName)
         {
             if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
@@ -425,6 +456,21 @@ namespace StatsMod
                 else
                 {
                     Logger.LogError($"Unknown weapon name: {weaponName}. This weapon is not pre-populated in WeaponHits dictionary.");
+                }
+            }
+        }
+
+        public void IncrementEnemyKillByName(PlayerInput player, string enemyName)
+        {
+            if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
+            {
+                if (data.EnemyKills.ContainsKey(enemyName))
+                {
+                    data.EnemyKills[enemyName]++;
+                }
+                else
+                {
+                    Logger.LogError($"Unknown enemy name: {enemyName}. This enemy is not pre-populated in EnemyKills dictionary.");
                 }
             }
         }

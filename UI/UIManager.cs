@@ -5,6 +5,14 @@ using UnityEngine.InputSystem;
 
 namespace StatsMod
 {
+    public enum UIState
+    {
+        Off,
+        SmallUI,
+        BigUI,
+        TitlesUI
+    }
+
     public class UIManager : MonoBehaviour
     {
         #region Singleton
@@ -15,6 +23,10 @@ namespace StatsMod
         private SmallUI smallUI;
         private BigUI bigUI;
         private TitlesUI titlesUI;
+        #endregion
+
+        #region Controller Cycling State
+        private UIState currentUIState = UIState.Off;
         #endregion
 
         #region Shared Constants
@@ -31,8 +43,8 @@ namespace StatsMod
         public static readonly Color Green = new Color(0.298f, 0.686f, 0.314f, 1f);
         public static readonly Color White = new Color(0.9f, 0.9f, 0.9f, 1f);
         public static readonly Color Gray = new Color(0.7f, 0.7f, 0.7f, 1f);
-        public static readonly Color DarkGray = new Color(0.18f, 0.18f, 0.18f, 0.95f);
-        public static readonly Color MediumGray = new Color(0.25f, 0.25f, 0.25f, 0.95f);
+        public static readonly Color DarkGray = new Color(0.10f, 0.10f, 0.10f, 0.95f);
+        public static readonly Color MediumGray = new Color(0.20f, 0.20f, 0.20f, 0.95f);
         public static readonly Color LightGray = new Color(0.35f, 0.35f, 0.35f, 0.95f);
         public static readonly Color Orange = new Color(1f, 0.647f, 0f, 1f);
         #endregion
@@ -144,6 +156,12 @@ namespace StatsMod
         #region Input Handling
         private void Update()
         {
+            HandleKeyboardInput();
+            HandleGamepadInput();
+        }
+
+        private void HandleKeyboardInput()
+        {
             Keyboard keyboard = Keyboard.current;
             if (keyboard == null) return;
 
@@ -163,6 +181,48 @@ namespace StatsMod
             }
         }
 
+        private void HandleGamepadInput()
+        {
+            Gamepad gamepad = Gamepad.current;
+            if (gamepad == null) return;
+
+            if (gamepad.rightStickButton.wasPressedThisFrame)
+            {
+                CycleUIState();
+            }
+        }
+
+        private void CycleUIState()
+        {
+            switch (currentUIState)
+            {
+                case UIState.Off:
+                    currentUIState = UIState.SmallUI;
+                    HideBigUI();
+                    HideTitlesUI();
+                    ShowSmallUI();
+                    break;
+                case UIState.SmallUI:
+                    currentUIState = UIState.BigUI;
+                    HideSmallUI();
+                    HideTitlesUI();
+                    ShowBigUI();
+                    break;
+                case UIState.BigUI:
+                    currentUIState = UIState.TitlesUI;
+                    HideSmallUI();
+                    HideBigUI();
+                    ShowTitlesUIWithoutAnimation();
+                    break;
+                case UIState.TitlesUI:
+                    currentUIState = UIState.Off;
+                    HideSmallUI();
+                    HideBigUI();
+                    HideTitlesUI();
+                    break;
+            }
+        }
+
         private void HandleF1Press()
         {
             bool isSmallVisible = smallUI != null && smallUI.IsVisible();
@@ -171,10 +231,12 @@ namespace StatsMod
             if (isSmallVisible)
             {
                 HideSmallUI();
+                currentUIState = UIState.Off;
             }
             else
             {
                 ShowSmallUI();
+                currentUIState = UIState.SmallUI;
             }
         }
 
@@ -186,10 +248,12 @@ namespace StatsMod
             if (isBigVisible)
             {
                 HideBigUI();
+                currentUIState = UIState.Off;
             }
             else
             {
                 ShowBigUI();
+                currentUIState = UIState.BigUI;
             }
         }
 
@@ -214,10 +278,12 @@ namespace StatsMod
             if (isTitlesVisible)
             {
                 HideTitlesUI();
+                currentUIState = UIState.Off;
             }
             else
             {
                 ShowTitlesUIWithoutAnimation();
+                currentUIState = UIState.TitlesUI;
             }
         }
 

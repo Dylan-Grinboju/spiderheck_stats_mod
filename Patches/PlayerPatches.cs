@@ -19,7 +19,7 @@ namespace StatsMod
 
         public static readonly FieldInfo EnemyImmuneTimeField =
             AccessTools.Field(typeof(EnemyHealthSystem), "_immuneTime");
-
+       
         public static readonly FieldInfo SpiderImmuneTimeField =
             AccessTools.Field(typeof(SpiderHealthSystem), "_immuneTime");
     }
@@ -92,6 +92,39 @@ namespace StatsMod
             catch (Exception ex)
             {
                 Logger.LogError($"Error in SpiderHealthSystem.DisableDeathEffect patch: {ex.Message}");
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(SpiderHealthSystem), "Disintegrate")]
+    public class SpiderHealthSystemDisintegratePatch
+    {
+        static void Prefix(SpiderHealthSystem __instance)
+        {
+            try
+            {
+                if (__instance == null || __instance.rootObject == null)
+                    return;
+
+                if (ReflectionCache.SpiderImmuneTimeField != null)
+                {
+                    float immuneTill = (float)ReflectionCache.SpiderImmuneTimeField.GetValue(__instance);
+                    if (Time.time < immuneTill)
+                        return;
+                }
+
+                if (__instance.HasShield())
+                    return;
+
+                PlayerInput playerInput = __instance.rootObject.GetComponentInParent<PlayerInput>();
+                if (playerInput != null)
+                {
+                    PlayerTracker.Instance.IncrementLavaDeaths(playerInput);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error in SpiderHealthSystem.Disintegrate patch: {ex.Message}");
             }
         }
     }

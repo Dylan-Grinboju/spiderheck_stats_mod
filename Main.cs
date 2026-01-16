@@ -10,7 +10,7 @@ using System.Reflection;
 namespace StatsMod
 {
     // SilkMod Attribute with the format: name, authors, mod version, silk version, and identifier
-    [SilkMod("Stats Mod", new string[] { "Dylan" }, "2.0.0", "0.7.0", "Stats_Mod", 1)]
+    [SilkMod("Stats Mod", new string[] { "Dylan" }, "2.1.0", "0.7.0", "Stats_Mod", 1)]
     public class StatsMod : SilkMod
     {
         public static StatsMod Instance { get; private set; }
@@ -86,17 +86,6 @@ namespace StatsMod
             }
 
             Logger.LogInfo("Harmony patches applied.");
-
-            // Uncommenting this will not initialize anything as this is not pushed to github on purpose
-            // Initialize cheat manager for testing
-            // try
-            // {
-            //     CheatManager.Initialize();
-            // }
-            // catch (System.Exception ex)
-            // {
-            //     Logger.LogError($"Error initializing CheatManager: {ex.Message}");
-            // }
         }
 
         private void SetupConfiguration()
@@ -113,10 +102,72 @@ namespace StatsMod
                         { "autoScale", true },
                         { "uiScale", 1.0f },
                         { "bigUIOpacity", 100f },
+                        { "smallUIShowBackground", false },
                         { "position", new Dictionary<string, object>
                             {
                                 { "x", 10 },
                                 { "y", 10 }
+                            }
+                        },
+                        { "bigUI", new Dictionary<string, object>
+                            {
+                                { "columns", new Dictionary<string, object>
+                                    {
+                                        // Computed stats
+                                        { "totalOffence", true },
+                                        { "totalFriendlyHits", true },
+                                        { "totalHitsTaken", true },
+                                        // Core stats
+                                        { "kills", false },
+                                        { "deaths", false },
+                                        { "maxKillStreak", true },
+                                        { "currentKillStreak", false },
+                                        { "maxSoloKillStreak", false },
+                                        { "currentSoloKillStreak", false },
+                                        { "friendlyKills", false },
+                                        { "enemyShields", false },
+                                        { "shieldsLost", false },
+                                        { "friendlyShields", false },
+                                        { "aliveTime", true },
+                                        { "waveClutches", true },
+                                        { "webSwings", false },
+                                        { "webSwingTime", false },
+                                        { "airborneTime", false },
+                                        { "lavaDeaths", false },
+                                        // Enemy kills
+                                        { "enemyKills", new Dictionary<string, object>
+                                            {
+                                                { "wasp", false },
+                                                { "powerWasp", false },
+                                                { "roller", false },
+                                                { "whisp", false },
+                                                { "powerWhisp", false },
+                                                { "meleeWhisp", false },
+                                                { "powerMeleeWhisp", false },
+                                                { "khepri", false },
+                                                { "powerKhepri", false },
+                                                { "hornetShaman", false },
+                                                { "hornet", false },
+                                            }
+                                        },
+                                        // Weapon kills
+                                        { "weaponKills", new Dictionary<string, object>
+                                            {
+                                                { "shotgun", false },
+                                                { "railShot", false },
+                                                { "deathCube", false },
+                                                { "deathRay", false },
+                                                { "energyBall", false },
+                                                { "particleBlade", false },
+                                                { "khepriStaff", false },
+                                                { "laserCannon", false },
+                                                { "laserCube", false },
+                                                { "sawDisc", false },
+                                                { "explosions", false }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
