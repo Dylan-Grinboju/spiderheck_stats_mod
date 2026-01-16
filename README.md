@@ -22,10 +22,10 @@ A statistics tracking mod for Spiderheck that monitors player performance and ga
 <img width="2485" height="1288" alt="Pasted image 20260109102238" src="https://github.com/user-attachments/assets/ea9b7aa7-9b15-408d-88d9-dd35c2679eff" />
 
 ### Small version:
-<img width="2510" height="1393" alt="image" src="https://github.com/user-attachments/assets/70784ca7-bda0-478f-864d-ce39e5b6dae1" />
+<img width="2559" height="1439" alt="image" src="https://github.com/user-attachments/assets/2fd4a739-d333-4173-9e68-1ee017032b86" />
 
 ### Big version:
-<img width="2520" height="1387" alt="image" src="https://github.com/user-attachments/assets/8e95019f-99c6-4e93-9c08-9b0f87a5fad4" />
+<img width="2547" height="1422" alt="image" src="https://github.com/user-attachments/assets/42ea27ef-9450-4cae-ae46-3f1befbe0d6a" />
 
 ## Installation
 
@@ -71,6 +71,8 @@ Some explanation of the fields:
 `bigUIOpacity`: Controls the transparency of the Big UI overlay (F2). Values range from 0 (fully transparent) to 100 (fully opaque). Default is 100. 
 
 `position`: You can use this to manually set the position of the small UI. The coordinates are in pixels, with 0,0 being the top left corner of the screen. This value will be saved every time you click and drag the UI. If the UI doesn't show up on your screen, you can try setting the x and y values to 10 again.
+
+`columns`: Setting a column to true will display it in the Big UI. I don't limit you but the elements can be cut off if there are too many. 
 
 `enabled`: If false, the mod will not track any stats. This is as if the mod is not installed at all.
 
