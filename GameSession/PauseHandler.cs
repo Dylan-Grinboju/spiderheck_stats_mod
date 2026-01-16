@@ -14,12 +14,10 @@ namespace StatsMod
             if (isPaused && !wasPaused)
             {
                 GameSessionManager.Instance.PauseTimers();
-                Logger.LogInfo("Game paused - timers paused");
             }
             else if (!isPaused && wasPaused)
             {
                 GameSessionManager.Instance.ResumeTimers();
-                Logger.LogInfo("Game resumed - timers resumed");
             }
 
             wasPaused = isPaused;

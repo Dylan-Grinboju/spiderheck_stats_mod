@@ -33,6 +33,7 @@ namespace StatsMod
         {
             public ulong PlayerId { get; set; }
             public int Deaths { get; set; }
+            public int LavaDeaths { get; set; }
             public int Kills { get; set; }
             public int KillsWhileAirborne { get; set; }
             public int KillsWhileSolo { get; set; }
@@ -67,6 +68,7 @@ namespace StatsMod
             {
                 PlayerId = id;
                 Deaths = 0;
+                LavaDeaths = 0;
                 Kills = 0;
                 KillsWhileAirborne = 0;
                 KillsWhileSolo = 0;
@@ -314,6 +316,7 @@ namespace StatsMod
             foreach (var entry in activePlayers)
             {
                 entry.Value.Deaths = 0;
+                entry.Value.LavaDeaths = 0;
                 entry.Value.Kills = 0;
                 entry.Value.KillsWhileAirborne = 0;
                 entry.Value.KillsWhileSolo = 0;
@@ -431,6 +434,14 @@ namespace StatsMod
             if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
             {
                 data.ShieldsLost++;
+            }
+        }
+
+        public void IncrementLavaDeaths(PlayerInput player)
+        {
+            if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
+            {
+                data.LavaDeaths++;
             }
         }
 

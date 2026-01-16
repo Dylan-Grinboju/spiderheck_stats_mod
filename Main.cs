@@ -145,6 +145,7 @@ namespace StatsMod
                                         { "webSwings", false },
                                         { "webSwingTime", false },
                                         { "airborneTime", false },
+                                        { "lavaDeaths", false },
                                         // Enemy kills
                                         { "enemyKills", new Dictionary<string, object>
                                             {

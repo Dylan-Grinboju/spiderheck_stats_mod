@@ -39,6 +39,7 @@ namespace StatsMod
         public float COL_WIDTH_TOTAL_OFFENCE = 100f;
         public float COL_WIDTH_TOTAL_FRIENDLY = 110f;
         public float COL_WIDTH_TOTAL_HITS = 90f;
+        public float COL_WIDTH_LAVA_DEATHS = 100f;
         public float COL_WIDTH_INDENT = 30f;
         #endregion
 
@@ -59,6 +60,7 @@ namespace StatsMod
         public string LABEL_WEB_SWINGS = "Web Swings";
         public string LABEL_WEB_SWING_TIME = "Web Swing Time";
         public string LABEL_AIRBORNE_TIME = "Airborne Time";
+        public string LABEL_LAVA_DEATHS = "Lava Deaths";
 
         // Computed stat labels
         public string LABEL_TOTAL_OFFENCE = "Total Offence";
@@ -346,6 +348,7 @@ namespace StatsMod
             if (ModConfig.BigUIShowWebSwings) columnWidth += COL_WIDTH_WEB_SWINGS;
             if (ModConfig.BigUIShowWebSwingTime) columnWidth += COL_WIDTH_WEB_SWING_TIME;
             if (ModConfig.BigUIShowAirborneTime) columnWidth += COL_WIDTH_AIRBORNE_TIME;
+            if (ModConfig.BigUIShowLavaDeaths) columnWidth += COL_WIDTH_LAVA_DEATHS;
 
             // Enemy kill columns
             if (ModConfig.BigUIShowWaspKills) columnWidth += COL_WIDTH_ENEMY_KILLS;
@@ -483,6 +486,8 @@ namespace StatsMod
                         GUILayout.Label(LABEL_WEB_SWING_TIME, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEB_SWING_TIME)));
                     if (ModConfig.BigUIShowAirborneTime)
                         GUILayout.Label(LABEL_AIRBORNE_TIME, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_AIRBORNE_TIME)));
+                    if (ModConfig.BigUIShowLavaDeaths)
+                        GUILayout.Label(LABEL_LAVA_DEATHS, headerStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_LAVA_DEATHS)));
 
                     // Enemy kill columns
                     if (ModConfig.BigUIShowWaspKills)
@@ -593,6 +598,8 @@ namespace StatsMod
                             GUILayout.Label(TimeFormatUtils.FormatTimeSpan(playerData.GetCurrentWebSwingTime()), centeredWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_WEB_SWING_TIME)));
                         if (ModConfig.BigUIShowAirborneTime)
                             GUILayout.Label(TimeFormatUtils.FormatTimeSpan(playerData.GetCurrentAirborneTime()), centeredWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_AIRBORNE_TIME)));
+                        if (ModConfig.BigUIShowLavaDeaths)
+                            GUILayout.Label(playerData.LavaDeaths.ToString(), playerData.LavaDeaths > 0 ? deathsRedStyle : deathsWhiteStyle, GUILayout.Width(UIManager.ScaleValue(COL_WIDTH_LAVA_DEATHS)));
 
                         // Enemy kill data
                         if (ModConfig.BigUIShowWaspKills)

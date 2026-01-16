@@ -109,7 +109,7 @@ namespace StatsMod
 
                     lines.Add($"  {playerData.PlayerName}:");
                     lines.Add($"    Player ID: {playerData.PlayerId}");
-                    lines.Add($"    Color: R={playerData.PlayerColor.r:F2}, G={playerData.PlayerColor.g:F2}, B={playerData.PlayerColor.b:F2}, A={playerData.PlayerColor.a:F2}");
+                    lines.Add($"    Color: #{(int)(playerData.PlayerColor.r * 255):X2}{(int)(playerData.PlayerColor.g * 255):X2}{(int)(playerData.PlayerColor.b * 255):X2}");
                     lines.Add($"    Kills: {playerData.Kills}");
                     lines.Add($"    Kills While Airborne: {playerData.KillsWhileAirborne}");
                     lines.Add($"    Kills While Solo: {playerData.KillsWhileSolo}");
@@ -118,6 +118,7 @@ namespace StatsMod
                     lines.Add($"    Max Solo Kill Streak: {playerData.MaxKillStreakWhileSolo}");
                     lines.Add($"    Friendly Kills (PvP): {playerData.FriendlyKills}");
                     lines.Add($"    Deaths: {playerData.Deaths}");
+                    lines.Add($"    Lava Deaths: {playerData.LavaDeaths}");
                     lines.Add($"    Enemy Shields Taken Down: {playerData.EnemyShieldsTakenDown}");
                     lines.Add($"    Friendly Shields Hit: {playerData.FriendlyShieldsHit}");
                     lines.Add($"    Shields Lost: {playerData.ShieldsLost}");
