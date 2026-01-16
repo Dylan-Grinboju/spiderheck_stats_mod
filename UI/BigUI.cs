@@ -233,12 +233,16 @@ namespace StatsMod
 
             // Calculate width based on content
             CalculateContentWidth();
-            float backgroundWidth = Total_Width + (BASE_CONTENT_PADDING * 2) + BASE_BACKGROUND_PADDING;
+
+            float scaledContentPadding = UIManager.ScaleValue(BASE_CONTENT_PADDING);
+            float scaledBackgroundPadding = UIManager.ScaleValue(BASE_BACKGROUND_PADDING);
+
+            float backgroundWidth = Total_Width + (scaledContentPadding * 2) + scaledBackgroundPadding;
             backgroundWidth = Mathf.Min(backgroundWidth, Screen.width * BASE_MAX_WIDTH_PERCENT);
             float marginX = (Screen.width - backgroundWidth) * 0.5f;
 
             CalculateContentHeight();
-            float backgroundHeight = Mathf.Min(Total_Height + BASE_BACKGROUND_PADDING, Screen.height * BASE_MAX_HEIGHT_PERCENT);
+            float backgroundHeight = Mathf.Min(Total_Height + scaledBackgroundPadding, Screen.height * BASE_MAX_HEIGHT_PERCENT);
             float backgroundY = (Screen.height - backgroundHeight) * 0.5f;
 
             Rect backgroundRect = new Rect(marginX, backgroundY, backgroundWidth, backgroundHeight);
@@ -246,7 +250,7 @@ namespace StatsMod
             GUI.Box(backgroundRect, "", backgroundStyle);
 
             // Calculate content area within the background
-            float contentPadding = BASE_CONTENT_PADDING;
+            float contentPadding = scaledContentPadding;
             float contentWidth = backgroundRect.width - (contentPadding * 2);
             float availableContentHeight = backgroundRect.height - (contentPadding * 2);
 
