@@ -10,7 +10,7 @@ using System.Reflection;
 namespace StatsMod
 {
     // SilkMod Attribute with the format: name, authors, mod version, silk version, and identifier
-    [SilkMod("Stats Mod", new string[] { "Dylan" }, "2.1.0", "0.7.0", "Stats_Mod", 1)]
+    [SilkMod("Stats Mod", new string[] { "Dylan" }, "2.1.1", "0.7.0", "Stats_Mod", 1)]
     public class StatsMod : SilkMod
     {
         public static StatsMod Instance { get; private set; }
@@ -187,6 +187,11 @@ namespace StatsMod
                     {
                         { "enabled", true },
                         { "revealDelaySeconds", 2.0f }
+                    }
+                },
+                { "input", new Dictionary<string, object>
+                    {
+                        { "joystickCycle", "right" }
                     }
                 },
             };

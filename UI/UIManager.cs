@@ -27,6 +27,7 @@ namespace StatsMod
 
         #region Controller Cycling State
         private UIState currentUIState = UIState.Off;
+        private string _joystickCycle;
         #endregion
 
         #region Shared Constants
@@ -150,6 +151,9 @@ namespace StatsMod
             titlesUIObj.transform.SetParent(transform);
             titlesUI = titlesUIObj.AddComponent<TitlesUI>();
             titlesUI.Initialize();
+
+            // Cache joystick cycle setting
+            _joystickCycle = ModConfig.JoystickCycle;
         }
         #endregion
 
@@ -186,7 +190,24 @@ namespace StatsMod
             Gamepad gamepad = Gamepad.current;
             if (gamepad == null) return;
 
-            if (gamepad.rightStickButton.wasPressedThisFrame)
+            bool cyclePressed = false;
+            switch (_joystickCycle)
+            {
+                case "right":
+                    cyclePressed = gamepad.rightStickButton.wasPressedThisFrame;
+                    break;
+                case "left":
+                    cyclePressed = gamepad.leftStickButton.wasPressedThisFrame;
+                    break;
+                case "both":
+                    cyclePressed = gamepad.rightStickButton.wasPressedThisFrame || gamepad.leftStickButton.wasPressedThisFrame;
+                    break;
+                case "none":
+                default:
+                    break;
+            }
+
+            if (cyclePressed)
             {
                 CycleUIState();
             }

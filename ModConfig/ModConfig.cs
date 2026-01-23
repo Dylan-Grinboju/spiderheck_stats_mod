@@ -84,6 +84,9 @@ namespace StatsMod
         public static bool TitlesEnabled => Config.GetModConfigValue(ModId, "titles.enabled", true);
         public static float TitlesRevealDelaySeconds => ValidateTitlesRevealDelay(Config.GetModConfigValue(ModId, "titles.revealDelaySeconds", 2.0f));
 
+        // Input settings
+        public static string JoystickCycle => ValidateJoystickCycle(Config.GetModConfigValue(ModId, "input.joystickCycle", "right"));
+
         private static float ValidateTitlesRevealDelay(float value)
         {
             if (value < 0f)
@@ -168,6 +171,17 @@ namespace StatsMod
                 return 100f;
             }
             return value;
+        }
+
+        private static string ValidateJoystickCycle(string value)
+        {
+            string lower = value.ToLower();
+            if (lower == "none" || lower == "right" || lower == "left" || lower == "both")
+            {
+                return lower;
+            }
+            Logger.LogWarning($"Invalid JoystickCycle value '{value}', defaulting to 'right'");
+            return "right";
         }
     }
 }
