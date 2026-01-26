@@ -15,6 +15,11 @@ namespace StatsMod
 
     public class UIManager : MonoBehaviour
     {
+        private UIManager()
+        {
+            cycleInput = ModConfig.CycleInput;
+        }
+
         #region Singleton
         public static UIManager Instance { get; private set; }
         #endregion
@@ -27,7 +32,7 @@ namespace StatsMod
 
         #region Controller Cycling State
         private UIState currentUIState = UIState.Off;
-        private string _cycleInput;
+        private readonly string cycleInput;
         #endregion
 
         #region Shared Constants
@@ -152,8 +157,6 @@ namespace StatsMod
             titlesUI = titlesUIObj.AddComponent<TitlesUI>();
             titlesUI.Initialize();
 
-            // Cache cycle input setting
-            _cycleInput = ModConfig.CycleInput;
         }
         #endregion
 
@@ -191,19 +194,19 @@ namespace StatsMod
             if (gamepad == null) return;
 
             bool cyclePressed = false;
-            switch (_cycleInput)
+            bool dpadPressed = gamepad.dpad.up.wasPressedThisFrame || gamepad.dpad.down.wasPressedThisFrame ||
+                               gamepad.dpad.left.wasPressedThisFrame || gamepad.dpad.right.wasPressedThisFrame;
+            bool joystickPressed = gamepad.leftStickButton.wasPressedThisFrame || gamepad.rightStickButton.wasPressedThisFrame;
+            switch (cycleInput)
             {
                 case "dpad":
-                    cyclePressed = gamepad.dpad.up.wasPressedThisFrame || gamepad.dpad.down.wasPressedThisFrame ||
-                                    gamepad.dpad.left.wasPressedThisFrame || gamepad.dpad.right.wasPressedThisFrame;
+                    cyclePressed = dpadPressed;
                     break;
                 case "joystick":
-                    cyclePressed = gamepad.leftStickButton.wasPressedThisFrame || gamepad.rightStickButton.wasPressedThisFrame;
+                    cyclePressed = joystickPressed;
                     break;
                 case "both":
-                    cyclePressed = gamepad.dpad.up.wasPressedThisFrame || gamepad.dpad.down.wasPressedThisFrame ||
-                                     gamepad.dpad.left.wasPressedThisFrame || gamepad.dpad.right.wasPressedThisFrame ||
-                                    gamepad.leftStickButton.wasPressedThisFrame || gamepad.rightStickButton.wasPressedThisFrame;
+                    cyclePressed = dpadPressed || joystickPressed;
                     break;
                 default:
                     break;

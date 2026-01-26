@@ -5,17 +5,17 @@ A statistics tracking mod for Spiderheck that monitors player performance and ga
 
 ## Features
 
-- **Extensive Player Statistics**: Tracks a wide range of player stats including kills, deaths, friendly kills, shield interactions, web swings, airborne time, kill streaks, and weapon-specific kills.
-- **Enemy Tracking**: Counts enemies killed during survival gameplay
+- **Extensive Player Statistics**: Tracks a wide range of player stats including kills, deaths, friendly kills, shield interactions, web swings, airborne time, kill streaks, enemy-specific and weapon-specific kills.
 - **Player Titles**: At the end of each game, players are awarded fun titles based on their performance (e.g., "The Survivor", "Phantom Blade", "Lone Wolf")
 - **In-Game Display**: 
-  - Press **F1** to toggle the small stats display window
+  - Press **F1** to toggle the small stats display window. You can click and drag this window to reposition it
   - Press **F2** for the large stats overlay
   - Press **F3** to view player titles (only after the game ends)
+  - Press **D-pad** on a controller to cycle the UI's
 - **Log File**: All the stats are saved to a local txt file when the game ends 
 - **Configurable**: Using the Yaml file, various aspects of the mod can be changed
 - **Updater**: The mod will automatically check for updates when the game starts
-- **Versus Mode Support**: The mod will track stats in versus mode, but as this was developed with the survival mode in mind, some features may not work as intended
+- **Versus Mode Support**: The mod will track stats in versus mode, but as this was developed with the survival mode in mind, some features (such as the titles) may not work as intended
 
 
 ### Titles
@@ -36,33 +36,16 @@ A statistics tracking mod for Spiderheck that monitors player performance and ga
 
 ## How to configure the Mod using the Yaml file:
 The first time after launching the game with the mod installed, the following file will be created at this path: `...\Silk\Config\Mods\Stats_Mod.yaml`
-```
-display:
-  showStatsWindow: true
-  showPlayers: true
-  showPlayTime: true
-  showEnemyDeaths: true
-  autoScale: true
-  uiScale: 1
-  bigUIOpacity: 100
-  position:
-    x: 10
-    y: 10
-tracking:
-  enabled: true
-  saveStatsToFile: true
-updater:
-  checkForUpdates: true
-titles:
-  enabled: true
-  revealDelaySeconds: 2.0
-```
-After every change to the file, you need to relaunch the game for it to take effect. If you enter an incorrect value, for example 5 to a boolean field, the mod will throw a bunch of errors at you. You can change it back or just delete the file and it will be created again with the next game launch. 
-Some explanation of the fields:
 
+After every change to the file, you need to relaunch the game for it to take effect. If you enter an incorrect value, for example 5 to a boolean field, the mod will throw a bunch of errors at you. You can change it back or just delete the file and it will be created again with the next game launch. 
+
+<details>
+<summary>Explanation of the fields</summary>
+
+### UI:
 `showStatsWindow`: shows the mod UI. If false then pressing F1, F2, or F3 will do nothing. Note that the tracking will still work, it will just not show you anything.
 
-`showPlayers`, `showPlayTime` and `showEnemyDeaths`: Exactly what this sounds. Will hide/show the corresponding parts of the UI.
+`showPlayers`, `showPlayTime` and `showEnemyDeaths`: Exactly what this sounds. Will hide/show the corresponding parts of the Big UI.
 
 `autoScale`: If true, the mod will automatically scale the UI based on your screen resolution.
 
@@ -70,23 +53,29 @@ Some explanation of the fields:
 
 `bigUIOpacity`: Controls the transparency of the Big UI overlay (F2). Values range from 0 (fully transparent) to 100 (fully opaque). Default is 100. 
 
-`position`: You can use this to manually set the position of the small UI. The coordinates are in pixels, with 0,0 being the top left corner of the screen. This value will be saved every time you click and drag the UI. If the UI doesn't show up on your screen, you can try setting the x and y values to 10 again.
+`position`: You can use this to manually set the position of the Small UI. The coordinates are in pixels, with 0,0 being the top left corner of the screen. This value will be saved every time you click and drag the UI. If the UI doesn't show up on your screen, you can try setting the x and y values to 10 again.
 
 `columns`: Setting a column to true will display it in the Big UI. I don't limit you but the elements can be cut off if there are too many. 
 
+### tracking:
 `enabled`: If false, the mod will not track any stats. This is as if the mod is not installed at all.
 
 `saveStatsToFile`: If true, the stats will be saved to a local txt file.
 
-### Updater Configuration:
+### Updater:
 
 `checkForUpdates`: If true, the mod will automatically check for updates when the game starts.
 
-### Titles Configuration:
+### Titles:
 
-`titles.enabled`: If true, player titles will be calculated and displayed at the end of each game. Press F3 to view them.
+`enabled`: If true, player titles will be calculated and displayed at the end of each game. Press F3 to view them.
 
-`titles.revealDelaySeconds`: Controls the delay between revealing each title card in the titles screen animation. Default is 2.0 seconds. Set to 0 for instant reveal.
+`revealDelaySeconds`: Controls the delay between revealing each title card in the titles screen animation. Default is 2.0 seconds. Set to 0 for instant reveal.
+
+### Input:
+`cycleInput`: Controls which input on a controller cycles the UI. Options are `dpad`, `joystick`, `both`, or `none`. The joystick input refers to pressing down either joystick. The default and recommended is `dpad`.
+
+</details>
 
 
 ## Notes and disclaimers
@@ -98,4 +87,3 @@ Some explanation of the fields:
 ## The Future
 - I plan to continue expanding this mod with more fun titles and statistics
 - I welcome any help or feedback! You can send me a message on Discord or Reddit, open a PR or try to send me a bug report using smoke signals. Some options are better than others
-
