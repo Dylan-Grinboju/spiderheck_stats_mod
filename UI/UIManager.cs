@@ -15,7 +15,7 @@ namespace StatsMod
 
     public class UIManager : MonoBehaviour
     {
-        private UIManager()
+        private void Awake()
         {
             cycleInput = ModConfig.CycleInput;
         }
@@ -32,7 +32,7 @@ namespace StatsMod
 
         #region Controller Cycling State
         private UIState currentUIState = UIState.Off;
-        private readonly string cycleInput;
+        private string cycleInput;
         #endregion
 
         #region Shared Constants

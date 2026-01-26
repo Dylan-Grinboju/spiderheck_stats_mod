@@ -11,7 +11,7 @@ A statistics tracking mod for Spiderheck that monitors player performance and ga
   - Press **F1** to toggle the small stats display window. You can click and drag this window to reposition it
   - Press **F2** for the large stats overlay
   - Press **F3** to view player titles (only after the game ends)
-  - Press **D-pad** on a controller to cycle the UI's
+  - Press **D-pad** on a controller to cycle the UIs
 - **Log File**: All the stats are saved to a local txt file when the game ends 
 - **Configurable**: Using the Yaml file, various aspects of the mod can be changed
 - **Updater**: The mod will automatically check for updates when the game starts
