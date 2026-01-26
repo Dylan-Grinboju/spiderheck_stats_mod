@@ -84,6 +84,9 @@ namespace StatsMod
         public static bool TitlesEnabled => Config.GetModConfigValue(ModId, "titles.enabled", true);
         public static float TitlesRevealDelaySeconds => ValidateTitlesRevealDelay(Config.GetModConfigValue(ModId, "titles.revealDelaySeconds", 2.0f));
 
+        // Input settings
+        public static string CycleInput => ValidateCycleInput(Config.GetModConfigValue(ModId, "input.cycleInput", "dpad"));
+
         private static float ValidateTitlesRevealDelay(float value)
         {
             if (value < 0f)
@@ -168,6 +171,17 @@ namespace StatsMod
                 return 100f;
             }
             return value;
+        }
+
+        private static string ValidateCycleInput(string value)
+        {
+            string lower = value.ToLower();
+            if (lower == "none" || lower == "dpad" || lower == "joystick" || lower == "both")
+            {
+                return lower;
+            }
+            Logger.LogWarning($"Invalid CycleInput value '{value}', defaulting to 'dpad'");
+            return "dpad";
         }
     }
 }

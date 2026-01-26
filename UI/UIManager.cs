@@ -15,6 +15,11 @@ namespace StatsMod
 
     public class UIManager : MonoBehaviour
     {
+        private void Awake()
+        {
+            cycleInput = ModConfig.CycleInput;
+        }
+
         #region Singleton
         public static UIManager Instance { get; private set; }
         #endregion
@@ -27,6 +32,7 @@ namespace StatsMod
 
         #region Controller Cycling State
         private UIState currentUIState = UIState.Off;
+        private string cycleInput;
         #endregion
 
         #region Shared Constants
@@ -150,6 +156,7 @@ namespace StatsMod
             titlesUIObj.transform.SetParent(transform);
             titlesUI = titlesUIObj.AddComponent<TitlesUI>();
             titlesUI.Initialize();
+
         }
         #endregion
 
@@ -186,7 +193,26 @@ namespace StatsMod
             Gamepad gamepad = Gamepad.current;
             if (gamepad == null) return;
 
-            if (gamepad.rightStickButton.wasPressedThisFrame)
+            bool cyclePressed = false;
+            bool dpadPressed = gamepad.dpad.up.wasPressedThisFrame || gamepad.dpad.down.wasPressedThisFrame ||
+                               gamepad.dpad.left.wasPressedThisFrame || gamepad.dpad.right.wasPressedThisFrame;
+            bool joystickPressed = gamepad.leftStickButton.wasPressedThisFrame || gamepad.rightStickButton.wasPressedThisFrame;
+            switch (cycleInput)
+            {
+                case "dpad":
+                    cyclePressed = dpadPressed;
+                    break;
+                case "joystick":
+                    cyclePressed = joystickPressed;
+                    break;
+                case "both":
+                    cyclePressed = dpadPressed || joystickPressed;
+                    break;
+                default:
+                    break;
+            }
+
+            if (cyclePressed)
             {
                 CycleUIState();
             }
