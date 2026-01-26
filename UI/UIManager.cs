@@ -27,7 +27,7 @@ namespace StatsMod
 
         #region Controller Cycling State
         private UIState currentUIState = UIState.Off;
-        private string _joystickCycle;
+        private string _cycleInput;
         #endregion
 
         #region Shared Constants
@@ -152,8 +152,8 @@ namespace StatsMod
             titlesUI = titlesUIObj.AddComponent<TitlesUI>();
             titlesUI.Initialize();
 
-            // Cache joystick cycle setting
-            _joystickCycle = ModConfig.JoystickCycle;
+            // Cache cycle input setting
+            _cycleInput = ModConfig.CycleInput;
         }
         #endregion
 
@@ -191,18 +191,20 @@ namespace StatsMod
             if (gamepad == null) return;
 
             bool cyclePressed = false;
-            switch (_joystickCycle)
+            switch (_cycleInput)
             {
-                case "right":
-                    cyclePressed = gamepad.rightStickButton.wasPressedThisFrame;
+                case "dpad":
+                    cyclePressed = gamepad.dpad.up.wasPressedThisFrame || gamepad.dpad.down.wasPressedThisFrame ||
+                                    gamepad.dpad.left.wasPressedThisFrame || gamepad.dpad.right.wasPressedThisFrame;
                     break;
-                case "left":
-                    cyclePressed = gamepad.leftStickButton.wasPressedThisFrame;
+                case "joystick":
+                    cyclePressed = gamepad.leftStickButton.wasPressedThisFrame || gamepad.rightStickButton.wasPressedThisFrame;
                     break;
                 case "both":
-                    cyclePressed = gamepad.rightStickButton.wasPressedThisFrame || gamepad.leftStickButton.wasPressedThisFrame;
+                    cyclePressed = gamepad.dpad.up.wasPressedThisFrame || gamepad.dpad.down.wasPressedThisFrame ||
+                                     gamepad.dpad.left.wasPressedThisFrame || gamepad.dpad.right.wasPressedThisFrame ||
+                                    gamepad.leftStickButton.wasPressedThisFrame || gamepad.rightStickButton.wasPressedThisFrame;
                     break;
-                case "none":
                 default:
                     break;
             }

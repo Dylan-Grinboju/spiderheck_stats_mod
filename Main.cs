@@ -191,7 +191,7 @@ namespace StatsMod
                 },
                 { "input", new Dictionary<string, object>
                     {
-                        { "joystickCycle", "right" }
+                        { "cycleInput", "dpad" }
                     }
                 },
             };
