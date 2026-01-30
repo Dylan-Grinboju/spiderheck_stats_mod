@@ -22,7 +22,7 @@ namespace StatsMod
                 if (string.IsNullOrEmpty(gameDirectory))
                     gameDirectory = Environment.CurrentDirectory;
 
-                logDirectory = Path.Combine(gameDirectory, "Silk", "Logs");
+                logDirectory = Path.Combine(gameDirectory, "Silk", "Logs", "SpiderStats");
 
                 if (!Directory.Exists(logDirectory))
                 {
@@ -188,6 +188,28 @@ namespace StatsMod
                 foreach (var title in statsSnapshot.Titles)
                 {
                     lines.Add($"  {title.TitleName}: {title.PlayerName}");
+                }
+                lines.Add("");
+            }
+
+            // Add maps played section
+            if (statsSnapshot.MapsPlayed != null && statsSnapshot.MapsPlayed.Any())
+            {
+                lines.Add("MAPS PLAYED:");
+                foreach (var map in statsSnapshot.MapsPlayed)
+                {
+                    lines.Add($"  - {map}");
+                }
+                lines.Add("");
+            }
+
+            // Add perks chosen section
+            if (statsSnapshot.PerksChosen != null && statsSnapshot.PerksChosen.Any())
+            {
+                lines.Add("PERKS CHOSEN:");
+                foreach (var perk in statsSnapshot.PerksChosen)
+                {
+                    lines.Add($"  - {perk}");
                 }
                 lines.Add("");
             }

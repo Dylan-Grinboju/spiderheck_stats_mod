@@ -30,6 +30,8 @@ namespace StatsMod
         private DateTime pauseStartTime;
 
         private List<TitleEntry> lastGameTitles = new List<TitleEntry>();
+        private readonly List<string> mapsPlayed = new List<string>();
+        private readonly List<string> perksChosen = new List<string>();
 
         public bool IsActive => isSurvivalActive || isVersusActive;
         public GameMode CurrentGameMode => currentGameMode;
@@ -72,6 +74,8 @@ namespace StatsMod
             playerTracker.StartAllAliveTimers();
 
             lastGameTitles.Clear();
+            mapsPlayed.Clear();
+            perksChosen.Clear();
             UIManager.ClearTitlesForNewGame();
 
             Logger.LogInfo($"{mode} session started");
@@ -164,6 +168,28 @@ namespace StatsMod
 
         #endregion
 
+        #region Map and Perk Tracking
+
+        public void RecordMap(string mapName)
+        {
+            if (!IsActive) return;
+            if (string.IsNullOrEmpty(mapName)) return;
+
+            mapsPlayed.Add(mapName);
+            Logger.LogInfo($"Map recorded: {mapName}");
+        }
+
+        public void RecordPerk(string perkName)
+        {
+            if (!IsActive) return;
+            if (string.IsNullOrEmpty(perkName)) return;
+
+            perksChosen.Add(perkName);
+            Logger.LogInfo($"Perk recorded: {perkName}");
+        }
+
+        #endregion
+
         #region Wave Clutch (Survival-specific)
 
         public void CheckWaveClutch()
@@ -197,7 +223,9 @@ namespace StatsMod
                 CurrentSessionTime = GetCurrentSessionTime(),
                 LastGameDuration = lastGameDuration,
                 ActivePlayers = new Dictionary<PlayerInput, PlayerTracker.PlayerData>(playerTracker.GetActivePlayers()),
-                EnemiesKilled = enemiesTracker.EnemiesKilled
+                EnemiesKilled = enemiesTracker.EnemiesKilled,
+                MapsPlayed = new List<string>(mapsPlayed),
+                PerksChosen = new List<string>(perksChosen)
             };
         }
 

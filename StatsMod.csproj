@@ -6,7 +6,7 @@
     <Title>Stats Mod</Title>
 
     <!-- Version -->
-    <Version>2.1.1</Version>
+    <Version>2.1.2</Version>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version)</FileVersion>
 
@@ -65,6 +65,7 @@
   <!-- Exclude Sourcecode folder from compilation (decompiled game source for reference only) -->
   <ItemGroup>
     <Compile Remove="Sourcecode\**\*.cs" />
+    <Compile Remove="OtherMods\**\*.cs" />
   </ItemGroup>
 
   <!-- Assembly References -->
