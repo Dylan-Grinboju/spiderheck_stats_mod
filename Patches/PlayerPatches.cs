@@ -119,6 +119,8 @@ namespace StatsMod
                 PlayerInput playerInput = __instance.rootObject.GetComponentInParent<PlayerInput>();
                 if (playerInput != null)
                 {
+                    if (__instance.astralDead)
+                        return;
                     PlayerTracker.Instance.IncrementLavaDeaths(playerInput);
                 }
             }
