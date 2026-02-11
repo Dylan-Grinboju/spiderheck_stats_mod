@@ -32,10 +32,12 @@ namespace StatsMod
         private List<TitleEntry> lastGameTitles = new List<TitleEntry>();
         private readonly List<string> mapsPlayed = new List<string>();
         private readonly List<string> perksChosen = new List<string>();
+        private int painLevel = -1;
 
         public bool IsActive => isSurvivalActive || isVersusActive;
         public GameMode CurrentGameMode => currentGameMode;
         public GameMode LastGameMode => lastGameMode;
+        public string CurrentMapName => mapsPlayed.Count > 0 ? mapsPlayed[mapsPlayed.Count - 1] : "Unknown";
 
         private GameSessionManager()
         {
@@ -76,6 +78,7 @@ namespace StatsMod
             lastGameTitles.Clear();
             mapsPlayed.Clear();
             perksChosen.Clear();
+            painLevel = -1;
             UIManager.ClearTitlesForNewGame();
 
             Logger.LogInfo($"{mode} session started");
@@ -188,6 +191,23 @@ namespace StatsMod
             Logger.LogInfo($"Perk recorded: {perkName}");
         }
 
+        public void RecordPainLevel()
+        {
+            if (!IsActive) return;
+
+            try
+            {
+                if (PainLevelsScreen.instance != null)
+                {
+                    painLevel = PainLevelsScreen.instance.GetPainLevel();
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning($"Could not read pain level: {ex.Message}");
+            }
+        }
+
         #endregion
 
         #region Wave Clutch (Survival-specific)
@@ -224,6 +244,7 @@ namespace StatsMod
                 LastGameDuration = lastGameDuration,
                 ActivePlayers = new Dictionary<PlayerInput, PlayerTracker.PlayerData>(playerTracker.GetActivePlayers()),
                 EnemiesKilled = enemiesTracker.EnemiesKilled,
+                PainLevel = painLevel,
                 MapsPlayed = new List<string>(mapsPlayed),
                 PerksChosen = new List<string>(perksChosen)
             };

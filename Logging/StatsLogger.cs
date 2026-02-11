@@ -71,12 +71,21 @@ namespace StatsMod
                 "GAME INFORMATION:",
                 $"  Game End Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}",
                 $"  Game Duration: {FormatTimeSpan(statsSnapshot.LastGameDuration)}",
+            };
+
+            if (statsSnapshot.PainLevel >= 1)
+            {
+                lines.Add($"  Pain Level: {statsSnapshot.PainLevel}");
+            }
+
+            lines.AddRange(new[]
+            {
                 "",
                 "ENEMY STATISTICS:",
                 $"  Total Enemies Killed: {statsSnapshot.EnemiesKilled}",
                 "",
                 "PLAYER STATISTICS:"
-            };
+            });
             if (statsSnapshot.ActivePlayers != null && statsSnapshot.ActivePlayers.Any())
             {
                 var sortedPlayers = statsSnapshot.ActivePlayers
@@ -119,6 +128,17 @@ namespace StatsMod
                     lines.Add($"    Friendly Kills (PvP): {playerData.FriendlyKills}");
                     lines.Add($"    Deaths: {playerData.Deaths}");
                     lines.Add($"    Lava Deaths: {playerData.LavaDeaths}");
+
+                    // Deaths per map breakdown
+                    if (playerData.DeathsPerMap != null && playerData.DeathsPerMap.Any())
+                    {
+                        lines.Add($"    Deaths Per Map:");
+                        foreach (var mapEntry in playerData.DeathsPerMap.OrderByDescending(m => m.Value))
+                        {
+                            lines.Add($"      {mapEntry.Key}: {mapEntry.Value}");
+                        }
+                    }
+
                     lines.Add($"    Enemy Shields Taken Down: {playerData.EnemyShieldsTakenDown}");
                     lines.Add($"    Friendly Shields Hit: {playerData.FriendlyShieldsHit}");
                     lines.Add($"    Shields Lost: {playerData.ShieldsLost}");
@@ -192,13 +212,35 @@ namespace StatsMod
                 lines.Add("");
             }
 
-            // Add maps played section
+            // Add maps played section with aggregated deaths per map
             if (statsSnapshot.MapsPlayed != null && statsSnapshot.MapsPlayed.Any())
             {
-                lines.Add("MAPS PLAYED:");
-                foreach (var map in statsSnapshot.MapsPlayed)
+                // Aggregate deaths across all players per map
+                var totalDeathsPerMap = new Dictionary<string, int>();
+                if (statsSnapshot.ActivePlayers != null)
                 {
-                    lines.Add($"  - {map}");
+                    foreach (var player in statsSnapshot.ActivePlayers)
+                    {
+                        if (player.Value.DeathsPerMap != null)
+                        {
+                            foreach (var mapEntry in player.Value.DeathsPerMap)
+                            {
+                                if (totalDeathsPerMap.ContainsKey(mapEntry.Key))
+                                    totalDeathsPerMap[mapEntry.Key] += mapEntry.Value;
+                                else
+                                    totalDeathsPerMap[mapEntry.Key] = mapEntry.Value;
+                            }
+                        }
+                    }
+                }
+
+                lines.Add("MAPS PLAYED:");
+                foreach (var map in statsSnapshot.MapsPlayed.Distinct())
+                {
+                    if (totalDeathsPerMap.TryGetValue(map, out int deaths) && deaths > 0)
+                        lines.Add($"  - {map} ({deaths} {(deaths == 1 ? "death" : "deaths")})");
+                    else
+                        lines.Add($"  - {map}");
                 }
                 lines.Add("");
             }

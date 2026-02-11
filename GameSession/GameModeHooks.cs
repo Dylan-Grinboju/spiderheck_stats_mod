@@ -20,6 +20,7 @@ namespace StatsMod
                 if (survivalConfig != null && !__instance.GameModeActive())
                 {
                     GameSessionManager.Instance.StartSurvivalSession();
+                    GameSessionManager.Instance.RecordPainLevel();
                     Logger.LogInfo("Survival mode started");
                 }
             }

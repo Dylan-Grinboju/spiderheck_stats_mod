@@ -14,6 +14,7 @@ namespace StatsMod
         public Dictionary<PlayerInput, PlayerTracker.PlayerData> ActivePlayers { get; set; }
         public int EnemiesKilled { get; set; }
         public List<TitleEntry> Titles { get; set; }
+        public int PainLevel { get; set; }
         public List<string> MapsPlayed { get; set; }
         public List<string> PerksChosen { get; set; }
     }

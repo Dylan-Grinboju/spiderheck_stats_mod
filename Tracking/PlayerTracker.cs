@@ -63,6 +63,7 @@ namespace StatsMod
             public Color SecondaryColor { get; set; }
             public Dictionary<string, int> WeaponHits { get; set; }
             public Dictionary<string, int> EnemyKills { get; set; }
+            public Dictionary<string, int> DeathsPerMap { get; set; }
 
             public PlayerData(ulong id, string name = "Player")
             {
@@ -125,6 +126,7 @@ namespace StatsMod
                     { "Hornet", 0 },
                     { "Player", 0 }
                 };
+                DeathsPerMap = new Dictionary<string, int>();
             }
 
             public TimeSpan GetCurrentAliveTime()
@@ -271,6 +273,13 @@ namespace StatsMod
                     data.KillStreakWhileSolo = 0;
                     data.StopAliveTimer();
                     StopWebSwingTimer(playerInput);
+
+                    // Track death on the current map
+                    string currentMap = GameSessionManager.Instance.CurrentMapName;
+                    if (data.DeathsPerMap.ContainsKey(currentMap))
+                        data.DeathsPerMap[currentMap]++;
+                    else
+                        data.DeathsPerMap[currentMap] = 1;
                 }
                 else
                 {
@@ -302,6 +311,16 @@ namespace StatsMod
                 if (playerInput != null && activePlayers.TryGetValue(playerInput, out PlayerData data))
                 {
                     data.Deaths--;
+
+                    // Undo death on the current map
+                    string currentMap = GameSessionManager.Instance.CurrentMapName;
+                    if (data.DeathsPerMap.ContainsKey(currentMap) && data.DeathsPerMap[currentMap] > 0)
+                    {
+                        data.DeathsPerMap[currentMap]--;
+                        if (data.DeathsPerMap[currentMap] == 0)
+                            data.DeathsPerMap.Remove(currentMap);
+                    }
+
                     StartAliveTimer(playerInput);
                 }
             }
@@ -342,6 +361,7 @@ namespace StatsMod
                 {
                     entry.Value.EnemyKills[enemyKey] = 0;
                 }
+                entry.Value.DeathsPerMap.Clear();
             }
         }
 
