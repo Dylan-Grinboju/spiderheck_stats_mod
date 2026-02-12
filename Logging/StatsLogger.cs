@@ -33,7 +33,7 @@ namespace StatsMod
             catch (Exception ex)
             {
                 logDirectory = Environment.CurrentDirectory;
-                Logger.LogError($"Failed to create Silk/Logs directory, using current directory: {ex.Message}");
+                Logger.LogError($"Failed to create Silk/Logs/SpiderStats directory, using current directory: {ex.Message}");
             }
 
             Logger.LogInfo($"Stats logger initialized. Log directory: {logDirectory}");

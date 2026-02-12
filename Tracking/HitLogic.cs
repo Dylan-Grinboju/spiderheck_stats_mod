@@ -36,7 +36,7 @@ namespace StatsMod
             "PowerWhisp Variant(Clone)",
             "MeleeWhisp(Clone)",
             "PowerMeleeWhisp Variant(Clone)",
-            "Khepri (Clone)",
+            "Khepri(Clone)",
             "PowerKhepri Variant(Clone)",
             "Hornet_Shaman Variant(Clone)",
             "Shielded Hornet_Shaman Variant(Clone)",
