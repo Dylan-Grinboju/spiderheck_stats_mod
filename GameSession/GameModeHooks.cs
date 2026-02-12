@@ -7,19 +7,20 @@ namespace StatsMod
 {
     // Consolidated Harmony patches for game mode lifecycle events.
     // Handles survival and versus mode start/stop, lobby transitions.
-    
+
     #region Survival Mode Hooks
 
     [HarmonyPatch(typeof(SurvivalMode), "StartGame")]
     public class SurvivalModeStartPatch
     {
-        static void Postfix(SurvivalMode __instance, SurvivalConfig survivalConfig, bool __result)
+        static void Prefix(SurvivalMode __instance, SurvivalConfig survivalConfig)
         {
             try
             {
-                if (__result)
+                if (survivalConfig != null && !__instance.GameModeActive())
                 {
                     GameSessionManager.Instance.StartSurvivalSession();
+                    GameSessionManager.Instance.RecordPainLevel();
                     Logger.LogInfo("Survival mode started");
                 }
             }
@@ -73,7 +74,7 @@ namespace StatsMod
     [HarmonyPatch(typeof(VersusMode), "StartMatch")]
     public class VersusModeStartPatch
     {
-        static void Postfix(VersusMode __instance)
+        static void Prefix(VersusMode __instance)
         {
             try
             {

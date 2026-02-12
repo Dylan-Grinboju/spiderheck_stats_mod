@@ -22,7 +22,7 @@ namespace StatsMod
                 if (string.IsNullOrEmpty(gameDirectory))
                     gameDirectory = Environment.CurrentDirectory;
 
-                logDirectory = Path.Combine(gameDirectory, "Silk", "Logs");
+                logDirectory = Path.Combine(gameDirectory, "Silk", "Logs", "SpiderStats");
 
                 if (!Directory.Exists(logDirectory))
                 {
@@ -33,7 +33,7 @@ namespace StatsMod
             catch (Exception ex)
             {
                 logDirectory = Environment.CurrentDirectory;
-                Logger.LogError($"Failed to create Silk/Logs directory, using current directory: {ex.Message}");
+                Logger.LogError($"Failed to create Silk/Logs/SpiderStats directory, using current directory: {ex.Message}");
             }
 
             Logger.LogInfo($"Stats logger initialized. Log directory: {logDirectory}");
@@ -71,12 +71,21 @@ namespace StatsMod
                 "GAME INFORMATION:",
                 $"  Game End Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}",
                 $"  Game Duration: {FormatTimeSpan(statsSnapshot.LastGameDuration)}",
+            };
+
+            if (statsSnapshot.PainLevel >= 1)
+            {
+                lines.Add($"  Pain Level: {statsSnapshot.PainLevel}");
+            }
+
+            lines.AddRange(new[]
+            {
                 "",
                 "ENEMY STATISTICS:",
                 $"  Total Enemies Killed: {statsSnapshot.EnemiesKilled}",
                 "",
                 "PLAYER STATISTICS:"
-            };
+            });
             if (statsSnapshot.ActivePlayers != null && statsSnapshot.ActivePlayers.Any())
             {
                 var sortedPlayers = statsSnapshot.ActivePlayers
@@ -119,6 +128,18 @@ namespace StatsMod
                     lines.Add($"    Friendly Kills (PvP): {playerData.FriendlyKills}");
                     lines.Add($"    Deaths: {playerData.Deaths}");
                     lines.Add($"    Lava Deaths: {playerData.LavaDeaths}");
+                    lines.Add($"    Astral Returns: {playerData.AstralReturns}");
+
+                    // Deaths per map breakdown
+                    if (playerData.DeathsPerMap != null && playerData.DeathsPerMap.Any())
+                    {
+                        lines.Add($"    Deaths Per Map:");
+                        foreach (var mapEntry in playerData.DeathsPerMap.OrderByDescending(m => m.Value))
+                        {
+                            lines.Add($"      {mapEntry.Key}: {mapEntry.Value}");
+                        }
+                    }
+
                     lines.Add($"    Enemy Shields Taken Down: {playerData.EnemyShieldsTakenDown}");
                     lines.Add($"    Friendly Shields Hit: {playerData.FriendlyShieldsHit}");
                     lines.Add($"    Shields Lost: {playerData.ShieldsLost}");
@@ -188,6 +209,50 @@ namespace StatsMod
                 foreach (var title in statsSnapshot.Titles)
                 {
                     lines.Add($"  {title.TitleName}: {title.PlayerName}");
+                }
+                lines.Add("");
+            }
+
+            // Add maps played section with aggregated deaths per map
+            if (statsSnapshot.MapsPlayed != null && statsSnapshot.MapsPlayed.Any())
+            {
+                // Aggregate deaths across all players per map
+                var totalDeathsPerMap = new Dictionary<string, int>();
+                if (statsSnapshot.ActivePlayers != null)
+                {
+                    foreach (var player in statsSnapshot.ActivePlayers)
+                    {
+                        if (player.Value.DeathsPerMap != null)
+                        {
+                            foreach (var mapEntry in player.Value.DeathsPerMap)
+                            {
+                                if (totalDeathsPerMap.ContainsKey(mapEntry.Key))
+                                    totalDeathsPerMap[mapEntry.Key] += mapEntry.Value;
+                                else
+                                    totalDeathsPerMap[mapEntry.Key] = mapEntry.Value;
+                            }
+                        }
+                    }
+                }
+
+                lines.Add("MAPS PLAYED:");
+                foreach (var map in statsSnapshot.MapsPlayed.Distinct())
+                {
+                    if (totalDeathsPerMap.TryGetValue(map, out int deaths) && deaths > 0)
+                        lines.Add($"  - {map} ({deaths} {(deaths == 1 ? "death" : "deaths")})");
+                    else
+                        lines.Add($"  - {map}");
+                }
+                lines.Add("");
+            }
+
+            // Add perks chosen section
+            if (statsSnapshot.PerksChosen != null && statsSnapshot.PerksChosen.Any())
+            {
+                lines.Add("PERKS CHOSEN:");
+                foreach (var perk in statsSnapshot.PerksChosen)
+                {
+                    lines.Add($"  - {perk}");
                 }
                 lines.Add("");
             }

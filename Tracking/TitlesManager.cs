@@ -122,6 +122,7 @@ namespace StatsMod
         public const string MostHornetKills = nameof(StatLeaders.MostHornetKills);
         public const string MostWhispKills = nameof(StatLeaders.MostWhispKills);
         public const string MostKhepriKills = nameof(StatLeaders.MostKhepriKills);
+        public const string MostAstralReturns = nameof(StatLeaders.MostAstralReturns);
     }
 
     public class StatLeaders
@@ -158,6 +159,7 @@ namespace StatsMod
         public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostHornetKills { get; set; }
         public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostWhispKills { get; set; }
         public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostKhepriKills { get; set; }
+        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostAstralReturns { get; set; }
     }
 
     public class TitlesManager
@@ -299,6 +301,9 @@ namespace StatsMod
 
             var kheprisRanked = players.OrderByDescending(p => p.Value.EnemyKills["Khepri"] + p.Value.EnemyKills["Power Khepri"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
             leaders.MostKhepriKills = kheprisRanked[0];
+
+            var astralReturnsRanked = players.OrderByDescending(p => p.Value.AstralReturns).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+            leaders.MostAstralReturns = astralReturnsRanked[0];
 
             return leaders;
         }
@@ -568,6 +573,16 @@ namespace StatsMod
                 .WithDescription($"Least Lava Deaths ({leaders.LeastLavaDeaths.Value.LavaDeaths})")
                 .WithPriority(defaultPriority)
                 .Build());
+
+            if (leaders.MostAstralReturns.Value.AstralReturns > 0)
+            {
+                titles.Add(new TitleBuilder(leaders)
+                    .ForLeader(l => l.MostAstralReturns, Req.MostAstralReturns)
+                    .WithName("Resurrection")
+                    .WithDescription($"Most Astral Returns ({leaders.MostAstralReturns.Value.AstralReturns})")
+                    .WithPriority(defaultPriority)
+                    .Build());
+            }
 
             return titles;
         }
@@ -895,6 +910,21 @@ namespace StatsMod
                     .WithPriority(defaultPriority)
                     .Build());
             }
+
+            bool hasMostAstralReturns = leaders.MostAstralReturns.Value.AstralReturns > 0;
+            bool hasMostDeaths = leaders.MostDeaths.Value.Deaths > 0;
+
+            if (hasMostAstralReturns && hasMostDeaths && TitleBuilder.SamePlayer(leaders.MostAstralReturns, leaders.MostDeaths))
+            {
+                titles.Add(new TitleBuilder(leaders)
+                    .ForLeader(l => l.MostAstralReturns, Req.MostAstralReturns)
+                    .AndLeader(Req.MostDeaths)
+                    .WithName("Second Chances")
+                    .WithDescription($"Most Astral Returns ({leaders.MostAstralReturns.Value.AstralReturns})\nMost Deaths ({leaders.MostDeaths.Value.Deaths})")
+                    .WithPriority(defaultPriority)
+                    .Build());
+            }
+
             return titles;
         }
 
@@ -1115,6 +1145,49 @@ namespace StatsMod
                     .Build());
             }
 
+            bool hasMostAstralReturns = leaders.MostAstralReturns.Value.AstralReturns > 0;
+            bool hasMostShieldsLost = leaders.MostShieldsLost.Value.ShieldsLost > 0;
+            bool hasMostAliveTime = leaders.MostAliveTime.Value.TotalAliveTime > TimeSpan.Zero;
+            bool hasMostKhepriKills = (leaders.MostKhepriKills.Value.EnemyKills["Khepri"] + leaders.MostKhepriKills.Value.EnemyKills["Power Khepri"]) > 0;
+
+            if (hasMostAstralReturns && hasMostShieldsLost && hasMostAliveTime && TitleBuilder.SamePlayer(leaders.MostAstralReturns, leaders.MostShieldsLost, leaders.MostAliveTime))
+            {
+                titles.Add(new TitleBuilder(leaders)
+                    .ForLeader(l => l.MostAstralReturns, Req.MostAstralReturns)
+                    .AndLeader(Req.MostShieldsLost)
+                    .AndLeader(Req.MostAliveTime)
+                    .WithName("Perseverance")
+                    .WithDescription($"Most Astral Returns ({leaders.MostAstralReturns.Value.AstralReturns})\nMost Shields Lost ({leaders.MostShieldsLost.Value.ShieldsLost})\nMost Alive Time ({leaders.MostAliveTime.Value.TotalAliveTime.TotalSeconds:F1}s)")
+                    .WithPriority(defaultPriority)
+                    .Build());
+            }
+
+            if (hasMostAstralReturns && TitleBuilder.SamePlayer(leaders.MostAstralReturns, leaders.LeastOffense, leaders.LeastFriendlyFire))
+            {
+                titles.Add(new TitleBuilder(leaders)
+                    .ForLeader(l => l.MostAstralReturns, Req.MostAstralReturns)
+                    .AndLeader(Req.LeastOffense)
+                    .AndLeader(Req.LeastFriendlyFire)
+                    .WithName("A Gust of Wind")
+                    .WithDescription($"Most Astral Returns ({leaders.MostAstralReturns.Value.AstralReturns})\nLeast Offense ({leaders.LeastOffense.Value.Kills + leaders.LeastOffense.Value.EnemyShieldsTakenDown})\nLeast Friendly Fire ({leaders.LeastFriendlyFire.Value.FriendlyKills + leaders.LeastFriendlyFire.Value.FriendlyShieldsHit})")
+                    .WithPriority(defaultPriority)
+                    .Build());
+            }
+
+            if (hasMostAstralReturns && hasMostKhepriKills && hasMostDamageTaken && TitleBuilder.SamePlayer(leaders.MostAstralReturns, leaders.MostKhepriKills, leaders.MostDamageTaken))
+            {
+                var khepriKills = leaders.MostKhepriKills.Value.EnemyKills["Khepri"] + leaders.MostKhepriKills.Value.EnemyKills["Power Khepri"];
+
+                titles.Add(new TitleBuilder(leaders)
+                    .ForLeader(l => l.MostAstralReturns, Req.MostAstralReturns)
+                    .AndLeader(Req.MostKhepriKills)
+                    .AndLeader(Req.MostDamageTaken)
+                    .WithName("Anubis")
+                    .WithDescription($"Most Astral Returns ({leaders.MostAstralReturns.Value.AstralReturns})\nMost Khepris Killed ({khepriKills})\nMost Damage Taken ({leaders.MostDamageTaken.Value.Deaths + leaders.MostDamageTaken.Value.ShieldsLost})")
+                    .WithPriority(defaultPriority)
+                    .Build());
+            }
+
             return titles;
         }
 
@@ -1246,6 +1319,21 @@ namespace StatsMod
                     .Build());
             }
 
+            bool hasMostAstralReturns = leaders.MostAstralReturns.Value.AstralReturns > 0;
+
+            if (hasMostAstralReturns && hasMostBladeKills && hasHighestPoint && TitleBuilder.SamePlayer(leaders.MostAstralReturns, leaders.MostBladeKills, leaders.HighestPoint, leaders.LeastDamageTaken))
+            {
+                titles.Add(new TitleBuilder(leaders)
+                    .ForLeader(l => l.MostAstralReturns, Req.MostAstralReturns)
+                    .AndLeader(Req.MostBladeKills)
+                    .AndLeader(Req.HighestPoint)
+                    .AndLeader(Req.LeastDamageTaken)
+                    .WithName("Spectral Blade")
+                    .WithDescription($"Most Astral Returns ({leaders.MostAstralReturns.Value.AstralReturns})\nMost Blade Kills ({blades["Particle Blade"] + blades["KhepriStaff"]})\nHighest Point ({leaders.HighestPoint.Value.HighestPoint:F1}m)\nLeast Damage Taken ({leaders.LeastDamageTaken.Value.Deaths + leaders.LeastDamageTaken.Value.ShieldsLost})")
+                    .WithPriority(defaultPriority)
+                    .Build());
+            }
+
             return titles;
         }
 
@@ -1270,6 +1358,27 @@ namespace StatsMod
                     .AndLeader(Req.MostExplosionsKills)
                     .WithName("Supernova")
                     .WithDescription($"Most Offense ({leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown})\nMost Friendly Fire ({leaders.MostFriendlyFire.Value.FriendlyKills + leaders.MostFriendlyFire.Value.FriendlyShieldsHit})\nMost Explosive Kills ({expl["Explosions"] + expl["Laser Cube"] + expl["DeathCube"]})\nLeast Damage Taken ({leaders.LeastDamageTaken.Value.Deaths + leaders.LeastDamageTaken.Value.ShieldsLost})\nHighest Point ({leaders.HighestPoint.Value.HighestPoint:F1}m)")
+                    .WithPriority(defaultPriority)
+                    .Build());
+            }
+
+            bool hasMostAstralReturns = leaders.MostAstralReturns.Value.AstralReturns > 0;
+            bool hasMostHornetKills = leaders.MostHornetKills.Value.EnemyKills["Hornet"] > 0;
+            bool hasMostLavaDeaths = leaders.MostLavaDeaths.Value.LavaDeaths > 0;
+
+            var blades = leaders.MostBladeKills.Value.WeaponHits;
+            bool hasMostBladeKills = (blades["Particle Blade"] + blades["KhepriStaff"]) > 0;
+
+            if (hasMostAstralReturns && hasMostHornetKills && hasMostBladeKills && hasMostFriendlyFire && hasMostLavaDeaths && TitleBuilder.SamePlayer(leaders.MostAstralReturns, leaders.MostHornetKills, leaders.MostBladeKills, leaders.MostFriendlyFire, leaders.MostLavaDeaths))
+            {
+                titles.Add(new TitleBuilder(leaders)
+                    .ForLeader(l => l.MostAstralReturns, Req.MostAstralReturns)
+                    .AndLeader(Req.MostHornetKills)
+                    .AndLeader(Req.MostBladeKills)
+                    .AndLeader(Req.MostFriendlyFire)
+                    .AndLeader(Req.MostLavaDeaths)
+                    .WithName("Redemption Arc")
+                    .WithDescription($"Most Astral Returns ({leaders.MostAstralReturns.Value.AstralReturns})\nMost Hornets Killed ({leaders.MostHornetKills.Value.EnemyKills["Hornet"]})\nMost Blade Kills ({blades["Particle Blade"] + blades["KhepriStaff"]})\nMost Friendly Fire ({leaders.MostFriendlyFire.Value.FriendlyKills + leaders.MostFriendlyFire.Value.FriendlyShieldsHit})\nMost Lava Deaths ({leaders.MostLavaDeaths.Value.LavaDeaths})")
                     .WithPriority(defaultPriority)
                     .Build());
             }

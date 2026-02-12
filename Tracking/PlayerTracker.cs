@@ -39,6 +39,7 @@ namespace StatsMod
             public int KillsWhileSolo { get; set; }
             public int FriendlyKills { get; set; }
             public int WaveClutches { get; set; }
+            public int AstralReturns { get; set; }
             public int EnemyShieldsTakenDown { get; set; }
             public int FriendlyShieldsHit { get; set; }
             public int ShieldsLost { get; set; }
@@ -63,6 +64,7 @@ namespace StatsMod
             public Color SecondaryColor { get; set; }
             public Dictionary<string, int> WeaponHits { get; set; }
             public Dictionary<string, int> EnemyKills { get; set; }
+            public Dictionary<string, int> DeathsPerMap { get; set; }
 
             public PlayerData(ulong id, string name = "Player")
             {
@@ -74,6 +76,7 @@ namespace StatsMod
                 KillsWhileSolo = 0;
                 FriendlyKills = 0;
                 WaveClutches = 0;
+                AstralReturns = 0;
                 EnemyShieldsTakenDown = 0;
                 FriendlyShieldsHit = 0;
                 ShieldsLost = 0;
@@ -125,6 +128,7 @@ namespace StatsMod
                     { "Hornet", 0 },
                     { "Player", 0 }
                 };
+                DeathsPerMap = new Dictionary<string, int>();
             }
 
             public TimeSpan GetCurrentAliveTime()
@@ -271,6 +275,13 @@ namespace StatsMod
                     data.KillStreakWhileSolo = 0;
                     data.StopAliveTimer();
                     StopWebSwingTimer(playerInput);
+
+                    // Track death on the current map
+                    string currentMap = GameSessionManager.Instance.CurrentMapName;
+                    if (data.DeathsPerMap.ContainsKey(currentMap))
+                        data.DeathsPerMap[currentMap]++;
+                    else
+                        data.DeathsPerMap[currentMap] = 1;
                 }
                 else
                 {
@@ -302,6 +313,17 @@ namespace StatsMod
                 if (playerInput != null && activePlayers.TryGetValue(playerInput, out PlayerData data))
                 {
                     data.Deaths--;
+                    data.AstralReturns++;
+
+                    // Undo death on the current map
+                    string currentMap = GameSessionManager.Instance.CurrentMapName;
+                    if (data.DeathsPerMap.ContainsKey(currentMap) && data.DeathsPerMap[currentMap] > 0)
+                    {
+                        data.DeathsPerMap[currentMap]--;
+                        if (data.DeathsPerMap[currentMap] == 0)
+                            data.DeathsPerMap.Remove(currentMap);
+                    }
+
                     StartAliveTimer(playerInput);
                 }
             }
@@ -322,6 +344,7 @@ namespace StatsMod
                 entry.Value.KillsWhileSolo = 0;
                 entry.Value.FriendlyKills = 0;
                 entry.Value.WaveClutches = 0;
+                entry.Value.AstralReturns = 0;
                 entry.Value.EnemyShieldsTakenDown = 0;
                 entry.Value.FriendlyShieldsHit = 0;
                 entry.Value.ShieldsLost = 0;
@@ -342,6 +365,7 @@ namespace StatsMod
                 {
                     entry.Value.EnemyKills[enemyKey] = 0;
                 }
+                entry.Value.DeathsPerMap.Clear();
             }
         }
 

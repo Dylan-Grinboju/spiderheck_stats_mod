@@ -30,16 +30,19 @@ namespace StatsMod
         private DateTime pauseStartTime;
 
         private List<TitleEntry> lastGameTitles = new List<TitleEntry>();
+        private readonly List<string> mapsPlayed = new List<string>();
+        private readonly List<string> perksChosen = new List<string>();
+        private int painLevel = -1;
 
         public bool IsActive => isSurvivalActive || isVersusActive;
         public GameMode CurrentGameMode => currentGameMode;
         public GameMode LastGameMode => lastGameMode;
+        public string CurrentMapName => mapsPlayed.Count > 0 ? mapsPlayed[mapsPlayed.Count - 1] : "Unknown";
 
         private GameSessionManager()
         {
             playerTracker = PlayerTracker.Instance;
             enemiesTracker = EnemiesTracker.Instance;
-            Logger.LogInfo("Game session manager initialized");
         }
 
         #region Session Lifecycle
@@ -72,9 +75,11 @@ namespace StatsMod
             playerTracker.StartAllAliveTimers();
 
             lastGameTitles.Clear();
+            mapsPlayed.Clear();
+            perksChosen.Clear();
+            painLevel = -1;
             UIManager.ClearTitlesForNewGame();
 
-            Logger.LogInfo($"{mode} session started");
         }
 
         public void StopSurvivalSession()
@@ -164,6 +169,43 @@ namespace StatsMod
 
         #endregion
 
+        #region Map and Perk Tracking
+
+        public void RecordMap(string mapName)
+        {
+            if (!IsActive) return;
+            if (string.IsNullOrEmpty(mapName)) return;
+
+            mapsPlayed.Add(mapName);
+        }
+
+        public void RecordPerk(string perkName)
+        {
+            if (!IsActive) return;
+            if (string.IsNullOrEmpty(perkName)) return;
+
+            perksChosen.Add(perkName);
+        }
+
+        public void RecordPainLevel()
+        {
+            if (!IsActive) return;
+
+            try
+            {
+                if (PainLevelsScreen.instance != null)
+                {
+                    painLevel = PainLevelsScreen.instance.GetPainLevel();
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning($"Could not read pain level: {ex.Message}");
+            }
+        }
+
+        #endregion
+
         #region Wave Clutch (Survival-specific)
 
         public void CheckWaveClutch()
@@ -179,7 +221,6 @@ namespace StatsMod
             if (clutchPlayer != null)
             {
                 playerTracker.IncrementWaveClutch(clutchPlayer);
-                Logger.LogInfo($"Wave clutch recorded for player");
             }
         }
 
@@ -197,7 +238,10 @@ namespace StatsMod
                 CurrentSessionTime = GetCurrentSessionTime(),
                 LastGameDuration = lastGameDuration,
                 ActivePlayers = new Dictionary<PlayerInput, PlayerTracker.PlayerData>(playerTracker.GetActivePlayers()),
-                EnemiesKilled = enemiesTracker.EnemiesKilled
+                EnemiesKilled = enemiesTracker.EnemiesKilled,
+                PainLevel = painLevel,
+                MapsPlayed = new List<string>(mapsPlayed),
+                PerksChosen = new List<string>(perksChosen)
             };
         }
 

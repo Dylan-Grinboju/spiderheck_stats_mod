@@ -41,6 +41,7 @@ namespace StatsMod
         public static bool BigUIShowWebSwingTime => Config.GetModConfigValue(ModId, "display.bigUI.columns.webSwingTime", false);
         public static bool BigUIShowAirborneTime => Config.GetModConfigValue(ModId, "display.bigUI.columns.airborneTime", false);
         public static bool BigUIShowLavaDeaths => Config.GetModConfigValue(ModId, "display.bigUI.columns.lavaDeaths", false);
+        public static bool BigUIShowAstralReturns => Config.GetModConfigValue(ModId, "display.bigUI.columns.astralReturns", false);
 
         // Computed stat columns
         public static bool BigUIShowTotalOffence => Config.GetModConfigValue(ModId, "display.bigUI.columns.totalOffence", false);
