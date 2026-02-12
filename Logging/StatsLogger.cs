@@ -128,6 +128,7 @@ namespace StatsMod
                     lines.Add($"    Friendly Kills (PvP): {playerData.FriendlyKills}");
                     lines.Add($"    Deaths: {playerData.Deaths}");
                     lines.Add($"    Lava Deaths: {playerData.LavaDeaths}");
+                    lines.Add($"    Astral Returns: {playerData.AstralReturns}");
 
                     // Deaths per map breakdown
                     if (playerData.DeathsPerMap != null && playerData.DeathsPerMap.Any())

@@ -43,7 +43,6 @@ namespace StatsMod
         {
             playerTracker = PlayerTracker.Instance;
             enemiesTracker = EnemiesTracker.Instance;
-            Logger.LogInfo("Game session manager initialized");
         }
 
         #region Session Lifecycle
@@ -81,7 +80,6 @@ namespace StatsMod
             painLevel = -1;
             UIManager.ClearTitlesForNewGame();
 
-            Logger.LogInfo($"{mode} session started");
         }
 
         public void StopSurvivalSession()
@@ -179,7 +177,6 @@ namespace StatsMod
             if (string.IsNullOrEmpty(mapName)) return;
 
             mapsPlayed.Add(mapName);
-            Logger.LogInfo($"Map recorded: {mapName}");
         }
 
         public void RecordPerk(string perkName)
@@ -188,7 +185,6 @@ namespace StatsMod
             if (string.IsNullOrEmpty(perkName)) return;
 
             perksChosen.Add(perkName);
-            Logger.LogInfo($"Perk recorded: {perkName}");
         }
 
         public void RecordPainLevel()
@@ -225,7 +221,6 @@ namespace StatsMod
             if (clutchPlayer != null)
             {
                 playerTracker.IncrementWaveClutch(clutchPlayer);
-                Logger.LogInfo($"Wave clutch recorded for player");
             }
         }
 

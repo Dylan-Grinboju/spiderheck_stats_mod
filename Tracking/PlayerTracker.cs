@@ -39,6 +39,7 @@ namespace StatsMod
             public int KillsWhileSolo { get; set; }
             public int FriendlyKills { get; set; }
             public int WaveClutches { get; set; }
+            public int AstralReturns { get; set; }
             public int EnemyShieldsTakenDown { get; set; }
             public int FriendlyShieldsHit { get; set; }
             public int ShieldsLost { get; set; }
@@ -75,6 +76,7 @@ namespace StatsMod
                 KillsWhileSolo = 0;
                 FriendlyKills = 0;
                 WaveClutches = 0;
+                AstralReturns = 0;
                 EnemyShieldsTakenDown = 0;
                 FriendlyShieldsHit = 0;
                 ShieldsLost = 0;
@@ -311,6 +313,7 @@ namespace StatsMod
                 if (playerInput != null && activePlayers.TryGetValue(playerInput, out PlayerData data))
                 {
                     data.Deaths--;
+                    data.AstralReturns++;
 
                     // Undo death on the current map
                     string currentMap = GameSessionManager.Instance.CurrentMapName;
@@ -341,6 +344,7 @@ namespace StatsMod
                 entry.Value.KillsWhileSolo = 0;
                 entry.Value.FriendlyKills = 0;
                 entry.Value.WaveClutches = 0;
+                entry.Value.AstralReturns = 0;
                 entry.Value.EnemyShieldsTakenDown = 0;
                 entry.Value.FriendlyShieldsHit = 0;
                 entry.Value.ShieldsLost = 0;
