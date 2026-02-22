@@ -148,6 +148,19 @@ namespace StatsMod
             isAnimating = false;
             hasAnimationPlayed = false;
         }
+
+        public void ResetRevealAnimationForCurrentTitles()
+        {
+            if (!TitlesManager.Instance.HasGameEndedTitles || TitlesManager.Instance.TitleCount == 0)
+            {
+                return;
+            }
+
+            isAnimating = false;
+            hasAnimationPlayed = false;
+            titlesToShow = 0;
+            animationTimer = 0f;
+        }
         #endregion
 
         #region Animation
@@ -256,7 +269,11 @@ namespace StatsMod
 
             GUILayout.BeginArea(backgroundRect);
 
-            GUILayout.Label("Titles", headerStyle);
+            bool showingPreviousSessionTitles = GameSessionManager.Instance.IsActive &&
+                                               TitlesManager.Instance.HasGameEndedTitles &&
+                                               TitlesManager.Instance.TitleCount > 0;
+            string headerText = showingPreviousSessionTitles ? "Titles - Last Session" : "Titles";
+            GUILayout.Label(headerText, headerStyle);
             GUILayout.Space(UIManager.ScaleValue(40f));
 
             if (!TitlesManager.Instance.HasGameEndedTitles || TitlesManager.Instance.TitleCount == 0)

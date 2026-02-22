@@ -104,6 +104,22 @@ namespace StatsMod
         }
     }
 
+    [HarmonyPatch(typeof(HudController), "Restart")]
+    public class HudControllerRestartPatch
+    {
+        static void Prefix()
+        {
+            try
+            {
+                GameSessionManager.Instance.MarkRestartRequested();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error in HudController.Restart patch: {ex.Message}");
+            }
+        }
+    }
+
     #endregion
 
     #region Lobby Transition Hooks
@@ -117,18 +133,15 @@ namespace StatsMod
             {
                 if (scene.name.Equals("Lobby"))
                 {
-                    bool isVersus = GameSessionManager.Instance.LastGameMode == GameMode.Versus;
-                    bool isSurvivalWithNoTitles = GameSessionManager.Instance.LastGameMode == GameMode.Survival && TitlesManager.Instance.TitleCount == 0;
+                    bool hasPendingTitles = TitlesManager.Instance.HasGameEndedTitles && TitlesManager.Instance.TitleCount > 0;
 
-                    if (isVersus || isSurvivalWithNoTitles)
+                    if (hasPendingTitles)
                     {
-                        Logger.LogInfo($"Returned to lobby from {GameSessionManager.Instance.LastGameMode}, showing BigUI");
-                        UIManager.AutoPullHUD();
+                        UIManager.AutoShowTitles(true);
                     }
                     else
                     {
-                        Logger.LogInfo("Returned to lobby with pending titles, showing TitlesUI");
-                        UIManager.AutoShowTitles();
+                        UIManager.AutoPullHUD();
                     }
                 }
             }

@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEngine.InputSystem;
-using Silk;
 using Logger = Silk.Logger;
 
 namespace StatsMod
@@ -33,6 +31,8 @@ namespace StatsMod
         private readonly List<string> mapsPlayed = new List<string>();
         private readonly List<string> perksChosen = new List<string>();
         private int painLevel = -1;
+        private bool restartRequested = false;
+        private bool pauseAfterRestartOnNextSessionStart = false;
 
         public bool IsActive => isSurvivalActive || isVersusActive;
         public GameMode CurrentGameMode => currentGameMode;
@@ -78,7 +78,18 @@ namespace StatsMod
             mapsPlayed.Clear();
             perksChosen.Clear();
             painLevel = -1;
-            UIManager.ClearTitlesForNewGame();
+
+            bool keepEndOfGameTitlesVisible = pauseAfterRestartOnNextSessionStart &&
+                                             TitlesManager.Instance.HasGameEndedTitles &&
+                                             TitlesManager.Instance.TitleCount > 0;
+
+            UIManager.OnGameSessionStarted(keepEndOfGameTitlesVisible);
+
+            if (pauseAfterRestartOnNextSessionStart)
+            {
+                UIManager.PauseGameLikeEscDelayed(3f);
+                pauseAfterRestartOnNextSessionStart = false;
+            }
 
         }
 
@@ -128,9 +139,36 @@ namespace StatsMod
                 StatsLogger.Instance.LogGameStats(statsSnapshot);
             }
 
+            int playerCount = statsSnapshot.ActivePlayers?.Count ?? 0;
+            bool shouldShowTitles = ModConfig.TitlesEnabled &&
+                                    playerCount > 1 &&
+                                    TitlesManager.Instance.HasGameEndedTitles &&
+                                    TitlesManager.Instance.TitleCount > 0;
+
+            if (shouldShowTitles)
+            {
+                UIManager.AutoShowTitles();
+            }
+            else
+            {
+                UIManager.AutoPullHUD();
+            }
+
+            if (restartRequested && shouldShowTitles)
+            {
+                pauseAfterRestartOnNextSessionStart = true;
+            }
+
+            restartRequested = false;
+
             lastGameMode = currentGameMode;
             currentGameMode = GameMode.None;
             Logger.LogInfo($"{mode} session stopped. Duration: {TimeFormatUtils.FormatTimeSpan(sessionTime)}");
+        }
+
+        public void MarkRestartRequested()
+        {
+            restartRequested = true;
         }
 
         #endregion
