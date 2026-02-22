@@ -720,6 +720,8 @@ namespace StatsMod
             bool hasMostLavaDeaths = leaders.MostLavaDeaths.Value.LavaDeaths > 0;
             bool hasMostKillsWhileAirborne = leaders.MostKillsWhileAirborne.Value.KillsWhileAirborne > 0;
             bool hasMaxKillStreak = leaders.MaxKillStreak.Value.MaxKillStreak > 0;
+            bool hasMaxKillStreakWhileSolo = leaders.MaxKillStreakWhileSolo.Value.MaxKillStreakWhileSolo > 0;
+            bool hasMostAstralReturns = leaders.MostAstralReturns.Value.AstralReturns > 0;
 
             if (hasMostOffense && hasHighestPoint && TitleBuilder.SamePlayer(leaders.MostOffense, leaders.HighestPoint))
             {
@@ -1014,7 +1016,6 @@ namespace StatsMod
                     .Build());
             }
 
-            bool hasMostAstralReturns = leaders.MostAstralReturns.Value.AstralReturns > 0;
             bool hasMostDeaths = leaders.MostDeaths.Value.Deaths > 0;
 
             if (hasMostAstralReturns && hasMostDeaths && TitleBuilder.SamePlayer(leaders.MostAstralReturns, leaders.MostDeaths))
@@ -1024,6 +1025,52 @@ namespace StatsMod
                     .AndLeader(Req.MostDeaths)
                     .WithName("Second Chances")
                     .WithDescription($"Most Astral Returns ({leaders.MostAstralReturns.Value.AstralReturns})\nMost Deaths ({leaders.MostDeaths.Value.Deaths})")
+                    .WithPriority(defaultPriority)
+                    .Build());
+            }
+
+            if (hasMaxKillStreakWhileSolo && hasMostGunsKills && TitleBuilder.SamePlayer(leaders.MaxKillStreakWhileSolo, leaders.MostGunsKills))
+            {
+                var gunKills = guns["Shotgun"] + guns["RailShot"] + guns["DeathRay"] + guns["EnergyBall"] + guns["Laser Cannon"] + guns["SawDisc"];
+
+                titles.Add(new TitleBuilder(leaders)
+                    .ForLeader(l => l.MaxKillStreakWhileSolo, Req.MaxKillStreakWhileSolo)
+                    .AndLeader(Req.MostGunsKills)
+                    .WithName("Guns Blazing")
+                    .WithDescription($"Max Kill Streak While Solo ({leaders.MaxKillStreakWhileSolo.Value.MaxKillStreakWhileSolo})\nMost Gun Kills ({gunKills})")
+                    .WithPriority(defaultPriority)
+                    .Build());
+            }
+
+            if (hasMaxKillStreakWhileSolo && hasMostAstralReturns && TitleBuilder.SamePlayer(leaders.MaxKillStreakWhileSolo, leaders.MostAstralReturns))
+            {
+                titles.Add(new TitleBuilder(leaders)
+                    .ForLeader(l => l.MaxKillStreakWhileSolo, Req.MaxKillStreakWhileSolo)
+                    .AndLeader(Req.MostAstralReturns)
+                    .WithName("Came to Finish the Job")
+                    .WithDescription($"Max Kill Streak While Solo ({leaders.MaxKillStreakWhileSolo.Value.MaxKillStreakWhileSolo})\nMost Astral Returns ({leaders.MostAstralReturns.Value.AstralReturns})")
+                    .WithPriority(defaultPriority)
+                    .Build());
+            }
+
+            if (hasMostAirborneTime && TitleBuilder.SamePlayer(leaders.LeastLavaDeaths, leaders.MostAirborneTime))
+            {
+                titles.Add(new TitleBuilder(leaders)
+                    .ForLeader(l => l.LeastLavaDeaths, Req.LeastLavaDeaths)
+                    .AndLeader(Req.MostAirborneTime)
+                    .WithName("Defying Gravity")
+                    .WithDescription($"Least Lava Deaths ({leaders.LeastLavaDeaths.Value.LavaDeaths})\nMost Airborne Time ({leaders.MostAirborneTime.Value.AirborneTime.TotalSeconds:F1}s)")
+                    .WithPriority(defaultPriority)
+                    .Build());
+            }
+
+            if (hasMostAstralReturns && TitleBuilder.SamePlayer(leaders.LeastLavaDeaths, leaders.MostAstralReturns))
+            {
+                titles.Add(new TitleBuilder(leaders)
+                    .ForLeader(l => l.LeastLavaDeaths, Req.LeastLavaDeaths)
+                    .AndLeader(Req.MostAstralReturns)
+                    .WithName("Phoenix")
+                    .WithDescription($"Least Lava Deaths ({leaders.LeastLavaDeaths.Value.LavaDeaths})\nMost Astral Returns ({leaders.MostAstralReturns.Value.AstralReturns})")
                     .WithPriority(defaultPriority)
                     .Build());
             }
