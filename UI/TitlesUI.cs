@@ -1,8 +1,5 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
-using Silk;
 using Logger = Silk.Logger;
-using System;
 using System.Collections.Generic;
 
 namespace StatsMod

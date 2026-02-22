@@ -166,6 +166,7 @@ namespace StatsMod
     {
         private static readonly Lazy<TitlesManager> _lazy = new Lazy<TitlesManager>(() => new TitlesManager());
         public static TitlesManager Instance => _lazy.Value;
+        private const int MaxDisplayedTitles = 8;
 
         private List<TitleEntry> currentTitles = new List<TitleEntry>();
         private bool hasGameEndedTitles = false;
@@ -219,11 +220,113 @@ namespace StatsMod
             }
             BalanceTitlePriorities();
 
-            currentTitles = currentTitles.OrderByDescending(t => t.Priority).ToList();
+            currentTitles = SelectTopAndShuffleTitles(currentTitles, MaxDisplayedTitles);
 
             hasGameEndedTitles = currentTitles.Count > 0;
             Logger.LogInfo($"Calculated {currentTitles.Count} titles for {players.Count} players");
             OnTitlesUpdated?.Invoke();
+        }
+
+        private List<TitleEntry> SelectTopAndShuffleTitles(List<TitleEntry> titles, int maxTitles)
+        {
+            var orderedTitles = titles
+                .OrderByDescending(t => t.Priority)
+                .ToList();
+
+            var selectedTitles = orderedTitles
+                .Take(maxTitles)
+                .ToList();
+
+            var remainingTitles = orderedTitles
+                .Skip(selectedTitles.Count)
+                .ToList();
+
+            RedistributeTitlesByCountGap(selectedTitles, remainingTitles, orderedTitles);
+
+            if (selectedTitles.Count <= 1)
+            {
+                return selectedTitles;
+            }
+
+            var random = new System.Random();
+            for (int i = selectedTitles.Count - 1; i > 0; i--)
+            {
+                int swapIndex = random.Next(i + 1);
+                (selectedTitles[i], selectedTitles[swapIndex]) = (selectedTitles[swapIndex], selectedTitles[i]);
+            }
+
+            return selectedTitles;
+        }
+
+        private void RedistributeTitlesByCountGap(List<TitleEntry> selectedTitles, List<TitleEntry> remainingTitles, List<TitleEntry> allTitles)
+        {
+            var players = allTitles
+                .Select(t => t.Player)
+                .Where(p => p != null)
+                .Distinct()
+                .ToList();
+
+            if (players.Count < 2)
+            {
+                return;
+            }
+
+            while (true)
+            {
+                var countsByPlayer = players.ToDictionary(
+                    player => player,
+                    player => selectedTitles.Count(t => t.Player == player));
+
+                var highestCounts = countsByPlayer
+                    .OrderByDescending(kvp => kvp.Value)
+                    .ToList();
+
+                var lowestCounts = countsByPlayer
+                    .OrderBy(kvp => kvp.Value)
+                    .ToList();
+
+                if (highestCounts.Count < 2 || lowestCounts.Count < 2)
+                {
+                    return;
+                }
+
+                int topGap = highestCounts[0].Value - highestCounts[1].Value;
+                int bottomGap = lowestCounts[1].Value - lowestCounts[0].Value;
+
+                if (topGap <= 1 || bottomGap <= 1)
+                {
+                    return;
+                }
+
+                var topPlayer = highestCounts[0].Key;
+                var bottomPlayer = lowestCounts[0].Key;
+
+                if (topPlayer == bottomPlayer)
+                {
+                    return;
+                }
+
+                var titleToRemove = selectedTitles
+                    .Where(t => t.Player == topPlayer)
+                    .OrderBy(t => t.Priority)
+                    .FirstOrDefault();
+
+                var replacementTitle = remainingTitles
+                    .Where(t => t.Player == bottomPlayer)
+                    .OrderByDescending(t => t.Priority)
+                    .FirstOrDefault();
+
+                if (titleToRemove == null || replacementTitle == null)
+                {
+                    return;
+                }
+
+                selectedTitles.Remove(titleToRemove);
+                remainingTitles.Remove(replacementTitle);
+
+                selectedTitles.Add(replacementTitle);
+                remainingTitles.Add(titleToRemove);
+            }
         }
 
         private StatLeaders CalculateStatLeaders(List<KeyValuePair<PlayerInput, PlayerTracker.PlayerData>> players)
