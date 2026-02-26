@@ -137,7 +137,7 @@ namespace StatsMod
 
                     if (hasPendingTitles)
                     {
-                        UIManager.AutoShowTitles(true);
+                        UIManager.AutoShowTitles(animate: true);
                     }
                     else
                     {

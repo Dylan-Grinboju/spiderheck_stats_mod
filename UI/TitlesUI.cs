@@ -71,6 +71,7 @@ namespace StatsMod
         private void UpdateTitlesCache()
         {
             _cachedTitles = TitlesManager.Instance.CurrentTitles;
+            hasAnimationPlayed = false;
         }
 
         private void CreateTextures()

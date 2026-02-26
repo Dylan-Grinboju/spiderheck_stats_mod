@@ -145,18 +145,14 @@ namespace StatsMod
                                     TitlesManager.Instance.HasGameEndedTitles &&
                                     TitlesManager.Instance.TitleCount > 0;
 
-            if (shouldShowTitles)
+            if (shouldShowTitles && restartRequested)
             {
-                UIManager.AutoShowTitles();
+                UIManager.AutoShowTitles(animate: false);
+                pauseAfterRestartOnNextSessionStart = true;
             }
-            else
+            else if (!shouldShowTitles)
             {
                 UIManager.AutoPullHUD();
-            }
-
-            if (restartRequested && shouldShowTitles)
-            {
-                pauseAfterRestartOnNextSessionStart = true;
             }
 
             restartRequested = false;

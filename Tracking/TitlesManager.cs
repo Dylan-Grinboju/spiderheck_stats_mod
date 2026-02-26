@@ -271,7 +271,9 @@ namespace StatsMod
                 return;
             }
 
-            while (true)
+            int maxIterations = selectedTitles.Count + remainingTitles.Count;
+            int iterations = 0;
+            while (iterations++ < maxIterations)
             {
                 var countsByPlayer = players.ToDictionary(
                     player => player,

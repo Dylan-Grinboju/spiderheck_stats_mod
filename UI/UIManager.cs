@@ -535,19 +535,23 @@ namespace StatsMod
             Instance.currentUIState = UIState.BigUI;
         }
 
-        public static void AutoShowTitles(bool forceReplayAnimation = false)
+        public static void AutoShowTitles(bool animate = true)
         {
             if (!ModConfig.TitlesEnabled) return;
             if (Instance == null) return;
 
-            if (forceReplayAnimation)
-            {
-                Instance.titlesUI?.ResetRevealAnimationForCurrentTitles();
-            }
-
             Instance.HideSmallUI();
             Instance.HideBigUI();
-            Instance.ShowTitlesUI();
+
+            if (animate)
+            {
+                Instance.ShowTitlesUI();
+            }
+            else
+            {
+                Instance.ShowTitlesUIWithoutAnimation();
+            }
+
             Instance.currentUIState = UIState.TitlesUI;
         }
 
