@@ -166,6 +166,7 @@ namespace StatsMod
     {
         private static readonly Lazy<TitlesManager> _lazy = new Lazy<TitlesManager>(() => new TitlesManager());
         public static TitlesManager Instance => _lazy.Value;
+        private const int MaxDisplayedTitles = 8;
 
         private List<TitleEntry> currentTitles = new List<TitleEntry>();
         private bool hasGameEndedTitles = false;
@@ -219,11 +220,115 @@ namespace StatsMod
             }
             BalanceTitlePriorities();
 
-            currentTitles = currentTitles.OrderByDescending(t => t.Priority).ToList();
+            currentTitles = SelectTopAndShuffleTitles(currentTitles, MaxDisplayedTitles);
 
             hasGameEndedTitles = currentTitles.Count > 0;
             Logger.LogInfo($"Calculated {currentTitles.Count} titles for {players.Count} players");
             OnTitlesUpdated?.Invoke();
+        }
+
+        private List<TitleEntry> SelectTopAndShuffleTitles(List<TitleEntry> titles, int maxTitles)
+        {
+            var orderedTitles = titles
+                .OrderByDescending(t => t.Priority)
+                .ToList();
+
+            var selectedTitles = orderedTitles
+                .Take(maxTitles)
+                .ToList();
+
+            var remainingTitles = orderedTitles
+                .Skip(selectedTitles.Count)
+                .ToList();
+
+            RedistributeTitlesByCountGap(selectedTitles, remainingTitles, orderedTitles);
+
+            if (selectedTitles.Count <= 1)
+            {
+                return selectedTitles;
+            }
+
+            var random = new System.Random();
+            for (int i = selectedTitles.Count - 1; i > 0; i--)
+            {
+                int swapIndex = random.Next(i + 1);
+                (selectedTitles[i], selectedTitles[swapIndex]) = (selectedTitles[swapIndex], selectedTitles[i]);
+            }
+
+            return selectedTitles;
+        }
+
+        private void RedistributeTitlesByCountGap(List<TitleEntry> selectedTitles, List<TitleEntry> remainingTitles, List<TitleEntry> allTitles)
+        {
+            var players = allTitles
+                .Select(t => t.Player)
+                .Where(p => p != null)
+                .Distinct()
+                .ToList();
+
+            if (players.Count < 2)
+            {
+                return;
+            }
+
+            int maxIterations = selectedTitles.Count + remainingTitles.Count;
+            int iterations = 0;
+            while (iterations++ < maxIterations)
+            {
+                var countsByPlayer = players.ToDictionary(
+                    player => player,
+                    player => selectedTitles.Count(t => t.Player == player));
+
+                var highestCounts = countsByPlayer
+                    .OrderByDescending(kvp => kvp.Value)
+                    .ToList();
+
+                var lowestCounts = countsByPlayer
+                    .OrderBy(kvp => kvp.Value)
+                    .ToList();
+
+                if (highestCounts.Count < 2 || lowestCounts.Count < 2)
+                {
+                    return;
+                }
+
+                int topGap = highestCounts[0].Value - highestCounts[1].Value;
+                int bottomGap = lowestCounts[1].Value - lowestCounts[0].Value;
+
+                if (topGap <= 1 || bottomGap <= 1)
+                {
+                    return;
+                }
+
+                var topPlayer = highestCounts[0].Key;
+                var bottomPlayer = lowestCounts[0].Key;
+
+                if (topPlayer == bottomPlayer)
+                {
+                    return;
+                }
+
+                var titleToRemove = selectedTitles
+                    .Where(t => t.Player == topPlayer)
+                    .OrderBy(t => t.Priority)
+                    .FirstOrDefault();
+
+                var replacementTitle = remainingTitles
+                    .Where(t => t.Player == bottomPlayer)
+                    .OrderByDescending(t => t.Priority)
+                    .FirstOrDefault();
+
+                if (titleToRemove == null || replacementTitle == null)
+                {
+                    return;
+                }
+
+                selectedTitles.Remove(titleToRemove);
+                remainingTitles.Remove(replacementTitle);
+
+                selectedTitles.Add(replacementTitle);
+                remainingTitles.Add(titleToRemove);
+            }
         }
 
         private StatLeaders CalculateStatLeaders(List<KeyValuePair<PlayerInput, PlayerTracker.PlayerData>> players)
@@ -617,6 +722,8 @@ namespace StatsMod
             bool hasMostLavaDeaths = leaders.MostLavaDeaths.Value.LavaDeaths > 0;
             bool hasMostKillsWhileAirborne = leaders.MostKillsWhileAirborne.Value.KillsWhileAirborne > 0;
             bool hasMaxKillStreak = leaders.MaxKillStreak.Value.MaxKillStreak > 0;
+            bool hasMaxKillStreakWhileSolo = leaders.MaxKillStreakWhileSolo.Value.MaxKillStreakWhileSolo > 0;
+            bool hasMostAstralReturns = leaders.MostAstralReturns.Value.AstralReturns > 0;
 
             if (hasMostOffense && hasHighestPoint && TitleBuilder.SamePlayer(leaders.MostOffense, leaders.HighestPoint))
             {
@@ -911,7 +1018,6 @@ namespace StatsMod
                     .Build());
             }
 
-            bool hasMostAstralReturns = leaders.MostAstralReturns.Value.AstralReturns > 0;
             bool hasMostDeaths = leaders.MostDeaths.Value.Deaths > 0;
 
             if (hasMostAstralReturns && hasMostDeaths && TitleBuilder.SamePlayer(leaders.MostAstralReturns, leaders.MostDeaths))
@@ -921,6 +1027,52 @@ namespace StatsMod
                     .AndLeader(Req.MostDeaths)
                     .WithName("Second Chances")
                     .WithDescription($"Most Astral Returns ({leaders.MostAstralReturns.Value.AstralReturns})\nMost Deaths ({leaders.MostDeaths.Value.Deaths})")
+                    .WithPriority(defaultPriority)
+                    .Build());
+            }
+
+            if (hasMaxKillStreakWhileSolo && hasMostGunsKills && TitleBuilder.SamePlayer(leaders.MaxKillStreakWhileSolo, leaders.MostGunsKills))
+            {
+                var gunKills = guns["Shotgun"] + guns["RailShot"] + guns["DeathRay"] + guns["EnergyBall"] + guns["Laser Cannon"] + guns["SawDisc"];
+
+                titles.Add(new TitleBuilder(leaders)
+                    .ForLeader(l => l.MaxKillStreakWhileSolo, Req.MaxKillStreakWhileSolo)
+                    .AndLeader(Req.MostGunsKills)
+                    .WithName("Guns Blazing")
+                    .WithDescription($"Max Kill Streak While Solo ({leaders.MaxKillStreakWhileSolo.Value.MaxKillStreakWhileSolo})\nMost Gun Kills ({gunKills})")
+                    .WithPriority(defaultPriority)
+                    .Build());
+            }
+
+            if (hasMaxKillStreakWhileSolo && hasMostAstralReturns && TitleBuilder.SamePlayer(leaders.MaxKillStreakWhileSolo, leaders.MostAstralReturns))
+            {
+                titles.Add(new TitleBuilder(leaders)
+                    .ForLeader(l => l.MaxKillStreakWhileSolo, Req.MaxKillStreakWhileSolo)
+                    .AndLeader(Req.MostAstralReturns)
+                    .WithName("Came to Finish the Job")
+                    .WithDescription($"Max Kill Streak While Solo ({leaders.MaxKillStreakWhileSolo.Value.MaxKillStreakWhileSolo})\nMost Astral Returns ({leaders.MostAstralReturns.Value.AstralReturns})")
+                    .WithPriority(defaultPriority)
+                    .Build());
+            }
+
+            if (hasMostAirborneTime && TitleBuilder.SamePlayer(leaders.LeastLavaDeaths, leaders.MostAirborneTime))
+            {
+                titles.Add(new TitleBuilder(leaders)
+                    .ForLeader(l => l.LeastLavaDeaths, Req.LeastLavaDeaths)
+                    .AndLeader(Req.MostAirborneTime)
+                    .WithName("Defying Gravity")
+                    .WithDescription($"Least Lava Deaths ({leaders.LeastLavaDeaths.Value.LavaDeaths})\nMost Airborne Time ({leaders.MostAirborneTime.Value.AirborneTime.TotalSeconds:F1}s)")
+                    .WithPriority(defaultPriority)
+                    .Build());
+            }
+
+            if (hasMostAstralReturns && TitleBuilder.SamePlayer(leaders.LeastLavaDeaths, leaders.MostAstralReturns))
+            {
+                titles.Add(new TitleBuilder(leaders)
+                    .ForLeader(l => l.LeastLavaDeaths, Req.LeastLavaDeaths)
+                    .AndLeader(Req.MostAstralReturns)
+                    .WithName("Phoenix")
+                    .WithDescription($"Least Lava Deaths ({leaders.LeastLavaDeaths.Value.LavaDeaths})\nMost Astral Returns ({leaders.MostAstralReturns.Value.AstralReturns})")
                     .WithPriority(defaultPriority)
                     .Build());
             }

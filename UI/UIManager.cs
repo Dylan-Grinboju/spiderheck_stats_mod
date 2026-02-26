@@ -1,7 +1,7 @@
 using UnityEngine;
-using Silk;
 using Logger = Silk.Logger;
 using UnityEngine.InputSystem;
+using System.Collections;
 
 namespace StatsMod
 {
@@ -33,6 +33,7 @@ namespace StatsMod
         #region Controller Cycling State
         private UIState currentUIState = UIState.Off;
         private string cycleInput;
+        private Coroutine delayedPauseCoroutine;
         #endregion
 
         #region Shared Constants
@@ -220,6 +221,12 @@ namespace StatsMod
 
         private void CycleUIState()
         {
+            if (GameSessionManager.Instance.IsActive)
+            {
+                CycleUIStateInGame();
+                return;
+            }
+
             switch (currentUIState)
             {
                 case UIState.Off:
@@ -245,6 +252,31 @@ namespace StatsMod
                     HideSmallUI();
                     HideBigUI();
                     HideTitlesUI();
+                    break;
+            }
+        }
+
+        private void CycleUIStateInGame()
+        {
+            switch (currentUIState)
+            {
+                case UIState.Off:
+                    currentUIState = UIState.SmallUI;
+                    HideBigUI();
+                    HideTitlesUI();
+                    ShowSmallUI();
+                    break;
+                case UIState.SmallUI:
+                    currentUIState = UIState.Off;
+                    HideSmallUI();
+                    HideBigUI();
+                    HideTitlesUI();
+                    break;
+                default:
+                    currentUIState = UIState.SmallUI;
+                    HideBigUI();
+                    HideTitlesUI();
+                    ShowSmallUI();
                     break;
             }
         }
@@ -290,12 +322,6 @@ namespace StatsMod
             {
                 titlesUI.SkipAnimation();
                 return;
-            }
-
-            // If in a game, clear titles and show empty titles screen
-            if (GameSessionManager.Instance.IsActive)
-            {
-                titlesUI?.ClearTitlesForNewGame();
             }
 
             bool isTitlesVisible = titlesUI != null && titlesUI.IsVisible();
@@ -500,22 +526,102 @@ namespace StatsMod
         #region Public Interface for External Classes
         public static void AutoPullHUD()
         {
-            Instance?.ShowBigUI();
-            Instance?.HideSmallUI();
-            Instance?.HideTitlesUI();
+            if (Instance == null) return;
+
+
+            Instance.ShowBigUI();
+            Instance.HideSmallUI();
+            Instance.HideTitlesUI();
+            Instance.currentUIState = UIState.BigUI;
         }
 
-        public static void AutoShowTitles()
+        public static void AutoShowTitles(bool animate = true)
         {
             if (!ModConfig.TitlesEnabled) return;
-            Instance?.HideSmallUI();
-            Instance?.HideBigUI();
-            Instance?.ShowTitlesUI();
+            if (Instance == null) return;
+
+            Instance.HideSmallUI();
+            Instance.HideBigUI();
+
+            if (animate)
+            {
+                Instance.ShowTitlesUI();
+            }
+            else
+            {
+                Instance.ShowTitlesUIWithoutAnimation();
+            }
+
+            Instance.currentUIState = UIState.TitlesUI;
         }
 
         public static void ClearTitlesForNewGame()
         {
             Instance?.titlesUI?.ClearTitlesForNewGame();
+        }
+
+        public static void OnGameSessionStarted(bool preserveEndOfGameTitles = false)
+        {
+            if (Instance == null) return;
+
+
+            if (preserveEndOfGameTitles &&
+                Instance.currentUIState == UIState.TitlesUI &&
+                TitlesManager.Instance.HasGameEndedTitles &&
+                TitlesManager.Instance.TitleCount > 0)
+            {
+                return;
+            }
+
+            if (Instance.currentUIState == UIState.BigUI || Instance.currentUIState == UIState.TitlesUI)
+            {
+                Instance.HideBigUI();
+                Instance.HideTitlesUI();
+                Instance.ShowSmallUI();
+                Instance.currentUIState = UIState.SmallUI;
+            }
+        }
+
+        public static void PauseGameLikeEsc()
+        {
+            try
+            {
+                if (HudController.instance != null && !HudController.instance.paused)
+                {
+                    HudController.instance.Pause();
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Logger.LogWarning($"Failed to pause game through HudController: {ex.Message}");
+            }
+        }
+
+        public static void PauseGameLikeEscDelayed(float delaySeconds)
+        {
+            if (Instance == null)
+            {
+                PauseGameLikeEsc();
+                return;
+            }
+
+            if (Instance.delayedPauseCoroutine != null)
+            {
+                Instance.StopCoroutine(Instance.delayedPauseCoroutine);
+            }
+
+            Instance.delayedPauseCoroutine = Instance.StartCoroutine(Instance.PauseGameLikeEscAfterDelay(delaySeconds));
+        }
+
+        private IEnumerator PauseGameLikeEscAfterDelay(float delaySeconds)
+        {
+            if (delaySeconds > 0f)
+            {
+                yield return new WaitForSecondsRealtime(delaySeconds);
+            }
+
+            PauseGameLikeEsc();
+            delayedPauseCoroutine = null;
         }
         #endregion
     }

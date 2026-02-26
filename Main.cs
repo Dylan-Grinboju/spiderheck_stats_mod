@@ -2,7 +2,6 @@
 using Logger = Silk.Logger;
 using HarmonyLib;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Reflection;
@@ -10,7 +9,7 @@ using System.Reflection;
 namespace StatsMod
 {
     // SilkMod Attribute with the format: name, authors, mod version, silk version, and identifier
-    [SilkMod("Stats Mod", new string[] { "Dylan" }, "2.2.0", "0.7.0", "Stats_Mod", 1)]
+    [SilkMod("Stats Mod", new string[] { "Dylan" }, "2.2.1", "0.7.0", "Stats_Mod", 1)]
     public class StatsMod : SilkMod
     {
         public static StatsMod Instance { get; private set; }

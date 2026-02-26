@@ -1,8 +1,5 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
-using Silk;
 using Logger = Silk.Logger;
-using System;
 using System.Collections.Generic;
 
 namespace StatsMod
@@ -74,6 +71,7 @@ namespace StatsMod
         private void UpdateTitlesCache()
         {
             _cachedTitles = TitlesManager.Instance.CurrentTitles;
+            hasAnimationPlayed = false;
         }
 
         private void CreateTextures()
@@ -147,6 +145,19 @@ namespace StatsMod
             titlesToShow = 0;
             isAnimating = false;
             hasAnimationPlayed = false;
+        }
+
+        public void ResetRevealAnimationForCurrentTitles()
+        {
+            if (!TitlesManager.Instance.HasGameEndedTitles || TitlesManager.Instance.TitleCount == 0)
+            {
+                return;
+            }
+
+            isAnimating = false;
+            hasAnimationPlayed = false;
+            titlesToShow = 0;
+            animationTimer = 0f;
         }
         #endregion
 
@@ -256,7 +267,11 @@ namespace StatsMod
 
             GUILayout.BeginArea(backgroundRect);
 
-            GUILayout.Label("Titles", headerStyle);
+            bool showingPreviousSessionTitles = GameSessionManager.Instance.IsActive &&
+                                               TitlesManager.Instance.HasGameEndedTitles &&
+                                               TitlesManager.Instance.TitleCount > 0;
+            string headerText = showingPreviousSessionTitles ? "Titles - Last Session" : "Titles";
+            GUILayout.Label(headerText, headerStyle);
             GUILayout.Space(UIManager.ScaleValue(40f));
 
             if (!TitlesManager.Instance.HasGameEndedTitles || TitlesManager.Instance.TitleCount == 0)
