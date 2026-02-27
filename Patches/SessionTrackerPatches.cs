@@ -3,54 +3,44 @@ using HarmonyLib;
 using Silk;
 using Logger = Silk.Logger;
 
-namespace StatsMod
+namespace StatsMod;
+
+[HarmonyPatch(typeof(LevelController), "LoadLevelWithTransition")]
+public class LevelControllerLoadLevelPatch
 {
-    [HarmonyPatch(typeof(LevelController), "LoadLevelWithTransition")]
-    public class LevelControllerLoadLevelPatch
+    static void Postfix(LevelController __instance, GameLevel level)
     {
-        static void Postfix(LevelController __instance, GameLevel level)
+        try
         {
-            try
+            if (GameSessionManager.Instance.IsActive && level is not null)
             {
-                if (GameSessionManager.Instance.IsActive && level != null)
-                {
-                    // Use the localized label if available, otherwise the name
-                    string mapName = level.label;
-                    if (string.IsNullOrEmpty(mapName))
-                    {
-                        mapName = level.name;
-                    }
-                    GameSessionManager.Instance.RecordMap(mapName);
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"Error tracking map load: {ex.Message}");
+                string mapName = string.IsNullOrEmpty(level.label) ? level.name : level.label;
+                GameSessionManager.Instance.RecordMap(mapName);
             }
         }
-    }
-
-    [HarmonyPatch(typeof(SurvivalMode), "ChoosePerkAndLevel")]
-    public class SurvivalModeChoosePerkPatch
-    {
-        static void Prefix(SurvivalMode __instance, Modifier modifier)
+        catch (Exception ex)
         {
-            try
+            Logger.LogError($"Error tracking map load: {ex.Message}");
+        }
+    }
+}
+
+[HarmonyPatch(typeof(SurvivalMode), "ChoosePerkAndLevel")]
+public class SurvivalModeChoosePerkPatch
+{
+    static void Prefix(SurvivalMode __instance, Modifier modifier)
+    {
+        try
+        {
+            if (GameSessionManager.Instance.IsActive && modifier is not null && modifier.data is not null)
             {
-                if (GameSessionManager.Instance.IsActive && modifier != null && modifier.data != null)
-                {
-                    string perkName = modifier.data.title;
-                    if (string.IsNullOrEmpty(perkName))
-                    {
-                        perkName = modifier.data.key;
-                    }
-                    GameSessionManager.Instance.RecordPerk(perkName);
-                }
+                string perkName = string.IsNullOrEmpty(modifier.data.title) ? modifier.data.key : modifier.data.title;
+                GameSessionManager.Instance.RecordPerk(perkName);
             }
-            catch (Exception ex)
-            {
-                Logger.LogError($"Error tracking perk selection: {ex.Message}");
-            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError($"Error tracking perk selection: {ex.Message}");
         }
     }
 }

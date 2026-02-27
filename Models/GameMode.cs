@@ -1,9 +1,8 @@
-namespace StatsMod
+namespace StatsMod;
+
+public enum GameMode
 {
-    public enum GameMode
-    {
-        None,
-        Survival,
-        Versus
-    }
+    None,
+    Survival,
+    Versus
 }

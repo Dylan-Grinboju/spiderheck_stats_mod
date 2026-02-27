@@ -25,6 +25,9 @@
     <!-- Target Framework -->
     <TargetFramework>net472</TargetFramework>
 
+    <!-- Use latest C# language features -->
+    <LangVersion>latest</LangVersion>
+
   </PropertyGroup>
 
   <!-- Default Silk Version (can be overridden by build configuration) -->
