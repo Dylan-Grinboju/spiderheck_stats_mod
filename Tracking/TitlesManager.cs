@@ -450,11 +450,13 @@ public class TitlesManager
         }
     }
 
-    /// Processes titles registered by external mods, validating their requirements against the stats mod's conditions
+    /// <summary>
+    /// Processes titles registered by external mods, validating their native requirements against the stats mod's conditions
+    /// </summary>
     private void AddExternalTitles(List<TitleEntry> titles, Dictionary<string, StatCondition> conditions)
     {
         var externalTitles = StatsModApi.GetExternalTitles();
-        if (externalTitles == null || externalTitles.Count == 0) return;
+        if (externalTitles?.Count == 0) return;
 
         foreach (var extTitle in externalTitles)
         {
@@ -477,22 +479,34 @@ public class TitlesManager
 
         foreach (var req in title.Requirements)
         {
+            // Custom requirements from external mods won't be in `conditions`, 
+            // so we skip them here (we assume the external mod validated its own custom stats).
             if (!conditions.TryGetValue(req, out var cond))
                 continue;
 
+            // If a native requirement exists but wasn't achieved (> 0), reject the title.
             if (!cond.HasStat)
                 return (null, null, false);
 
+            // Dynamically assign the player from the *first* matched native requirement
             resolvedPlayer ??= cond.Leader.Key;
 
+            // Make sure all native requirements actually applied to the exact same player
             if (cond.Leader.Key != resolvedPlayer)
                 return (null, null, false);
 
             descriptions.Add(cond.FormattedDescription);
         }
 
+        // Check if we still don't have a player after checking all requirements.
+        // This handles the edge case where:
+        // 1. The external mod didn't explicitly request a player (title.Player was null)
+        // 2. All of the title's requirements were custom (so it skipped every loop iteration above).
         if (resolvedPlayer == null)
+        {
+            Logger.LogWarning($"ValidateExternalRequirements: Failed to resolve player for title '{title.TitleName}'. If a title uses entirely custom requirements, you must explicitly provide the 'leader' parameter when registering it through StatsModApi.");
             return (null, null, false);
+        }
 
         return (resolvedPlayer, descriptions, true);
     }
