@@ -246,16 +246,23 @@ namespace StatsMod
                 lines.Add("");
             }
 
-            // Add perks chosen section
-            if (statsSnapshot.PerksChosen != null && statsSnapshot.PerksChosen.Any())
+        if (statsSnapshot.PerksChosen is not null && statsSnapshot.PerksChosen.Any())
+        {
+            lines.Add("PERKS CHOSEN:");
+            foreach (var perk in statsSnapshot.PerksChosen)
             {
-                lines.Add("PERKS CHOSEN:");
-                foreach (var perk in statsSnapshot.PerksChosen)
-                {
-                    lines.Add($"  - {perk}");
-                }
-                lines.Add("");
+                lines.Add($"  - {perk}");
             }
+            lines.Add("");
+        }
+
+        var externalStats = StatsModApi.GetExternalStats();
+        if (externalStats != null && externalStats.Count > 0)
+        {
+            lines.Add("EXTERNAL MOD STATISTICS:");
+            lines.AddRange(externalStats);
+            lines.Add("");
+        }
 
             lines.Add("=".PadRight(60, '='));
             lines.Add("End of Statistics Report");
