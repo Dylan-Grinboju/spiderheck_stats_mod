@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace StatsMod;
+
 public class TitleEntry(KeyValuePair<PlayerInput, PlayerTracker.PlayerData> playerData)
 {
     public string TitleName { get; set; }
@@ -177,6 +178,8 @@ public class TitlesManager
         var conditions = GetStatConditions(leaders);
 
         AddTitles(currentTitles, leaders, conditions);
+
+        AddExternalTitles(currentTitles, conditions);
 
         RemoveDominatedTitles();
 
@@ -447,6 +450,74 @@ public class TitlesManager
         }
     }
 
+    /// Processes titles registered by external mods, validating their requirements against the stats mod's conditions
+    private void AddExternalTitles(List<TitleEntry> titles, Dictionary<string, StatCondition> conditions)
+    {
+        var externalTitles = StatsModApi.GetExternalTitles();
+        if (externalTitles == null || externalTitles.Count == 0) return;
+
+        foreach (var extTitle in externalTitles)
+        {
+            var (player, descriptions, valid) = ValidateExternalRequirements(extTitle, conditions);
+            if (!valid) continue;
+
+            if (extTitle.Player == null)
+                ResolvePlayerInfo(extTitle, player);
+
+            AppendDescriptions(extTitle, descriptions);
+            titles.Add(extTitle);
+        }
+    }
+
+    private (PlayerInput player, List<string> descriptions, bool valid) ValidateExternalRequirements(
+        TitleEntry title, Dictionary<string, StatCondition> conditions)
+    {
+        PlayerInput resolvedPlayer = title.Player;
+        var descriptions = new List<string>();
+
+        foreach (var req in title.Requirements)
+        {
+            if (!conditions.TryGetValue(req, out var cond))
+                continue;
+
+            if (!cond.HasStat)
+                return (null, null, false);
+
+            resolvedPlayer ??= cond.Leader.Key;
+
+            if (cond.Leader.Key != resolvedPlayer)
+                return (null, null, false);
+
+            descriptions.Add(cond.FormattedDescription);
+        }
+
+        if (resolvedPlayer == null)
+            return (null, null, false);
+
+        return (resolvedPlayer, descriptions, true);
+    }
+
+    private void ResolvePlayerInfo(TitleEntry title, PlayerInput player)
+    {
+        title.Player = player;
+        var activePlayers = PlayerTracker.Instance.GetActivePlayers();
+        if (activePlayers.TryGetValue(player, out var pData))
+        {
+            title.PlayerName = pData.PlayerName;
+            title.PrimaryColor = pData.PlayerColor;
+            title.SecondaryColor = pData.SecondaryColor;
+        }
+    }
+
+    private void AppendDescriptions(TitleEntry title, List<string> newParts)
+    {
+        if (newParts == null || newParts.Count == 0) return;
+
+        string baseDesc = string.Join("\n", newParts);
+        title.Description = string.IsNullOrEmpty(title.Description)
+            ? baseDesc
+            : title.Description + "\n" + baseDesc;
+    }
 
     private class StatCondition(string requirementName, KeyValuePair<PlayerInput, PlayerTracker.PlayerData> leader, bool hasStat, string formattedDescription)
     {

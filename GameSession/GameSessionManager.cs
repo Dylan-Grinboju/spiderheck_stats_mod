@@ -73,6 +73,7 @@ public class GameSessionManager
         playerTracker.ResetPlayerStats();
         enemiesTracker.ResetEnemiesKilled();
         playerTracker.StartAllAliveTimers();
+        StatsModApi.ClearExternalData();
 
         lastGameTitles.Clear();
         mapsPlayed.Clear();
