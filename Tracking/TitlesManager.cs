@@ -7,16 +7,24 @@ using System.Linq;
 
 namespace StatsMod;
 
-public class TitleEntry(KeyValuePair<PlayerInput, PlayerTracker.PlayerData> playerData)
+public class TitleEntry
 {
+    public TitleEntry(KeyValuePair<PlayerInput, PlayerTracker.PlayerData> playerData)
+    {
+        PlayerName = playerData.Value.PlayerName;
+        PrimaryColor = playerData.Value.PlayerColor;
+        SecondaryColor = playerData.Value.SecondaryColor;
+        Player = playerData.Key;
+    }
+
     public string TitleName { get; set; }
     public string Description { get; set; }
-    public string PlayerName { get; set; } = playerData.Value.PlayerName;
-    public Color PrimaryColor { get; set; } = playerData.Value.PlayerColor;
-    public Color SecondaryColor { get; set; } = playerData.Value.SecondaryColor;
-    public PlayerInput Player { get; set; } = playerData.Key;
+    public string PlayerName { get; set; }
+    public Color PrimaryColor { get; set; }
+    public Color SecondaryColor { get; set; }
+    public PlayerInput Player { get; set; }
     public int Priority { get; set; }
-    public HashSet<string> Requirements { get; set; } = [];
+    public HashSet<string> Requirements { get; set; } = new HashSet<string>();
 }
 
     public class TitleBuilder
@@ -163,7 +171,7 @@ public class TitleEntry(KeyValuePair<PlayerInput, PlayerTracker.PlayerData> play
         private List<TitleEntry> currentTitles = new List<TitleEntry>();
         private bool hasGameEndedTitles = false;
 
-    public List<TitleEntry> CurrentTitles => [.. currentTitles];
+    public List<TitleEntry> CurrentTitles => currentTitles.ToList();
     public bool HasGameEndedTitles => hasGameEndedTitles;
     public int TitleCount => currentTitles.Count;
     public event Action OnTitlesUpdated;
@@ -538,12 +546,20 @@ public class TitleEntry(KeyValuePair<PlayerInput, PlayerTracker.PlayerData> play
             : title.Description + "\n" + baseDesc;
     }
 
-    private class StatCondition(string requirementName, KeyValuePair<PlayerInput, PlayerTracker.PlayerData> leader, bool hasStat, string formattedDescription)
+    private class StatCondition
     {
-        public string RequirementName { get; } = requirementName;
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> Leader { get; } = leader;
-        public bool HasStat { get; } = hasStat;
-        public string FormattedDescription { get; } = formattedDescription;
+        public StatCondition(string requirementName, KeyValuePair<PlayerInput, PlayerTracker.PlayerData> leader, bool hasStat, string formattedDescription)
+        {
+            RequirementName = requirementName;
+            Leader = leader;
+            HasStat = hasStat;
+            FormattedDescription = formattedDescription;
+        }
+
+        public string RequirementName { get; }
+        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> Leader { get; }
+        public bool HasStat { get; }
+        public string FormattedDescription { get; }
     }
 
     private Dictionary<string, StatCondition> GetStatConditions(StatLeaders leaders)

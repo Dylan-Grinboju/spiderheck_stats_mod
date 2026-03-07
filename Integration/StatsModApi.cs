@@ -11,6 +11,7 @@ namespace StatsMod;
 /// </summary>
 public static class StatsModApi
 {
+    private static readonly object _syncRoot = new();
     private static readonly List<string> externalStatLines = new();
     private static readonly List<TitleEntry> externalTitles = new();
 
@@ -21,7 +22,12 @@ public static class StatsModApi
     public static void RegisterCustomStats(List<string> lines)
     {
         if (lines == null || lines.Count == 0) return;
-        externalStatLines.AddRange(lines);
+        
+        lock (_syncRoot)
+        {
+            externalStatLines.AddRange(lines);
+        }
+        
         Logger.LogInfo($"StatsModApi: Registered {lines.Count} external stat lines");
     }
 
@@ -74,16 +80,34 @@ public static class StatsModApi
             Logger.LogInfo($"StatsModApi: Registered title '{titleName}' (player will be resolved from requirements)");
         }
 
-        externalTitles.Add(title);
+        lock (_syncRoot)
+        {
+            externalTitles.Add(title);
+        }
     }
 
-    public static List<string> GetExternalStats() => new(externalStatLines);
+    public static List<string> GetExternalStats()
+    {
+        lock (_syncRoot)
+        {
+            return new List<string>(externalStatLines);
+        }
+    }
 
-    public static List<TitleEntry> GetExternalTitles() => new(externalTitles);
+    public static List<TitleEntry> GetExternalTitles()
+    {
+        lock (_syncRoot)
+        {
+            return new List<TitleEntry>(externalTitles);
+        }
+    }
 
     public static void ClearExternalData()
     {
-        externalStatLines.Clear();
-        externalTitles.Clear();
+        lock (_syncRoot)
+        {
+            externalStatLines.Clear();
+            externalTitles.Clear();
+        }
     }
 }
