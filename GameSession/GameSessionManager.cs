@@ -128,11 +128,12 @@ namespace StatsMod
             GameStatsSnapshot statsSnapshot = GetStatsSnapshot();
 
             TitlesManager.Instance.CalculateAndStoreTitles(statsSnapshot);
+            statsSnapshot.Titles = TitlesManager.Instance.AllTitles;
+
             var titlesUI = UIManager.Instance?.GetTitlesUI();
             if (titlesUI != null)
             {
                 lastGameTitles = titlesUI.GetCurrentTitles();
-                statsSnapshot.Titles = lastGameTitles;
             }
 
             if (ModConfig.SaveStatsToFile)

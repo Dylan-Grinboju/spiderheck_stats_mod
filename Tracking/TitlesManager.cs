@@ -169,9 +169,11 @@ public class TitleEntry
         private const int MaxDisplayedTitles = 8;
 
         private List<TitleEntry> currentTitles = new List<TitleEntry>();
+        private List<TitleEntry> allTitles = new List<TitleEntry>();
         private bool hasGameEndedTitles = false;
 
     public List<TitleEntry> CurrentTitles => currentTitles.ToList();
+    public List<TitleEntry> AllTitles => allTitles.ToList();
     public bool HasGameEndedTitles => hasGameEndedTitles;
     public int TitleCount => currentTitles.Count;
     public event Action OnTitlesUpdated;
@@ -179,6 +181,7 @@ public class TitleEntry
         public void CalculateAndStoreTitles(GameStatsSnapshot snapshot)
         {
             currentTitles.Clear();
+            allTitles.Clear();
 
             if (snapshot?.ActivePlayers == null || snapshot.ActivePlayers.Count <= 1)
             {
@@ -209,6 +212,8 @@ public class TitleEntry
                 }
             }
             BalanceTitlePriorities();
+
+            allTitles = currentTitles.OrderByDescending(t => t.Priority).ToList();
 
             currentTitles = SelectTopAndShuffleTitles(currentTitles, MaxDisplayedTitles);
 
@@ -406,6 +411,7 @@ public class TitleEntry
         public void ClearTitles()
         {
             currentTitles.Clear();
+            allTitles.Clear();
             hasGameEndedTitles = false;
             OnTitlesUpdated?.Invoke();
         }
