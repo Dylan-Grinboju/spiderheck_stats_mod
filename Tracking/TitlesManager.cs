@@ -9,12 +9,17 @@ namespace StatsMod;
 
 public class TitleEntry
 {
+    public TitleEntry() { }
+
     public TitleEntry(KeyValuePair<PlayerInput, PlayerTracker.PlayerData> playerData)
     {
-        PlayerName = playerData.Value.PlayerName;
-        PrimaryColor = playerData.Value.PlayerColor;
-        SecondaryColor = playerData.Value.SecondaryColor;
-        Player = playerData.Key;
+        if (playerData.Value != null)
+        {
+            PlayerName = playerData.Value.PlayerName;
+            PrimaryColor = playerData.Value.PlayerColor;
+            SecondaryColor = playerData.Value.SecondaryColor;
+            Player = playerData.Key;
+        }
     }
 
     public string TitleName { get; set; }

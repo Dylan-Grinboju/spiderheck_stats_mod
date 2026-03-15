@@ -22,12 +22,12 @@ public static class StatsModApi
     public static void RegisterCustomStats(List<string> lines)
     {
         if (lines == null || lines.Count == 0) return;
-        
+
         lock (_syncRoot)
         {
             externalStatLines.AddRange(lines);
         }
-        
+
         Logger.LogInfo($"StatsModApi: Registered {lines.Count} external stat lines");
     }
 
@@ -70,7 +70,7 @@ public static class StatsModApi
         }
         else
         {
-            title = new TitleEntry(default)
+            title = new TitleEntry()
             {
                 TitleName = titleName,
                 Description = description,
@@ -98,7 +98,17 @@ public static class StatsModApi
     {
         lock (_syncRoot)
         {
-            return new List<TitleEntry>(externalTitles);
+            return externalTitles.ConvertAll(t => new TitleEntry
+            {
+                TitleName = t.TitleName,
+                Description = t.Description,
+                PlayerName = t.PlayerName,
+                PrimaryColor = t.PrimaryColor,
+                SecondaryColor = t.SecondaryColor,
+                Player = t.Player,
+                Priority = t.Priority,
+                Requirements = t.Requirements != null ? new HashSet<string>(t.Requirements) : new HashSet<string>()
+            });
         }
     }
 

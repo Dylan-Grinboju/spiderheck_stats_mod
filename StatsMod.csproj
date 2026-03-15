@@ -216,6 +216,8 @@
     <Message Text="Generated version.txt with version $(Version)" Importance="high" />
   </Target>
 
+  <Import Project="ILRepack.targets" />
+
 </Project>
 
 
