@@ -32,150 +32,150 @@ public class TitleEntry
     public HashSet<string> Requirements { get; set; } = new HashSet<string>();
 }
 
-    public class TitleBuilder
+public class TitleBuilder
+{
+    private readonly StatLeaders _leaders;
+    private KeyValuePair<PlayerInput, PlayerTracker.PlayerData> _primaryLeader;
+    private readonly HashSet<string> _requirements = new HashSet<string>();
+    private string _titleName;
+    private string _description;
+    private int _priority;
+
+    public TitleBuilder(StatLeaders leaders)
     {
-        private readonly StatLeaders _leaders;
-        private KeyValuePair<PlayerInput, PlayerTracker.PlayerData> _primaryLeader;
-        private readonly HashSet<string> _requirements = new HashSet<string>();
-        private string _titleName;
-        private string _description;
-        private int _priority;
-
-        public TitleBuilder(StatLeaders leaders)
-        {
-            _leaders = leaders;
-        }
-
-        public TitleBuilder ForLeader(Func<StatLeaders, KeyValuePair<PlayerInput, PlayerTracker.PlayerData>> leaderSelector, string requirementName)
-        {
-            _primaryLeader = leaderSelector(_leaders);
-            _requirements.Add(requirementName);
-            return this;
-        }
-        public TitleBuilder AndLeader(string requirementName)
-        {
-            _requirements.Add(requirementName);
-            return this;
-        }
-
-        public TitleBuilder WithName(string name)
-        {
-            _titleName = name;
-            return this;
-        }
-
-        public TitleBuilder WithDescription(string description)
-        {
-            _description = description;
-            return this;
-        }
-
-        public TitleBuilder WithPriority(int priority)
-        {
-            _priority = priority;
-            return this;
-        }
-
-        public TitleEntry Build()
-        {
-            return new TitleEntry(_primaryLeader)
-            {
-                TitleName = _titleName,
-                Description = _description,
-                Priority = _priority,
-                Requirements = new HashSet<string>(_requirements)
-            };
-        }
-
-        public static bool SamePlayer(params KeyValuePair<PlayerInput, PlayerTracker.PlayerData>[] leaders)
-        {
-            if (leaders.Length == 0) return false;
-            var firstPlayer = leaders[0].Key;
-            return leaders.All(l => l.Key == firstPlayer);
-        }
+        _leaders = leaders;
     }
 
-    public static class Req
+    public TitleBuilder ForLeader(Func<StatLeaders, KeyValuePair<PlayerInput, PlayerTracker.PlayerData>> leaderSelector, string requirementName)
     {
-        public const string MostWebSwings = nameof(StatLeaders.MostWebSwings);
-        public const string LeastWebSwings = nameof(StatLeaders.LeastWebSwings);
-        public const string HighestPoint = nameof(StatLeaders.HighestPoint);
-        public const string LowestPoint = nameof(StatLeaders.LowestPoint);
-        public const string MostAirborneTime = nameof(StatLeaders.MostAirborneTime);
-        public const string LeastAirborneTime = nameof(StatLeaders.LeastAirborneTime);
-        public const string MostKillsWhileAirborne = nameof(StatLeaders.MostKillsWhileAirborne);
-        public const string MostKillsWhileSolo = nameof(StatLeaders.MostKillsWhileSolo);
-        public const string MostWaveClutches = nameof(StatLeaders.MostWaveClutches);
-        public const string MaxKillStreak = nameof(StatLeaders.MaxKillStreak);
-        public const string MaxKillStreakWhileSolo = nameof(StatLeaders.MaxKillStreakWhileSolo);
-        public const string MostAliveTime = nameof(StatLeaders.MostAliveTime);
-        public const string MostOffense = nameof(StatLeaders.MostOffense);
-        public const string LeastOffense = nameof(StatLeaders.LeastOffense);
-        public const string MostDamageTaken = nameof(StatLeaders.MostDamageTaken);
-        public const string LeastDamageTaken = nameof(StatLeaders.LeastDamageTaken);
-        public const string MostFriendlyFire = nameof(StatLeaders.MostFriendlyFire);
-        public const string LeastFriendlyFire = nameof(StatLeaders.LeastFriendlyFire);
-        public const string MostShieldsLost = nameof(StatLeaders.MostShieldsLost);
-        public const string LeastShieldsLost = nameof(StatLeaders.LeastShieldsLost);
-        public const string MostDeaths = nameof(StatLeaders.MostDeaths);
-        public const string LeastDeaths = nameof(StatLeaders.LeastDeaths);
-        public const string MostLavaDeaths = nameof(StatLeaders.MostLavaDeaths);
-        public const string LeastLavaDeaths = nameof(StatLeaders.LeastLavaDeaths);
-        public const string MostGunsKills = nameof(StatLeaders.MostGunsKills);
-        public const string MostExplosionsKills = nameof(StatLeaders.MostExplosionsKills);
-        public const string MostBladeKills = nameof(StatLeaders.MostBladeKills);
-        public const string MostHornetKills = nameof(StatLeaders.MostHornetKills);
-        public const string MostWhispKills = nameof(StatLeaders.MostWhispKills);
-        public const string MostKhepriKills = nameof(StatLeaders.MostKhepriKills);
-        public const string MostAstralReturns = nameof(StatLeaders.MostAstralReturns);
+        _primaryLeader = leaderSelector(_leaders);
+        _requirements.Add(requirementName);
+        return this;
+    }
+    public TitleBuilder AndLeader(string requirementName)
+    {
+        _requirements.Add(requirementName);
+        return this;
     }
 
-    public class StatLeaders
+    public TitleBuilder WithName(string name)
     {
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostWebSwings { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> LeastWebSwings { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> HighestPoint { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> LowestPoint { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostAirborneTime { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> LeastAirborneTime { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostKillsWhileAirborne { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostKillsWhileSolo { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostWaveClutches { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MaxKillStreak { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MaxKillStreakWhileSolo { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostAliveTime { get; set; }
-
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostOffense { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> LeastOffense { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostDamageTaken { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> LeastDamageTaken { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostFriendlyFire { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> LeastFriendlyFire { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostShieldsLost { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> LeastShieldsLost { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostDeaths { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> LeastDeaths { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostLavaDeaths { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> LeastLavaDeaths { get; set; }
-
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostGunsKills { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostExplosionsKills { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostBladeKills { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostHornetKills { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostWhispKills { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostKhepriKills { get; set; }
-        public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostAstralReturns { get; set; }
+        _titleName = name;
+        return this;
     }
 
-    public class TitlesManager
+    public TitleBuilder WithDescription(string description)
     {
-        private static readonly Lazy<TitlesManager> _lazy = new Lazy<TitlesManager>(() => new TitlesManager());
-        public static TitlesManager Instance => _lazy.Value;
-        private const int MaxDisplayedTitles = 8;
+        _description = description;
+        return this;
+    }
 
-        private List<TitleEntry> currentTitles = new List<TitleEntry>();
-        private List<TitleEntry> allTitles = new List<TitleEntry>();
-        private bool hasGameEndedTitles = false;
+    public TitleBuilder WithPriority(int priority)
+    {
+        _priority = priority;
+        return this;
+    }
+
+    public TitleEntry Build()
+    {
+        return new TitleEntry(_primaryLeader)
+        {
+            TitleName = _titleName,
+            Description = _description,
+            Priority = _priority,
+            Requirements = new HashSet<string>(_requirements)
+        };
+    }
+
+    public static bool SamePlayer(params KeyValuePair<PlayerInput, PlayerTracker.PlayerData>[] leaders)
+    {
+        if (leaders.Length == 0) return false;
+        var firstPlayer = leaders[0].Key;
+        return leaders.All(l => l.Key == firstPlayer);
+    }
+}
+
+public static class Req
+{
+    public const string MostWebSwings = nameof(StatLeaders.MostWebSwings);
+    public const string LeastWebSwings = nameof(StatLeaders.LeastWebSwings);
+    public const string HighestPoint = nameof(StatLeaders.HighestPoint);
+    public const string LowestPoint = nameof(StatLeaders.LowestPoint);
+    public const string MostAirborneTime = nameof(StatLeaders.MostAirborneTime);
+    public const string LeastAirborneTime = nameof(StatLeaders.LeastAirborneTime);
+    public const string MostKillsWhileAirborne = nameof(StatLeaders.MostKillsWhileAirborne);
+    public const string MostKillsWhileSolo = nameof(StatLeaders.MostKillsWhileSolo);
+    public const string MostWaveClutches = nameof(StatLeaders.MostWaveClutches);
+    public const string MaxKillStreak = nameof(StatLeaders.MaxKillStreak);
+    public const string MaxKillStreakWhileSolo = nameof(StatLeaders.MaxKillStreakWhileSolo);
+    public const string MostAliveTime = nameof(StatLeaders.MostAliveTime);
+    public const string MostOffense = nameof(StatLeaders.MostOffense);
+    public const string LeastOffense = nameof(StatLeaders.LeastOffense);
+    public const string MostDamageTaken = nameof(StatLeaders.MostDamageTaken);
+    public const string LeastDamageTaken = nameof(StatLeaders.LeastDamageTaken);
+    public const string MostFriendlyFire = nameof(StatLeaders.MostFriendlyFire);
+    public const string LeastFriendlyFire = nameof(StatLeaders.LeastFriendlyFire);
+    public const string MostShieldsLost = nameof(StatLeaders.MostShieldsLost);
+    public const string LeastShieldsLost = nameof(StatLeaders.LeastShieldsLost);
+    public const string MostDeaths = nameof(StatLeaders.MostDeaths);
+    public const string LeastDeaths = nameof(StatLeaders.LeastDeaths);
+    public const string MostLavaDeaths = nameof(StatLeaders.MostLavaDeaths);
+    public const string LeastLavaDeaths = nameof(StatLeaders.LeastLavaDeaths);
+    public const string MostGunsKills = nameof(StatLeaders.MostGunsKills);
+    public const string MostExplosionsKills = nameof(StatLeaders.MostExplosionsKills);
+    public const string MostBladeKills = nameof(StatLeaders.MostBladeKills);
+    public const string MostHornetKills = nameof(StatLeaders.MostHornetKills);
+    public const string MostWhispKills = nameof(StatLeaders.MostWhispKills);
+    public const string MostKhepriKills = nameof(StatLeaders.MostKhepriKills);
+    public const string MostAstralReturns = nameof(StatLeaders.MostAstralReturns);
+}
+
+public class StatLeaders
+{
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostWebSwings { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> LeastWebSwings { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> HighestPoint { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> LowestPoint { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostAirborneTime { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> LeastAirborneTime { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostKillsWhileAirborne { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostKillsWhileSolo { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostWaveClutches { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MaxKillStreak { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MaxKillStreakWhileSolo { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostAliveTime { get; set; }
+
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostOffense { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> LeastOffense { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostDamageTaken { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> LeastDamageTaken { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostFriendlyFire { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> LeastFriendlyFire { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostShieldsLost { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> LeastShieldsLost { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostDeaths { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> LeastDeaths { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostLavaDeaths { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> LeastLavaDeaths { get; set; }
+
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostGunsKills { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostExplosionsKills { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostBladeKills { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostHornetKills { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostWhispKills { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostKhepriKills { get; set; }
+    public KeyValuePair<PlayerInput, PlayerTracker.PlayerData> MostAstralReturns { get; set; }
+}
+
+public class TitlesManager
+{
+    private static readonly Lazy<TitlesManager> _lazy = new Lazy<TitlesManager>(() => new TitlesManager());
+    public static TitlesManager Instance => _lazy.Value;
+    private const int MaxDisplayedTitles = 8;
+
+    private List<TitleEntry> currentTitles = new List<TitleEntry>();
+    private List<TitleEntry> allTitles = new List<TitleEntry>();
+    private bool hasGameEndedTitles = false;
 
     public List<TitleEntry> CurrentTitles => currentTitles.ToList();
     public List<TitleEntry> AllTitles => allTitles.ToList();
@@ -183,16 +183,16 @@ public class TitleEntry
     public int TitleCount => currentTitles.Count;
     public event Action OnTitlesUpdated;
 
-        public void CalculateAndStoreTitles(GameStatsSnapshot snapshot)
-        {
-            currentTitles.Clear();
-            allTitles.Clear();
+    public void CalculateAndStoreTitles(GameStatsSnapshot snapshot)
+    {
+        currentTitles.Clear();
+        allTitles.Clear();
 
-            if (snapshot?.ActivePlayers == null || snapshot.ActivePlayers.Count <= 1)
-            {
-                hasGameEndedTitles = false;
-                return;
-            }
+        if (snapshot?.ActivePlayers == null || snapshot.ActivePlayers.Count <= 1)
+        {
+            hasGameEndedTitles = false;
+            return;
+        }
 
         var players = snapshot.ActivePlayers.ToList();
         var leaders = CalculateStatLeaders(players);
@@ -202,277 +202,277 @@ public class TitleEntry
 
         AddExternalTitles(currentTitles, conditions);
 
-            RemoveDominatedTitles();
+        RemoveDominatedTitles();
 
-            foreach (var player in players)
-            {
-                if (!currentTitles.Any(t => t.Player == player.Key))
-                {
-                    currentTitles.Add(new TitleEntry(player)
-                    {
-                        TitleName = "Average Joe",
-                        Description = "Participated",
-                        Priority = 100
-                    });
-                }
-            }
-            BalanceTitlePriorities();
-
-            allTitles = currentTitles.OrderByDescending(t => t.Priority).ToList();
-
-            currentTitles = SelectTopAndShuffleTitles(currentTitles, MaxDisplayedTitles);
-
-            hasGameEndedTitles = currentTitles.Count > 0;
-            Logger.LogInfo($"Calculated {currentTitles.Count} titles for {players.Count} players");
-            OnTitlesUpdated?.Invoke();
-        }
-
-        private List<TitleEntry> SelectTopAndShuffleTitles(List<TitleEntry> titles, int maxTitles)
+        foreach (var player in players)
         {
-            var orderedTitles = titles
-                .OrderByDescending(t => t.Priority)
-                .ToList();
-
-            var selectedTitles = orderedTitles
-                .Take(maxTitles)
-                .ToList();
-
-            var remainingTitles = orderedTitles
-                .Skip(selectedTitles.Count)
-                .ToList();
-
-            RedistributeTitlesByCountGap(selectedTitles, remainingTitles, orderedTitles);
-
-            if (selectedTitles.Count <= 1)
+            if (!currentTitles.Any(t => t.Player == player.Key))
             {
-                return selectedTitles;
+                currentTitles.Add(new TitleEntry(player)
+                {
+                    TitleName = "Average Joe",
+                    Description = "Participated",
+                    Priority = 100
+                });
             }
+        }
+        BalanceTitlePriorities();
 
-            var random = new System.Random();
-            for (int i = selectedTitles.Count - 1; i > 0; i--)
-            {
-                int swapIndex = random.Next(i + 1);
-                (selectedTitles[i], selectedTitles[swapIndex]) = (selectedTitles[swapIndex], selectedTitles[i]);
-            }
+        allTitles = currentTitles.OrderByDescending(t => t.Priority).ToList();
 
+        currentTitles = SelectTopAndShuffleTitles(currentTitles, MaxDisplayedTitles);
+
+        hasGameEndedTitles = currentTitles.Count > 0;
+        Logger.LogInfo($"Calculated {currentTitles.Count} titles for {players.Count} players");
+        OnTitlesUpdated?.Invoke();
+    }
+
+    private List<TitleEntry> SelectTopAndShuffleTitles(List<TitleEntry> titles, int maxTitles)
+    {
+        var orderedTitles = titles
+            .OrderByDescending(t => t.Priority)
+            .ToList();
+
+        var selectedTitles = orderedTitles
+            .Take(maxTitles)
+            .ToList();
+
+        var remainingTitles = orderedTitles
+            .Skip(selectedTitles.Count)
+            .ToList();
+
+        RedistributeTitlesByCountGap(selectedTitles, remainingTitles, orderedTitles);
+
+        if (selectedTitles.Count <= 1)
+        {
             return selectedTitles;
         }
 
-        private void RedistributeTitlesByCountGap(List<TitleEntry> selectedTitles, List<TitleEntry> remainingTitles, List<TitleEntry> allTitles)
+        var random = new System.Random();
+        for (int i = selectedTitles.Count - 1; i > 0; i--)
         {
-            var players = allTitles
-                .Select(t => t.Player)
-                .Where(p => p != null)
-                .Distinct()
+            int swapIndex = random.Next(i + 1);
+            (selectedTitles[i], selectedTitles[swapIndex]) = (selectedTitles[swapIndex], selectedTitles[i]);
+        }
+
+        return selectedTitles;
+    }
+
+    private void RedistributeTitlesByCountGap(List<TitleEntry> selectedTitles, List<TitleEntry> remainingTitles, List<TitleEntry> allTitles)
+    {
+        var players = allTitles
+            .Select(t => t.Player)
+            .Where(p => p != null)
+            .Distinct()
+            .ToList();
+
+        if (players.Count < 2)
+        {
+            return;
+        }
+
+        int maxIterations = selectedTitles.Count + remainingTitles.Count;
+        int iterations = 0;
+        while (iterations++ < maxIterations)
+        {
+            var countsByPlayer = players.ToDictionary(
+                player => player,
+                player => selectedTitles.Count(t => t.Player == player));
+
+            var highestCounts = countsByPlayer
+                .OrderByDescending(kvp => kvp.Value)
                 .ToList();
 
-            if (players.Count < 2)
+            var lowestCounts = countsByPlayer
+                .OrderBy(kvp => kvp.Value)
+                .ToList();
+
+            if (highestCounts.Count < 2 || lowestCounts.Count < 2)
             {
                 return;
             }
 
-            int maxIterations = selectedTitles.Count + remainingTitles.Count;
-            int iterations = 0;
-            while (iterations++ < maxIterations)
+            int topGap = highestCounts[0].Value - highestCounts[1].Value;
+            int bottomGap = lowestCounts[1].Value - lowestCounts[0].Value;
+
+            if (topGap <= 1 || bottomGap <= 1)
             {
-                var countsByPlayer = players.ToDictionary(
-                    player => player,
-                    player => selectedTitles.Count(t => t.Player == player));
-
-                var highestCounts = countsByPlayer
-                    .OrderByDescending(kvp => kvp.Value)
-                    .ToList();
-
-                var lowestCounts = countsByPlayer
-                    .OrderBy(kvp => kvp.Value)
-                    .ToList();
-
-                if (highestCounts.Count < 2 || lowestCounts.Count < 2)
-                {
-                    return;
-                }
-
-                int topGap = highestCounts[0].Value - highestCounts[1].Value;
-                int bottomGap = lowestCounts[1].Value - lowestCounts[0].Value;
-
-                if (topGap <= 1 || bottomGap <= 1)
-                {
-                    return;
-                }
-
-                var topPlayer = highestCounts[0].Key;
-                var bottomPlayer = lowestCounts[0].Key;
-
-                if (topPlayer == bottomPlayer)
-                {
-                    return;
-                }
-
-                var titleToRemove = selectedTitles
-                    .Where(t => t.Player == topPlayer)
-                    .OrderBy(t => t.Priority)
-                    .FirstOrDefault();
-
-                var replacementTitle = remainingTitles
-                    .Where(t => t.Player == bottomPlayer)
-                    .OrderByDescending(t => t.Priority)
-                    .FirstOrDefault();
-
-                if (titleToRemove == null || replacementTitle == null)
-                {
-                    return;
-                }
-
-                selectedTitles.Remove(titleToRemove);
-                remainingTitles.Remove(replacementTitle);
-
-                selectedTitles.Add(replacementTitle);
-                remainingTitles.Add(titleToRemove);
+                return;
             }
-        }
 
-        private StatLeaders CalculateStatLeaders(List<KeyValuePair<PlayerInput, PlayerTracker.PlayerData>> players)
-        {
-            var leaders = new StatLeaders();
+            var topPlayer = highestCounts[0].Key;
+            var bottomPlayer = lowestCounts[0].Key;
 
-            var swingsRanked = players.OrderByDescending(p => p.Value.WebSwings).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-            leaders.MostWebSwings = swingsRanked[0];
-            leaders.LeastWebSwings = swingsRanked[swingsRanked.Count - 1];
-
-            var altitudeRanked = players.OrderByDescending(p => p.Value.HighestPoint).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-            leaders.HighestPoint = altitudeRanked[0];
-            leaders.LowestPoint = altitudeRanked[altitudeRanked.Count - 1];
-
-            var airborneRanked = players.OrderByDescending(p => p.Value.AirborneTime).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-            leaders.MostAirborneTime = airborneRanked[0];
-            leaders.LeastAirborneTime = airborneRanked[airborneRanked.Count - 1];
-
-            var airborneKillsRanked = players.OrderByDescending(p => p.Value.KillsWhileAirborne).ThenByDescending(p => p.Value.Kills).ToList();
-            leaders.MostKillsWhileAirborne = airborneKillsRanked[0];
-
-            var soloKillsRanked = players.OrderByDescending(p => p.Value.KillsWhileSolo).ThenByDescending(p => p.Value.Kills).ToList();
-            leaders.MostKillsWhileSolo = soloKillsRanked[0];
-
-            var waveClutchesRanked = players.OrderByDescending(p => p.Value.WaveClutches).ThenByDescending(p => p.Value.Kills).ToList();
-            leaders.MostWaveClutches = waveClutchesRanked[0];
-
-            var streakRanked = players.OrderByDescending(p => p.Value.MaxKillStreak).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-            leaders.MaxKillStreak = streakRanked[0];
-
-            var streakWhileSoloRanked = players.OrderByDescending(p => p.Value.MaxKillStreakWhileSolo).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-            leaders.MaxKillStreakWhileSolo = streakWhileSoloRanked[0];
-
-            var aliveTimeRanked = players.OrderByDescending(p => p.Value.TotalAliveTime).ToList();
-            leaders.MostAliveTime = aliveTimeRanked[0];
-
-            var offenseRanked = players.OrderByDescending(p => p.Value.Kills + p.Value.EnemyShieldsTakenDown).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-            leaders.MostOffense = offenseRanked[0];
-            leaders.LeastOffense = offenseRanked[offenseRanked.Count - 1];
-
-            var damageTakenRanked = players.OrderByDescending(p => p.Value.Deaths + p.Value.ShieldsLost).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-            leaders.MostDamageTaken = damageTakenRanked[0];
-            leaders.LeastDamageTaken = damageTakenRanked[damageTakenRanked.Count - 1];
-
-            var friendlyFireRanked = players.OrderByDescending(p => p.Value.FriendlyKills + p.Value.FriendlyShieldsHit).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-            leaders.MostFriendlyFire = friendlyFireRanked[0];
-            leaders.LeastFriendlyFire = friendlyFireRanked[friendlyFireRanked.Count - 1];
-
-            var shieldsLostRanked = players.OrderByDescending(p => p.Value.ShieldsLost).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-            leaders.MostShieldsLost = shieldsLostRanked[0];
-            leaders.LeastShieldsLost = shieldsLostRanked[shieldsLostRanked.Count - 1];
-
-            var deathsRanked = players.OrderByDescending(p => p.Value.Deaths).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-            leaders.MostDeaths = deathsRanked[0];
-            leaders.LeastDeaths = deathsRanked[deathsRanked.Count - 1];
-
-            var lavaDeathsRanked = players.OrderByDescending(p => p.Value.LavaDeaths).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-            leaders.MostLavaDeaths = lavaDeathsRanked[0];
-            leaders.LeastLavaDeaths = lavaDeathsRanked[lavaDeathsRanked.Count - 1];
-
-            var gunsRanked = players.OrderByDescending(p => p.Value.WeaponHits["Shotgun"] + p.Value.WeaponHits["RailShot"] + p.Value.WeaponHits["DeathRay"] + p.Value.WeaponHits["EnergyBall"] + p.Value.WeaponHits["Laser Cannon"] + p.Value.WeaponHits["SawDisc"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-            leaders.MostGunsKills = gunsRanked[0];
-
-            var explosionsRanked = players.OrderByDescending(p => p.Value.WeaponHits["Explosions"] + p.Value.WeaponHits["Laser Cube"] + p.Value.WeaponHits["DeathCube"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-            leaders.MostExplosionsKills = explosionsRanked[0];
-
-            var bladeRanked = players.OrderByDescending(p => p.Value.WeaponHits["Particle Blade"] + p.Value.WeaponHits["KhepriStaff"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-            leaders.MostBladeKills = bladeRanked[0];
-
-            var hornetsRanked = players.OrderByDescending(p => p.Value.EnemyKills["Hornet"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-            leaders.MostHornetKills = hornetsRanked[0];
-
-            var whispsRanked = players.OrderByDescending(p => p.Value.EnemyKills["Whisp"] + p.Value.EnemyKills["Power Whisp"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-            leaders.MostWhispKills = whispsRanked[0];
-
-            var kheprisRanked = players.OrderByDescending(p => p.Value.EnemyKills["Khepri"] + p.Value.EnemyKills["Power Khepri"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-            leaders.MostKhepriKills = kheprisRanked[0];
-
-            var astralReturnsRanked = players.OrderByDescending(p => p.Value.AstralReturns).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-            leaders.MostAstralReturns = astralReturnsRanked[0];
-
-            return leaders;
-        }
-
-        public void ClearTitles()
-        {
-            currentTitles.Clear();
-            allTitles.Clear();
-            hasGameEndedTitles = false;
-            OnTitlesUpdated?.Invoke();
-        }
-
-
-        private void RemoveDominatedTitles()
-        {
-            var titlesByPlayer = currentTitles.GroupBy(t => t.Player);
-            var toRemove = new HashSet<TitleEntry>();
-
-            foreach (var playerTitles in titlesByPlayer)
+            if (topPlayer == bottomPlayer)
             {
-                // Sort titles by requirement count (descending) for optimization
-                // Titles with more requirements can only dominate titles with fewer requirements
-                var titles = playerTitles.OrderByDescending(t => t.Requirements.Count).ToList();
+                return;
+            }
 
-                for (int i = 0; i < titles.Count; i++)
+            var titleToRemove = selectedTitles
+                .Where(t => t.Player == topPlayer)
+                .OrderBy(t => t.Priority)
+                .FirstOrDefault();
+
+            var replacementTitle = remainingTitles
+                .Where(t => t.Player == bottomPlayer)
+                .OrderByDescending(t => t.Priority)
+                .FirstOrDefault();
+
+            if (titleToRemove == null || replacementTitle == null)
+            {
+                return;
+            }
+
+            selectedTitles.Remove(titleToRemove);
+            remainingTitles.Remove(replacementTitle);
+
+            selectedTitles.Add(replacementTitle);
+            remainingTitles.Add(titleToRemove);
+        }
+    }
+
+    private StatLeaders CalculateStatLeaders(List<KeyValuePair<PlayerInput, PlayerTracker.PlayerData>> players)
+    {
+        var leaders = new StatLeaders();
+
+        var swingsRanked = players.OrderByDescending(p => p.Value.WebSwings).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+        leaders.MostWebSwings = swingsRanked[0];
+        leaders.LeastWebSwings = swingsRanked[swingsRanked.Count - 1];
+
+        var altitudeRanked = players.OrderByDescending(p => p.Value.HighestPoint).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+        leaders.HighestPoint = altitudeRanked[0];
+        leaders.LowestPoint = altitudeRanked[altitudeRanked.Count - 1];
+
+        var airborneRanked = players.OrderByDescending(p => p.Value.AirborneTime).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+        leaders.MostAirborneTime = airborneRanked[0];
+        leaders.LeastAirborneTime = airborneRanked[airborneRanked.Count - 1];
+
+        var airborneKillsRanked = players.OrderByDescending(p => p.Value.KillsWhileAirborne).ThenByDescending(p => p.Value.Kills).ToList();
+        leaders.MostKillsWhileAirborne = airborneKillsRanked[0];
+
+        var soloKillsRanked = players.OrderByDescending(p => p.Value.KillsWhileSolo).ThenByDescending(p => p.Value.Kills).ToList();
+        leaders.MostKillsWhileSolo = soloKillsRanked[0];
+
+        var waveClutchesRanked = players.OrderByDescending(p => p.Value.WaveClutches).ThenByDescending(p => p.Value.Kills).ToList();
+        leaders.MostWaveClutches = waveClutchesRanked[0];
+
+        var streakRanked = players.OrderByDescending(p => p.Value.MaxKillStreak).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+        leaders.MaxKillStreak = streakRanked[0];
+
+        var streakWhileSoloRanked = players.OrderByDescending(p => p.Value.MaxKillStreakWhileSolo).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+        leaders.MaxKillStreakWhileSolo = streakWhileSoloRanked[0];
+
+        var aliveTimeRanked = players.OrderByDescending(p => p.Value.TotalAliveTime).ToList();
+        leaders.MostAliveTime = aliveTimeRanked[0];
+
+        var offenseRanked = players.OrderByDescending(p => p.Value.Kills + p.Value.EnemyShieldsTakenDown).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+        leaders.MostOffense = offenseRanked[0];
+        leaders.LeastOffense = offenseRanked[offenseRanked.Count - 1];
+
+        var damageTakenRanked = players.OrderByDescending(p => p.Value.Deaths + p.Value.ShieldsLost).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+        leaders.MostDamageTaken = damageTakenRanked[0];
+        leaders.LeastDamageTaken = damageTakenRanked[damageTakenRanked.Count - 1];
+
+        var friendlyFireRanked = players.OrderByDescending(p => p.Value.FriendlyKills + p.Value.FriendlyShieldsHit).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+        leaders.MostFriendlyFire = friendlyFireRanked[0];
+        leaders.LeastFriendlyFire = friendlyFireRanked[friendlyFireRanked.Count - 1];
+
+        var shieldsLostRanked = players.OrderByDescending(p => p.Value.ShieldsLost).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+        leaders.MostShieldsLost = shieldsLostRanked[0];
+        leaders.LeastShieldsLost = shieldsLostRanked[shieldsLostRanked.Count - 1];
+
+        var deathsRanked = players.OrderByDescending(p => p.Value.Deaths).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+        leaders.MostDeaths = deathsRanked[0];
+        leaders.LeastDeaths = deathsRanked[deathsRanked.Count - 1];
+
+        var lavaDeathsRanked = players.OrderByDescending(p => p.Value.LavaDeaths).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+        leaders.MostLavaDeaths = lavaDeathsRanked[0];
+        leaders.LeastLavaDeaths = lavaDeathsRanked[lavaDeathsRanked.Count - 1];
+
+        var gunsRanked = players.OrderByDescending(p => p.Value.WeaponHits["Shotgun"] + p.Value.WeaponHits["RailShot"] + p.Value.WeaponHits["DeathRay"] + p.Value.WeaponHits["EnergyBall"] + p.Value.WeaponHits["Laser Cannon"] + p.Value.WeaponHits["SawDisc"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+        leaders.MostGunsKills = gunsRanked[0];
+
+        var explosionsRanked = players.OrderByDescending(p => p.Value.WeaponHits["Explosions"] + p.Value.WeaponHits["Laser Cube"] + p.Value.WeaponHits["DeathCube"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+        leaders.MostExplosionsKills = explosionsRanked[0];
+
+        var bladeRanked = players.OrderByDescending(p => p.Value.WeaponHits["Particle Blade"] + p.Value.WeaponHits["KhepriStaff"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+        leaders.MostBladeKills = bladeRanked[0];
+
+        var hornetsRanked = players.OrderByDescending(p => p.Value.EnemyKills["Hornet"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+        leaders.MostHornetKills = hornetsRanked[0];
+
+        var whispsRanked = players.OrderByDescending(p => p.Value.EnemyKills["Whisp"] + p.Value.EnemyKills["Power Whisp"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+        leaders.MostWhispKills = whispsRanked[0];
+
+        var kheprisRanked = players.OrderByDescending(p => p.Value.EnemyKills["Khepri"] + p.Value.EnemyKills["Power Khepri"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+        leaders.MostKhepriKills = kheprisRanked[0];
+
+        var astralReturnsRanked = players.OrderByDescending(p => p.Value.AstralReturns).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+        leaders.MostAstralReturns = astralReturnsRanked[0];
+
+        return leaders;
+    }
+
+    public void ClearTitles()
+    {
+        currentTitles.Clear();
+        allTitles.Clear();
+        hasGameEndedTitles = false;
+        OnTitlesUpdated?.Invoke();
+    }
+
+
+    private void RemoveDominatedTitles()
+    {
+        var titlesByPlayer = currentTitles.GroupBy(t => t.Player);
+        var toRemove = new HashSet<TitleEntry>();
+
+        foreach (var playerTitles in titlesByPlayer)
+        {
+            // Sort titles by requirement count (descending) for optimization
+            // Titles with more requirements can only dominate titles with fewer requirements
+            var titles = playerTitles.OrderByDescending(t => t.Requirements.Count).ToList();
+
+            for (int i = 0; i < titles.Count; i++)
+            {
+                if (toRemove.Contains(titles[i]))
+                    continue;
+
+                var currentRequirementCount = titles[i].Requirements.Count;
+
+                for (int j = 0; j < i; j++)
                 {
-                    if (toRemove.Contains(titles[i]))
-                        continue;
+                    if (titles[j].Requirements.Count <= currentRequirementCount)
+                        break;
 
-                    var currentRequirementCount = titles[i].Requirements.Count;
-
-                    for (int j = 0; j < i; j++)
+                    if (titles[i].Requirements.IsSubsetOf(titles[j].Requirements))
                     {
-                        if (titles[j].Requirements.Count <= currentRequirementCount)
-                            break;
-
-                        if (titles[i].Requirements.IsSubsetOf(titles[j].Requirements))
-                        {
-                            toRemove.Add(titles[i]);
-                            break;
-                        }
+                        toRemove.Add(titles[i]);
+                        break;
                     }
                 }
             }
-
-            currentTitles.RemoveAll(t => toRemove.Contains(t));
         }
 
-        // To prevent one player from dominating all titles due to sheer number of categories,
-        // we increase the priority of titles held by other players. Makes it more fun.
-        private void BalanceTitlePriorities()
+        currentTitles.RemoveAll(t => toRemove.Contains(t));
+    }
+
+    // To prevent one player from dominating all titles due to sheer number of categories,
+    // we increase the priority of titles held by other players. Makes it more fun.
+    private void BalanceTitlePriorities()
+    {
+        var titlesByPlayer = currentTitles.GroupBy(t => t.Player)
+                                          .ToDictionary(g => g.Key, g => g.Count());
+
+        foreach (var title in currentTitles)
         {
-            var titlesByPlayer = currentTitles.GroupBy(t => t.Player)
-                                              .ToDictionary(g => g.Key, g => g.Count());
+            int otherPlayersTitleCount = titlesByPlayer
+                .Where(kvp => kvp.Key != title.Player)
+                .Sum(kvp => kvp.Value);
 
-            foreach (var title in currentTitles)
-            {
-                int otherPlayersTitleCount = titlesByPlayer
-                    .Where(kvp => kvp.Key != title.Player)
-                    .Sum(kvp => kvp.Value);
-
-                title.Priority += otherPlayersTitleCount * 5;
-            }
+            title.Priority += otherPlayersTitleCount * 5;
         }
+    }
 
     /// <summary>
     /// Processes titles registered by external mods, validating their native requirements against the stats mod's conditions
@@ -480,7 +480,7 @@ public class TitleEntry
     private void AddExternalTitles(List<TitleEntry> titles, Dictionary<string, StatCondition> conditions)
     {
         var externalTitles = StatsModApi.GetExternalTitles();
-        if (externalTitles?.Count == 0) return;
+        if (externalTitles == null || externalTitles.Count == 0) return;
 
         foreach (var extTitle in externalTitles)
         {
