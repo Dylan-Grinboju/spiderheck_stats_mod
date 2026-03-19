@@ -586,14 +586,14 @@ public class TitlesManager
         Add(Req.LeastWebSwings, leaders.LeastWebSwings, true, $"Least Web Swings ({leaders.LeastWebSwings.Value.WebSwings})");
         Add(Req.HighestPoint, leaders.HighestPoint, leaders.HighestPoint.Value.HighestPoint > 0, $"Highest Point ({leaders.HighestPoint.Value.HighestPoint:F1}m)");
         Add(Req.LowestPoint, leaders.LowestPoint, true, $"Lowest Point ({leaders.LowestPoint.Value.HighestPoint:F1}m)");
-        Add(Req.MostAirborneTime, leaders.MostAirborneTime, leaders.MostAirborneTime.Value.AirborneTime > TimeSpan.Zero, $"Most Airborne Time ({leaders.MostAirborneTime.Value.AirborneTime.TotalSeconds:F1}s)");
-        Add(Req.LeastAirborneTime, leaders.LeastAirborneTime, true, $"Least Airborne Time ({leaders.LeastAirborneTime.Value.AirborneTime.TotalSeconds:F1}s)");
+        Add(Req.MostAirborneTime, leaders.MostAirborneTime, leaders.MostAirborneTime.Value.AirborneTime > 0f, $"Most Airborne Time ({leaders.MostAirborneTime.Value.AirborneTime:F1}s)");
+        Add(Req.LeastAirborneTime, leaders.LeastAirborneTime, true, $"Least Airborne Time ({leaders.LeastAirborneTime.Value.AirborneTime:F1}s)");
         Add(Req.MostKillsWhileAirborne, leaders.MostKillsWhileAirborne, leaders.MostKillsWhileAirborne.Value.KillsWhileAirborne > 0, $"Most Kills While Airborne ({leaders.MostKillsWhileAirborne.Value.KillsWhileAirborne})");
         Add(Req.MostKillsWhileSolo, leaders.MostKillsWhileSolo, leaders.MostKillsWhileSolo.Value.KillsWhileSolo > 0, $"Most Kills While Solo ({leaders.MostKillsWhileSolo.Value.KillsWhileSolo})");
         Add(Req.MostWaveClutches, leaders.MostWaveClutches, leaders.MostWaveClutches.Value.WaveClutches > 0, $"Most Wave Clutches ({leaders.MostWaveClutches.Value.WaveClutches})");
         Add(Req.MaxKillStreak, leaders.MaxKillStreak, leaders.MaxKillStreak.Value.MaxKillStreak > 0, $"Max Kill Streak ({leaders.MaxKillStreak.Value.MaxKillStreak})");
         Add(Req.MaxKillStreakWhileSolo, leaders.MaxKillStreakWhileSolo, leaders.MaxKillStreakWhileSolo.Value.MaxKillStreakWhileSolo > 0, $"Max Kill Streak While Solo ({leaders.MaxKillStreakWhileSolo.Value.MaxKillStreakWhileSolo})");
-        Add(Req.MostAliveTime, leaders.MostAliveTime, leaders.MostAliveTime.Value.TotalAliveTime > TimeSpan.Zero, $"Most Alive Time ({leaders.MostAliveTime.Value.TotalAliveTime.TotalSeconds:F1}s)");
+        Add(Req.MostAliveTime, leaders.MostAliveTime, leaders.MostAliveTime.Value.TotalAliveTime > 0f, $"Most Alive Time ({leaders.MostAliveTime.Value.TotalAliveTime:F1}s)");
 
         long mostOffenseVal = leaders.MostOffense.Value.Kills + leaders.MostOffense.Value.EnemyShieldsTakenDown;
         Add(Req.MostOffense, leaders.MostOffense, mostOffenseVal > 0, $"Most Offense ({mostOffenseVal})");

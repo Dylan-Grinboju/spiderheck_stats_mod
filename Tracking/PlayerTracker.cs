@@ -48,17 +48,17 @@ namespace StatsMod
             public int KillStreakWhileSolo { get; set; }
             public int MaxKillStreakWhileSolo { get; set; }
             public string PlayerName { get; set; }
-            public DateTime JoinTime { get; set; }
+            public float JoinTime { get; set; }
             public Color PlayerColor { get; set; }
-            public DateTime? CurrentAliveStartTime { get; set; }
-            public TimeSpan TotalAliveTime { get; set; }
+            public float? CurrentAliveStartTime { get; set; }
+            public float TotalAliveTime { get; set; }
             public bool WasAliveWhenPaused { get; set; }
             public int WebSwings { get; set; }
-            public TimeSpan WebSwingTime { get; set; }
-            public DateTime? CurrentWebSwingStartTime { get; set; }
+            public float WebSwingTime { get; set; }
+            public float? CurrentWebSwingStartTime { get; set; }
             public bool WasSwingingWhenPaused { get; set; }
-            public TimeSpan AirborneTime { get; set; }
-            public DateTime? CurrentAirborneStartTime { get; set; }
+            public float AirborneTime { get; set; }
+            public float? CurrentAirborneStartTime { get; set; }
             public bool WasAirborneWhenPaused { get; set; }
             public float HighestPoint { get; set; }
             public Color SecondaryColor { get; set; }
@@ -85,16 +85,16 @@ namespace StatsMod
                 KillStreakWhileSolo = 0;
                 MaxKillStreakWhileSolo = 0;
                 PlayerName = name;
-                JoinTime = DateTime.Now;
+                JoinTime = Time.unscaledTime;
                 PlayerColor = Color.white;
                 CurrentAliveStartTime = null;
-                TotalAliveTime = TimeSpan.Zero;
+                TotalAliveTime = 0f;
                 WasAliveWhenPaused = false;
                 WebSwings = 0;
-                WebSwingTime = TimeSpan.Zero;
+                WebSwingTime = 0f;
                 CurrentWebSwingStartTime = null;
                 WasSwingingWhenPaused = false;
-                AirborneTime = TimeSpan.Zero;
+                AirborneTime = 0f;
                 CurrentAirborneStartTime = null;
                 WasAirborneWhenPaused = false;
                 HighestPoint = 0;
@@ -135,34 +135,34 @@ namespace StatsMod
             {
                 if (CurrentAliveStartTime.HasValue)
                 {
-                    return TotalAliveTime + (DateTime.Now - CurrentAliveStartTime.Value);
+                    return TimeSpan.FromSeconds(TotalAliveTime + (Time.unscaledTime - CurrentAliveStartTime.Value));
                 }
-                return TotalAliveTime;
+                return TimeSpan.FromSeconds(TotalAliveTime);
             }
 
             public TimeSpan GetCurrentWebSwingTime()
             {
                 if (CurrentWebSwingStartTime.HasValue)
                 {
-                    return WebSwingTime + (DateTime.Now - CurrentWebSwingStartTime.Value);
+                    return TimeSpan.FromSeconds(WebSwingTime + (Time.unscaledTime - CurrentWebSwingStartTime.Value));
                 }
-                return WebSwingTime;
+                return TimeSpan.FromSeconds(WebSwingTime);
             }
 
             public TimeSpan GetCurrentAirborneTime()
             {
                 if (CurrentAirborneStartTime.HasValue)
                 {
-                    return AirborneTime + (DateTime.Now - CurrentAirborneStartTime.Value);
+                    return TimeSpan.FromSeconds(AirborneTime + (Time.unscaledTime - CurrentAirborneStartTime.Value));
                 }
-                return AirborneTime;
+                return TimeSpan.FromSeconds(AirborneTime);
             }
 
             public void StopAliveTimer()
             {
                 if (CurrentAliveStartTime.HasValue)
                 {
-                    TotalAliveTime += DateTime.Now - CurrentAliveStartTime.Value;
+                    TotalAliveTime += Time.unscaledTime - CurrentAliveStartTime.Value;
                     CurrentAliveStartTime = null;
                 }
             }
@@ -171,7 +171,7 @@ namespace StatsMod
             {
                 if (CurrentWebSwingStartTime.HasValue)
                 {
-                    WebSwingTime += DateTime.Now - CurrentWebSwingStartTime.Value;
+                    WebSwingTime += Time.unscaledTime - CurrentWebSwingStartTime.Value;
                     CurrentWebSwingStartTime = null;
                 }
             }
@@ -180,7 +180,7 @@ namespace StatsMod
             {
                 if (CurrentAirborneStartTime.HasValue)
                 {
-                    AirborneTime += DateTime.Now - CurrentAirborneStartTime.Value;
+                    AirborneTime += Time.unscaledTime - CurrentAirborneStartTime.Value;
                     CurrentAirborneStartTime = null;
                 }
             }
@@ -349,13 +349,13 @@ namespace StatsMod
                 entry.Value.FriendlyShieldsHit = 0;
                 entry.Value.ShieldsLost = 0;
                 entry.Value.WebSwings = 0;
-                entry.Value.WebSwingTime = TimeSpan.Zero;
-                entry.Value.AirborneTime = TimeSpan.Zero;
+                entry.Value.WebSwingTime = 0f;
+                entry.Value.AirborneTime = 0f;
                 entry.Value.KillStreak = 0;
                 entry.Value.MaxKillStreak = 0;
                 entry.Value.KillStreakWhileSolo = 0;
                 entry.Value.MaxKillStreakWhileSolo = 0;
-                entry.Value.TotalAliveTime = TimeSpan.Zero;
+                entry.Value.TotalAliveTime = 0f;
                 entry.Value.HighestPoint = 0;
                 foreach (var weaponKey in entry.Value.WeaponHits.Keys.ToList())
                 {
@@ -515,7 +515,7 @@ namespace StatsMod
                 {
                     return;
                 }
-                data.CurrentWebSwingStartTime = DateTime.Now;
+                data.CurrentWebSwingStartTime = Time.unscaledTime;
             }
         }
 
@@ -535,7 +535,7 @@ namespace StatsMod
                 {
                     return;
                 }
-                data.CurrentAirborneStartTime = DateTime.Now;
+                data.CurrentAirborneStartTime = Time.unscaledTime;
             }
         }
 
@@ -622,7 +622,7 @@ namespace StatsMod
                 {
                     return;
                 }
-                data.CurrentAliveStartTime = DateTime.Now;
+                data.CurrentAliveStartTime = Time.unscaledTime;
 
                 if (!IsOnlyOnePlayerAlive())
                 {
@@ -644,8 +644,8 @@ namespace StatsMod
             {
                 if (!entry.Value.CurrentAliveStartTime.HasValue)
                 {
-                    entry.Value.CurrentAliveStartTime = DateTime.Now;
-                    entry.Value.TotalAliveTime = TimeSpan.Zero;
+                    entry.Value.CurrentAliveStartTime = Time.unscaledTime;
+                    entry.Value.TotalAliveTime = 0f;
                 }
             }
         }
@@ -684,7 +684,7 @@ namespace StatsMod
             {
                 if (entry.Value.CurrentAliveStartTime.HasValue)
                 {
-                    TimeSpan aliveSession = DateTime.Now - entry.Value.CurrentAliveStartTime.Value;
+                    float aliveSession = Time.unscaledTime - entry.Value.CurrentAliveStartTime.Value;
                     entry.Value.TotalAliveTime += aliveSession;
                     entry.Value.CurrentAliveStartTime = null;
                     entry.Value.WasAliveWhenPaused = true;
@@ -696,7 +696,7 @@ namespace StatsMod
 
                 if (entry.Value.CurrentWebSwingStartTime.HasValue)
                 {
-                    TimeSpan swingSession = DateTime.Now - entry.Value.CurrentWebSwingStartTime.Value;
+                    float swingSession = Time.unscaledTime - entry.Value.CurrentWebSwingStartTime.Value;
                     entry.Value.WebSwingTime += swingSession;
                     entry.Value.CurrentWebSwingStartTime = null;
                     entry.Value.WasSwingingWhenPaused = true;
@@ -708,7 +708,7 @@ namespace StatsMod
 
                 if (entry.Value.CurrentAirborneStartTime.HasValue)
                 {
-                    TimeSpan airborneSession = DateTime.Now - entry.Value.CurrentAirborneStartTime.Value;
+                    float airborneSession = Time.unscaledTime - entry.Value.CurrentAirborneStartTime.Value;
                     entry.Value.AirborneTime += airborneSession;
                     entry.Value.CurrentAirborneStartTime = null;
                     entry.Value.WasAirborneWhenPaused = true;
@@ -730,19 +730,19 @@ namespace StatsMod
             {
                 if (entry.Value.WasAliveWhenPaused)
                 {
-                    entry.Value.CurrentAliveStartTime = DateTime.Now;
+                    entry.Value.CurrentAliveStartTime = Time.unscaledTime;
                     entry.Value.WasAliveWhenPaused = false;
                 }
 
                 if (entry.Value.WasSwingingWhenPaused)
                 {
-                    entry.Value.CurrentWebSwingStartTime = DateTime.Now;
+                    entry.Value.CurrentWebSwingStartTime = Time.unscaledTime;
                     entry.Value.WasSwingingWhenPaused = false;
                 }
 
                 if (entry.Value.WasAirborneWhenPaused)
                 {
-                    entry.Value.CurrentAirborneStartTime = DateTime.Now;
+                    entry.Value.CurrentAirborneStartTime = Time.unscaledTime;
                     entry.Value.WasAirborneWhenPaused = false;
                 }
             }
