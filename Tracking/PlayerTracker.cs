@@ -356,6 +356,9 @@ namespace StatsMod
                 entry.Value.KillStreakWhileSolo = 0;
                 entry.Value.MaxKillStreakWhileSolo = 0;
                 entry.Value.TotalAliveTime = 0f;
+                entry.Value.CurrentAliveStartTime = null;
+                entry.Value.CurrentWebSwingStartTime = null;
+                entry.Value.CurrentAirborneStartTime = null;
                 entry.Value.HighestPoint = 0;
                 foreach (var weaponKey in entry.Value.WeaponHits.Keys.ToList())
                 {
