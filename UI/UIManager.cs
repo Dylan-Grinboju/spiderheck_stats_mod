@@ -520,6 +520,11 @@ namespace StatsMod
             if (darkTexture != null) Destroy(darkTexture);
             if (mediumTexture != null) Destroy(mediumTexture);
             if (lightTexture != null) Destroy(lightTexture);
+
+            if (Instance == this)
+            {
+                Instance = null;
+            }
         }
         #endregion
 

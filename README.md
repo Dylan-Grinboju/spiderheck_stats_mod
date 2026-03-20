@@ -78,6 +78,38 @@ After every change to the file, you need to relaunch the game for it to take eff
 </details>
 
 
+## Cross-Mod Integration API
+
+SpiderStats exposes a public API that other mods can call at runtime to inject custom stats and titles into the end-of-game screen and log files. Since mods are separate DLLs, communication happens via **reflection** — the calling mod discovers `StatsMod.StatsModApi` from the loaded assemblies and invokes its static methods.
+
+#### `RegisterCustomStats(List<string> lines)`
+
+Appends raw text lines to the end-of-game stats log file under an "EXTERNAL MOD STATISTICS" section.
+
+| Parameter | Description |
+|---|---|
+| `lines` | Lines of text to append to the stats file. Null or empty lists are ignored. |
+
+#### `RegisterCustomTitle(string titleName, string description, string[] requirementNames, PlayerInput leader, bool leaderHasStat, int bonusPriority)`
+
+Registers a custom title that participates in the native title pipeline (domination removal, priority balancing, display selection).
+
+| Parameter | Description |
+|---|---|
+| `titleName` | Display name for the title |
+| `description` | Subtitle text. Can be expanded with native stats if any native requirement names are included |
+| `requirementNames` | Array of stat keys. Can be native names (e.g. `"MostOffense"`, `"MostDamageTaken"`) or entirely custom names |
+| `leader` | The `PlayerInput` who earned this title. **If all requirements are custom, this must be non-null** — otherwise the title will be rejected since there's no native stat to resolve the player from |
+| `leaderHasStat` | Set to `true` if the external mod already validated the stat. If `false` and `leader` is non-null, the title is rejected |
+| `bonusPriority` | Additional priority added on top of the base (`requirementCount × 10`). Higher priority = more likely to be displayed |
+
+### Important Notes
+
+- **Data is cleared** at the start of each game session — external mods should re-register their stats and titles after each game ends.
+- **Titles require 2+ players** — they are meaningless in solo play and will not be displayed.
+- **Thread safety**: All API methods are synchronized internally. Safe to call from any thread.
+- **Graceful degradation**: If SpiderStats is not installed, calling mods should handle the case where the API type is not found.
+
 ## Notes and disclaimers
 - Stats reset when starting a new game. After the game ending you can return to the lobby and the overlay will show the last game's stats
 - By default, the mod saves the stats in a txt file in this path: `.../Silk/Logs/Spiderheck_stats_<Current_Date>.txt`

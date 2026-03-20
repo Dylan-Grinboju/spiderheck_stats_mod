@@ -1,9 +1,9 @@
-using System;
+using Logger = Silk.Logger;
 using System.Collections.Generic;
+using System;
 using System.IO;
 using System.Linq;
-using Logger = Silk.Logger;
-
+using System.Text;
 namespace StatsMod
 {
     // Handles logging game statistics to files.
@@ -42,6 +42,7 @@ namespace StatsMod
         {
             try
             {
+                Logger.LogInfo($"Saving stats for {statsSnapshot.GameMode} game, Duration: {FormatTimeSpan(statsSnapshot.LastGameDuration)}");
                 string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
                 string fileName = $"Spiderheck_stats_{timestamp}.txt";
                 string filePath = Path.Combine(logDirectory, fileName);
@@ -62,30 +63,25 @@ namespace StatsMod
         {
             string modeHeader = statsSnapshot.GameMode == GameMode.Versus ? "VERSUS MODE" : "SURVIVAL MODE";
 
-            var lines = new List<string>
-            {
-                "=".PadRight(60, '='),
-                $"SPIDERHECK {modeHeader} STATISTICS",
-                "=".PadRight(60, '='),
-                "",
-                "GAME INFORMATION:",
-                $"  Game End Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}",
-                $"  Game Duration: {FormatTimeSpan(statsSnapshot.LastGameDuration)}",
-            };
+            var sb = new StringBuilder(2048);
+            sb.AppendLine("=".PadRight(60, '='));
+            sb.AppendLine($"SPIDERHECK {modeHeader} STATISTICS");
+            sb.AppendLine("=".PadRight(60, '='));
+            sb.AppendLine("");
+            sb.AppendLine("GAME INFORMATION:");
+            sb.AppendLine($"  Game End Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+            sb.AppendLine($"  Game Duration: {FormatTimeSpan(statsSnapshot.LastGameDuration)}");
 
             if (statsSnapshot.PainLevel >= 1)
             {
-                lines.Add($"  Pain Level: {statsSnapshot.PainLevel}");
+                sb.AppendLine($"  Pain Level: {statsSnapshot.PainLevel}");
             }
 
-            lines.AddRange(new[]
-            {
-                "",
-                "ENEMY STATISTICS:",
-                $"  Total Enemies Killed: {statsSnapshot.EnemiesKilled}",
-                "",
-                "PLAYER STATISTICS:"
-            });
+            sb.AppendLine("");
+            sb.AppendLine("ENEMY STATISTICS:");
+            sb.AppendLine($"  Total Enemies Killed: {statsSnapshot.EnemiesKilled}");
+            sb.AppendLine("");
+            sb.AppendLine("PLAYER STATISTICS:");
             if (statsSnapshot.ActivePlayers != null && statsSnapshot.ActivePlayers.Any())
             {
                 var sortedPlayers = statsSnapshot.ActivePlayers
@@ -100,59 +96,59 @@ namespace StatsMod
                 int totalFriendlyShieldsHit = statsSnapshot.ActivePlayers.Sum(p => p.Value.FriendlyShieldsHit);
                 int totalShieldsLost = statsSnapshot.ActivePlayers.Sum(p => p.Value.ShieldsLost);
 
-                lines.Add($"  Total Players: {statsSnapshot.ActivePlayers.Count}");
-                lines.Add($"  Total Player Kills: {totalKills}");
-                lines.Add($"  Total Friendly Kills (PvP): {totalFriendlyKills}");
-                lines.Add($"  Total Player Deaths: {totalDeaths}");
-                lines.Add($"  Total Enemy Shields Taken Down: {totalEnemyShieldsTakenDown}");
-                lines.Add($"  Total Friendly Shields Hit: {totalFriendlyShieldsHit}");
-                lines.Add($"  Total Shields Lost: {totalShieldsLost}");
-                lines.Add("");
+                sb.AppendLine($"  Total Players: {statsSnapshot.ActivePlayers.Count}");
+                sb.AppendLine($"  Total Player Kills: {totalKills}");
+                sb.AppendLine($"  Total Friendly Kills (PvP): {totalFriendlyKills}");
+                sb.AppendLine($"  Total Player Deaths: {totalDeaths}");
+                sb.AppendLine($"  Total Enemy Shields Taken Down: {totalEnemyShieldsTakenDown}");
+                sb.AppendLine($"  Total Friendly Shields Hit: {totalFriendlyShieldsHit}");
+                sb.AppendLine($"  Total Shields Lost: {totalShieldsLost}");
+                sb.AppendLine("");
 
-                lines.Add("  Individual Player Performance:");
-                lines.Add("  " + "-".PadRight(50, '-'));
+                sb.AppendLine("  Individual Player Performance:");
+                sb.AppendLine("  " + "-".PadRight(50, '-'));
 
                 foreach (var playerEntry in sortedPlayers)
                 {
                     var playerData = playerEntry.Value;
 
-                    lines.Add($"  {playerData.PlayerName}:");
-                    lines.Add($"    Player ID: {playerData.PlayerId}");
-                    lines.Add($"    Color: #{(int)(playerData.PlayerColor.r * 255):X2}{(int)(playerData.PlayerColor.g * 255):X2}{(int)(playerData.PlayerColor.b * 255):X2}");
-                    lines.Add($"    Kills: {playerData.Kills}");
-                    lines.Add($"    Kills While Airborne: {playerData.KillsWhileAirborne}");
-                    lines.Add($"    Kills While Solo: {playerData.KillsWhileSolo}");
-                    lines.Add($"    Wave Clutches: {playerData.WaveClutches}");
-                    lines.Add($"    Max Kill Streak: {playerData.MaxKillStreak}");
-                    lines.Add($"    Max Solo Kill Streak: {playerData.MaxKillStreakWhileSolo}");
-                    lines.Add($"    Friendly Kills (PvP): {playerData.FriendlyKills}");
-                    lines.Add($"    Deaths: {playerData.Deaths}");
-                    lines.Add($"    Lava Deaths: {playerData.LavaDeaths}");
-                    lines.Add($"    Astral Returns: {playerData.AstralReturns}");
+                    sb.AppendLine($"  {playerData.PlayerName}:");
+                    sb.AppendLine($"    Player ID: {playerData.PlayerId}");
+                    sb.AppendLine($"    Color: #{(int)(playerData.PlayerColor.r * 255):X2}{(int)(playerData.PlayerColor.g * 255):X2}{(int)(playerData.PlayerColor.b * 255):X2}");
+                    sb.AppendLine($"    Kills: {playerData.Kills}");
+                    sb.AppendLine($"    Kills While Airborne: {playerData.KillsWhileAirborne}");
+                    sb.AppendLine($"    Kills While Solo: {playerData.KillsWhileSolo}");
+                    sb.AppendLine($"    Wave Clutches: {playerData.WaveClutches}");
+                    sb.AppendLine($"    Max Kill Streak: {playerData.MaxKillStreak}");
+                    sb.AppendLine($"    Max Solo Kill Streak: {playerData.MaxKillStreakWhileSolo}");
+                    sb.AppendLine($"    Friendly Kills (PvP): {playerData.FriendlyKills}");
+                    sb.AppendLine($"    Deaths: {playerData.Deaths}");
+                    sb.AppendLine($"    Lava Deaths: {playerData.LavaDeaths}");
+                    sb.AppendLine($"    Astral Returns: {playerData.AstralReturns}");
 
                     // Deaths per map breakdown
                     if (playerData.DeathsPerMap != null && playerData.DeathsPerMap.Any())
                     {
-                        lines.Add($"    Deaths Per Map:");
+                        sb.AppendLine($"    Deaths Per Map:");
                         foreach (var mapEntry in playerData.DeathsPerMap.OrderByDescending(m => m.Value))
                         {
-                            lines.Add($"      {mapEntry.Key}: {mapEntry.Value}");
+                            sb.AppendLine($"      {mapEntry.Key}: {mapEntry.Value}");
                         }
                     }
 
-                    lines.Add($"    Enemy Shields Taken Down: {playerData.EnemyShieldsTakenDown}");
-                    lines.Add($"    Friendly Shields Hit: {playerData.FriendlyShieldsHit}");
-                    lines.Add($"    Shields Lost: {playerData.ShieldsLost}");
-                    lines.Add($"    Alive Time: {FormatTimeSpan(playerData.GetCurrentAliveTime())}");
-                    lines.Add($"    Web Swings: {playerData.WebSwings}");
-                    lines.Add($"    Time Swinging: {FormatTimeSpan(playerData.GetCurrentWebSwingTime())}");
-                    lines.Add($"    Time Airborne: {FormatTimeSpan(playerData.GetCurrentAirborneTime())}");
-                    lines.Add($"    Highest Point: {playerData.HighestPoint:F1}m");
+                    sb.AppendLine($"    Enemy Shields Taken Down: {playerData.EnemyShieldsTakenDown}");
+                    sb.AppendLine($"    Friendly Shields Hit: {playerData.FriendlyShieldsHit}");
+                    sb.AppendLine($"    Shields Lost: {playerData.ShieldsLost}");
+                    sb.AppendLine($"    Alive Time: {FormatTimeSpan(playerData.GetCurrentAliveTime())}");
+                    sb.AppendLine($"    Web Swings: {playerData.WebSwings}");
+                    sb.AppendLine($"    Time Swinging: {FormatTimeSpan(playerData.GetCurrentWebSwingTime())}");
+                    sb.AppendLine($"    Time Airborne: {FormatTimeSpan(playerData.GetCurrentAirborneTime())}");
+                    sb.AppendLine($"    Highest Point: {playerData.HighestPoint:F1}m");
 
                     // Weapon hits breakdown
                     if (playerData.WeaponHits != null && playerData.WeaponHits.Any())
                     {
-                        lines.Add($"    Weapon Hits (Kills + Shield Hits):");
+                        sb.AppendLine($"    Weapon Hits (Kills + Shield Hits):");
                         var sortedWeaponHits = playerData.WeaponHits
                             .Where(w => w.Value > 0)
                             .OrderByDescending(w => w.Value)
@@ -162,19 +158,19 @@ namespace StatsMod
                         {
                             foreach (var weapon in sortedWeaponHits)
                             {
-                                lines.Add($"      {weapon.Key}: {weapon.Value}");
+                                sb.AppendLine($"      {weapon.Key}: {weapon.Value}");
                             }
                         }
                         else
                         {
-                            lines.Add($"      No weapon hits recorded");
+                            sb.AppendLine($"      No weapon hits recorded");
                         }
                     }
 
                     // Enemy kills breakdown
                     if (playerData.EnemyKills != null && playerData.EnemyKills.Any())
                     {
-                        lines.Add($"    Kills by Enemy Type:");
+                        sb.AppendLine($"    Kills by Enemy Type:");
                         var sortedEnemyKills = playerData.EnemyKills
                             .Where(e => e.Value > 0)
                             .OrderByDescending(e => e.Value)
@@ -184,33 +180,33 @@ namespace StatsMod
                         {
                             foreach (var enemy in sortedEnemyKills)
                             {
-                                lines.Add($"      {enemy.Key}: {enemy.Value}");
+                                sb.AppendLine($"      {enemy.Key}: {enemy.Value}");
                             }
                         }
                         else
                         {
-                            lines.Add($"      No enemy kills recorded");
+                            sb.AppendLine($"      No enemy kills recorded");
                         }
                     }
 
-                    lines.Add("");
+                    sb.AppendLine("");
                 }
             }
             else
             {
-                lines.Add("  No player data available");
-                lines.Add("");
+                sb.AppendLine("  No player data available");
+                sb.AppendLine("");
             }
 
             // Add titles section
             if (statsSnapshot.Titles != null && statsSnapshot.Titles.Count > 0)
             {
-                lines.Add("TITLES AWARDED:");
+                sb.AppendLine("TITLES AWARDED:");
                 foreach (var title in statsSnapshot.Titles)
                 {
-                    lines.Add($"  {title.TitleName}: {title.PlayerName}");
+                    sb.AppendLine($"  {title.TitleName}: {title.PlayerName}");
                 }
-                lines.Add("");
+                sb.AppendLine("");
             }
 
             // Add maps played section with aggregated deaths per map
@@ -235,33 +231,40 @@ namespace StatsMod
                     }
                 }
 
-                lines.Add("MAPS PLAYED:");
+                sb.AppendLine("MAPS PLAYED:");
                 foreach (var map in statsSnapshot.MapsPlayed.Distinct())
                 {
                     if (totalDeathsPerMap.TryGetValue(map, out int deaths) && deaths > 0)
-                        lines.Add($"  - {map} ({deaths} {(deaths == 1 ? "death" : "deaths")})");
+                        sb.AppendLine($"  - {map} ({deaths} {(deaths == 1 ? "death" : "deaths")})");
                     else
-                        lines.Add($"  - {map}");
+                        sb.AppendLine($"  - {map}");
                 }
-                lines.Add("");
+                sb.AppendLine("");
             }
 
-            // Add perks chosen section
-            if (statsSnapshot.PerksChosen != null && statsSnapshot.PerksChosen.Any())
+            if (statsSnapshot.PerksChosen is not null && statsSnapshot.PerksChosen.Any())
             {
-                lines.Add("PERKS CHOSEN:");
+                sb.AppendLine("PERKS CHOSEN:");
                 foreach (var perk in statsSnapshot.PerksChosen)
                 {
-                    lines.Add($"  - {perk}");
+                    sb.AppendLine($"  - {perk}");
                 }
-                lines.Add("");
+                sb.AppendLine("");
             }
 
-            lines.Add("=".PadRight(60, '='));
-            lines.Add("End of Statistics Report");
-            lines.Add("=".PadRight(60, '='));
+            var externalStats = StatsModApi.GetExternalStats();
+            if (externalStats != null && externalStats.Count > 0)
+            {
+                sb.AppendLine("EXTERNAL MOD STATISTICS:");
+                foreach (var stat in externalStats) sb.AppendLine(stat);
+                sb.AppendLine("");
+            }
 
-            return string.Join(Environment.NewLine, lines);
+            sb.AppendLine("=".PadRight(60, '='));
+            sb.AppendLine("End of Statistics Report");
+            sb.AppendLine("=".PadRight(60, '='));
+
+            return sb.ToString();
         }
 
         private string FormatTimeSpan(TimeSpan timeSpan)
@@ -273,3 +276,4 @@ namespace StatsMod
         }
     }
 }
+
