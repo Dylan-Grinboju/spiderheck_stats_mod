@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
+using System.Linq;
 using HarmonyLib;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -8,22 +8,6 @@ using Logger = Silk.Logger;
 
 namespace StatsMod
 {
-    // Cache reflection field info for performance
-    internal static class ReflectionCache
-    {
-        public static readonly FieldInfo PrimaryColorField =
-            typeof(SpiderCustomizer).GetField("_primaryColor", BindingFlags.NonPublic | BindingFlags.Instance);
-
-        public static readonly FieldInfo SecondaryColorField =
-            typeof(SpiderCustomizer).GetField("_secondaryColor", BindingFlags.NonPublic | BindingFlags.Instance);
-
-        public static readonly FieldInfo EnemyImmuneTimeField =
-            AccessTools.Field(typeof(EnemyHealthSystem), "_immuneTime");
-       
-        public static readonly FieldInfo SpiderImmuneTimeField =
-            AccessTools.Field(typeof(SpiderHealthSystem), "_immuneTime");
-    }
-
     [HarmonyPatch(typeof(PlayerInput), "OnEnable")]
     public class PlayerInputEnablePatch
     {
@@ -290,6 +274,13 @@ namespace StatsMod
                     if (cached.Item1 != null && cached.Item2 != null) return cached;
                     _componentCache.Remove(stabilizer);
                 }
+
+                // Opportunistically prune entries whose key Stabilizer has been Unity-destroyed
+                // (e.g. after a player respawn — Unity destroys the old Stabilizer but the dict
+                // still holds a C# reference to it as a dictionary key). Only runs on cache miss
+                // so the cost is bounded.
+                var dead = _componentCache.Keys.Where(k => k == null).ToList();
+                foreach (var k in dead) _componentCache.Remove(k);
 
                 // Cache miss - do the expensive lookup once
                 if (stabilizer.TryGetComponent(out SpiderController spider) ||

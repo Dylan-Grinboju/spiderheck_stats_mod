@@ -86,13 +86,6 @@ public class TitleBuilder
             Requirements = new HashSet<string>(_requirements)
         };
     }
-
-    public static bool SamePlayer(params KeyValuePair<PlayerInput, PlayerTracker.PlayerData>[] leaders)
-    {
-        if (leaders.Length == 0) return false;
-        var firstPlayer = leaders[0].Key;
-        return leaders.All(l => l.Key == firstPlayer);
-    }
 }
 
 public static class Req
@@ -331,84 +324,72 @@ public class TitlesManager
         }
     }
 
+    // Rank players by `primary` (descending), breaking ties by `tieBreaker` (descending).
+    // Returns the top and bottom of the resulting order.
+    private static (KeyValuePair<PlayerInput, PlayerTracker.PlayerData> Top,
+                    KeyValuePair<PlayerInput, PlayerTracker.PlayerData> Bottom)
+        RankPlayers<TKey1, TKey2>(
+            List<KeyValuePair<PlayerInput, PlayerTracker.PlayerData>> players,
+            Func<KeyValuePair<PlayerInput, PlayerTracker.PlayerData>, TKey1> primary,
+            Func<KeyValuePair<PlayerInput, PlayerTracker.PlayerData>, TKey2> tieBreaker)
+    {
+        var ordered = players.OrderByDescending(primary).ThenByDescending(tieBreaker).ToList();
+        return (ordered[0], ordered[ordered.Count - 1]);
+    }
+
+    // Overload without a tie-breaker (used for ranks where the primary stat is itself the tie-breaker).
+    private static (KeyValuePair<PlayerInput, PlayerTracker.PlayerData> Top,
+                    KeyValuePair<PlayerInput, PlayerTracker.PlayerData> Bottom)
+        RankPlayers<TKey>(
+            List<KeyValuePair<PlayerInput, PlayerTracker.PlayerData>> players,
+            Func<KeyValuePair<PlayerInput, PlayerTracker.PlayerData>, TKey> primary)
+    {
+        var ordered = players.OrderByDescending(primary).ToList();
+        return (ordered[0], ordered[ordered.Count - 1]);
+    }
+
     private StatLeaders CalculateStatLeaders(List<KeyValuePair<PlayerInput, PlayerTracker.PlayerData>> players)
     {
         var leaders = new StatLeaders();
 
-        var swingsRanked = players.OrderByDescending(p => p.Value.WebSwings).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-        leaders.MostWebSwings = swingsRanked[0];
-        leaders.LeastWebSwings = swingsRanked[swingsRanked.Count - 1];
+        // Default tie-breakers
+        Func<KeyValuePair<PlayerInput, PlayerTracker.PlayerData>, float> byAliveTime = p => p.Value.TotalAliveTime;
+        Func<KeyValuePair<PlayerInput, PlayerTracker.PlayerData>, int>   byKills     = p => p.Value.Kills;
 
-        var altitudeRanked = players.OrderByDescending(p => p.Value.HighestPoint).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-        leaders.HighestPoint = altitudeRanked[0];
-        leaders.LowestPoint = altitudeRanked[altitudeRanked.Count - 1];
+        (leaders.MostWebSwings,        leaders.LeastWebSwings)        = RankPlayers(players, p => p.Value.WebSwings,                                    byAliveTime);
+        (leaders.HighestPoint,         leaders.LowestPoint)           = RankPlayers(players, p => p.Value.HighestPoint,                                 byAliveTime);
+        (leaders.MostAirborneTime,     leaders.LeastAirborneTime)     = RankPlayers(players, p => p.Value.AirborneTime,                                 byAliveTime);
+        (leaders.MostOffense,          leaders.LeastOffense)          = RankPlayers(players, p => p.Value.Kills + p.Value.EnemyShieldsTakenDown,         byAliveTime);
+        (leaders.MostDamageTaken,      leaders.LeastDamageTaken)      = RankPlayers(players, p => p.Value.Deaths + p.Value.ShieldsLost,                  byAliveTime);
+        (leaders.MostFriendlyFire,     leaders.LeastFriendlyFire)     = RankPlayers(players, p => p.Value.FriendlyKills + p.Value.FriendlyShieldsHit,    byAliveTime);
+        (leaders.MostShieldsLost,      leaders.LeastShieldsLost)      = RankPlayers(players, p => p.Value.ShieldsLost,                                   byAliveTime);
+        (leaders.MostDeaths,           leaders.LeastDeaths)           = RankPlayers(players, p => p.Value.Deaths,                                        byAliveTime);
+        (leaders.MostLavaDeaths,       leaders.LeastLavaDeaths)       = RankPlayers(players, p => p.Value.LavaDeaths,                                    byAliveTime);
 
-        var airborneRanked = players.OrderByDescending(p => p.Value.AirborneTime).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-        leaders.MostAirborneTime = airborneRanked[0];
-        leaders.LeastAirborneTime = airborneRanked[airborneRanked.Count - 1];
+        // Top-only ranks (Bottom is discarded). Helper still does the full sort, same as the original code did.
+        leaders.MostKillsWhileAirborne = RankPlayers(players, p => p.Value.KillsWhileAirborne,     byKills).Top;
+        leaders.MostKillsWhileSolo     = RankPlayers(players, p => p.Value.KillsWhileSolo,         byKills).Top;
+        leaders.MostWaveClutches       = RankPlayers(players, p => p.Value.WaveClutches,           byKills).Top;
+        leaders.MaxKillStreak          = RankPlayers(players, p => p.Value.MaxKillStreak,          byAliveTime).Top;
+        leaders.MaxKillStreakWhileSolo = RankPlayers(players, p => p.Value.MaxKillStreakWhileSolo, byAliveTime).Top;
+        leaders.MostAliveTime          = RankPlayers(players, p => p.Value.TotalAliveTime).Top;
+        leaders.MostHornetKills        = RankPlayers(players, p => p.Value.EnemyKills["Hornet"],                                                  byAliveTime).Top;
+        leaders.MostWhispKills         = RankPlayers(players, p => p.Value.EnemyKills["Whisp"] + p.Value.EnemyKills["Power Whisp"],               byAliveTime).Top;
+        leaders.MostKhepriKills        = RankPlayers(players, p => p.Value.EnemyKills["Khepri"] + p.Value.EnemyKills["Power Khepri"],             byAliveTime).Top;
+        leaders.MostAstralReturns      = RankPlayers(players, p => p.Value.AstralReturns,                                                          byAliveTime).Top;
 
-        var airborneKillsRanked = players.OrderByDescending(p => p.Value.KillsWhileAirborne).ThenByDescending(p => p.Value.Kills).ToList();
-        leaders.MostKillsWhileAirborne = airborneKillsRanked[0];
+        leaders.MostGunsKills = RankPlayers(players,
+            p => p.Value.WeaponHits["Shotgun"] + p.Value.WeaponHits["RailShot"] + p.Value.WeaponHits["DeathRay"]
+               + p.Value.WeaponHits["EnergyBall"] + p.Value.WeaponHits["Laser Cannon"] + p.Value.WeaponHits["SawDisc"],
+            byAliveTime).Top;
 
-        var soloKillsRanked = players.OrderByDescending(p => p.Value.KillsWhileSolo).ThenByDescending(p => p.Value.Kills).ToList();
-        leaders.MostKillsWhileSolo = soloKillsRanked[0];
+        leaders.MostExplosionsKills = RankPlayers(players,
+            p => p.Value.WeaponHits["Explosions"] + p.Value.WeaponHits["Laser Cube"] + p.Value.WeaponHits["DeathCube"],
+            byAliveTime).Top;
 
-        var waveClutchesRanked = players.OrderByDescending(p => p.Value.WaveClutches).ThenByDescending(p => p.Value.Kills).ToList();
-        leaders.MostWaveClutches = waveClutchesRanked[0];
-
-        var streakRanked = players.OrderByDescending(p => p.Value.MaxKillStreak).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-        leaders.MaxKillStreak = streakRanked[0];
-
-        var streakWhileSoloRanked = players.OrderByDescending(p => p.Value.MaxKillStreakWhileSolo).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-        leaders.MaxKillStreakWhileSolo = streakWhileSoloRanked[0];
-
-        var aliveTimeRanked = players.OrderByDescending(p => p.Value.TotalAliveTime).ToList();
-        leaders.MostAliveTime = aliveTimeRanked[0];
-
-        var offenseRanked = players.OrderByDescending(p => p.Value.Kills + p.Value.EnemyShieldsTakenDown).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-        leaders.MostOffense = offenseRanked[0];
-        leaders.LeastOffense = offenseRanked[offenseRanked.Count - 1];
-
-        var damageTakenRanked = players.OrderByDescending(p => p.Value.Deaths + p.Value.ShieldsLost).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-        leaders.MostDamageTaken = damageTakenRanked[0];
-        leaders.LeastDamageTaken = damageTakenRanked[damageTakenRanked.Count - 1];
-
-        var friendlyFireRanked = players.OrderByDescending(p => p.Value.FriendlyKills + p.Value.FriendlyShieldsHit).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-        leaders.MostFriendlyFire = friendlyFireRanked[0];
-        leaders.LeastFriendlyFire = friendlyFireRanked[friendlyFireRanked.Count - 1];
-
-        var shieldsLostRanked = players.OrderByDescending(p => p.Value.ShieldsLost).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-        leaders.MostShieldsLost = shieldsLostRanked[0];
-        leaders.LeastShieldsLost = shieldsLostRanked[shieldsLostRanked.Count - 1];
-
-        var deathsRanked = players.OrderByDescending(p => p.Value.Deaths).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-        leaders.MostDeaths = deathsRanked[0];
-        leaders.LeastDeaths = deathsRanked[deathsRanked.Count - 1];
-
-        var lavaDeathsRanked = players.OrderByDescending(p => p.Value.LavaDeaths).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-        leaders.MostLavaDeaths = lavaDeathsRanked[0];
-        leaders.LeastLavaDeaths = lavaDeathsRanked[lavaDeathsRanked.Count - 1];
-
-        var gunsRanked = players.OrderByDescending(p => p.Value.WeaponHits["Shotgun"] + p.Value.WeaponHits["RailShot"] + p.Value.WeaponHits["DeathRay"] + p.Value.WeaponHits["EnergyBall"] + p.Value.WeaponHits["Laser Cannon"] + p.Value.WeaponHits["SawDisc"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-        leaders.MostGunsKills = gunsRanked[0];
-
-        var explosionsRanked = players.OrderByDescending(p => p.Value.WeaponHits["Explosions"] + p.Value.WeaponHits["Laser Cube"] + p.Value.WeaponHits["DeathCube"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-        leaders.MostExplosionsKills = explosionsRanked[0];
-
-        var bladeRanked = players.OrderByDescending(p => p.Value.WeaponHits["Particle Blade"] + p.Value.WeaponHits["KhepriStaff"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-        leaders.MostBladeKills = bladeRanked[0];
-
-        var hornetsRanked = players.OrderByDescending(p => p.Value.EnemyKills["Hornet"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-        leaders.MostHornetKills = hornetsRanked[0];
-
-        var whispsRanked = players.OrderByDescending(p => p.Value.EnemyKills["Whisp"] + p.Value.EnemyKills["Power Whisp"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-        leaders.MostWhispKills = whispsRanked[0];
-
-        var kheprisRanked = players.OrderByDescending(p => p.Value.EnemyKills["Khepri"] + p.Value.EnemyKills["Power Khepri"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-        leaders.MostKhepriKills = kheprisRanked[0];
-
-        var astralReturnsRanked = players.OrderByDescending(p => p.Value.AstralReturns).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
-        leaders.MostAstralReturns = astralReturnsRanked[0];
+        leaders.MostBladeKills = RankPlayers(players,
+            p => p.Value.WeaponHits["Particle Blade"] + p.Value.WeaponHits["KhepriStaff"],
+            byAliveTime).Top;
 
         return leaders;
     }

@@ -8,6 +8,9 @@ namespace StatsMod
 {
     public static class HitLogic
     {
+        // How long (in seconds) of no IsFirstTimeDeath calls before the dedup HashSets are wiped.
+        // Prevents unbounded growth across long sessions. Within a session, Unity instance IDs
+        // are unique so dedup remains correct even if cleanup doesn't fire (it just uses more memory).
         private static readonly float cleanupInterval = 10f;
         private static HashSet<int> recentlyKilledEnemies = new HashSet<int>();
         private static float lastEnemiesCleanupTime = 0f;
@@ -76,11 +79,14 @@ namespace StatsMod
             lock (lockObject)
             {
                 float currentTime = Time.time;
+                // The assignment below must stay inside the `if`. Keeping it outside (the previous
+                // behavior) would refresh lastCleanupTime on every call, so the elapsed gap could
+                // never exceed cleanupInterval during active play, and Clear() would never fire.
                 if (currentTime - lastCleanupTime > cleanupInterval)
                 {
                     recentlyKilledSet.Clear();
+                    lastCleanupTime = currentTime;
                 }
-                lastCleanupTime = currentTime;
 
                 if (recentlyKilledSet.Contains(instanceId))
                 {

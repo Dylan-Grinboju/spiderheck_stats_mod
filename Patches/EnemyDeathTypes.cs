@@ -4,83 +4,10 @@ using Logger = Silk.Logger;
 using HarmonyLib;
 using Interfaces;
 using Unity.Netcode;
-using System.Reflection;
 
 
 namespace StatsMod
 {
-    // All AccessTools calls are done once at static initialization to avoid per-call overhead.
-    internal static class EnemyReflectionCache
-    {
-        // NetworkBehaviour
-        public static readonly PropertyInfo IsHostProperty =
-            AccessTools.Property(typeof(NetworkBehaviour), "IsHost");
-
-        // DeathCube fields
-        public static readonly FieldInfo DeathCubeLaserColliderLayers =
-            AccessTools.Field(typeof(DeathCube), "laserColliderLayers");
-        public static readonly FieldInfo DeathCubeBeamWidth =
-            AccessTools.Field(typeof(DeathCube), "beamWidth");
-
-        // DeathRay fields
-        public static readonly FieldInfo DeathRayDamageLayers =
-            AccessTools.Field(typeof(DeathRay), "damageLayers");
-        public static readonly FieldInfo DeathRayBeamWidth =
-            AccessTools.Field(typeof(DeathRay), "beamWidth");
-        public static readonly FieldInfo DeathRayBeamLength =
-            AccessTools.Field(typeof(DeathRay), "beamLength");
-        public static readonly FieldInfo DeathRayPoint =
-            AccessTools.Field(typeof(DeathRay), "point");
-
-        // EnergyBall fields and methods
-        public static readonly FieldInfo EnergyBallDamageEnemies =
-            AccessTools.Field(typeof(EnergyBall), "damageEnemies");
-        public static readonly MethodInfo EnergyBallIsEnemy =
-            AccessTools.Method(typeof(EnergyBall), "IsEnemy");
-        public static readonly MethodInfo EnergyBallIsDamageable =
-            AccessTools.Method(typeof(EnergyBall), "IsDamageable");
-
-        // DiscLauncher methods
-        public static readonly MethodInfo DiscLauncherLaunchDiscClientRpc =
-            AccessTools.Method(typeof(DiscLauncher), "LaunchDiscClientRpc");
-        public static readonly MethodInfo DiscLauncherImpact =
-            AccessTools.Method(typeof(DiscLauncher), "Impact");
-
-        // SpiderHealthSystem fields
-        public static readonly FieldInfo SpiderKnockBackRadius =
-            AccessTools.Field(typeof(SpiderHealthSystem), "knockBackRadius");
-        public static readonly FieldInfo SpiderLayers =
-            AccessTools.Field(typeof(SpiderHealthSystem), "layers");
-        public static readonly FieldInfo SpiderDeathRadius =
-            AccessTools.Field(typeof(SpiderHealthSystem), "_deathRadius");
-
-        // Explosion fields
-        public static readonly FieldInfo ExplosionKnockBackRadius =
-            AccessTools.Field(typeof(Explosion), "knockBackRadius");
-        public static readonly FieldInfo ExplosionLayers =
-            AccessTools.Field(typeof(Explosion), "layers");
-        public static readonly FieldInfo ExplosionDeathRadius =
-            AccessTools.Field(typeof(Explosion), "deathRadius");
-        public static readonly FieldInfo ExplosionPlayerDeathRadius =
-            AccessTools.Field(typeof(Explosion), "_playerDeathRadius");
-        public static readonly FieldInfo ExplosionIsBoomSpear =
-            AccessTools.Field(typeof(Explosion), "isBoomSpear");
-        public static readonly FieldInfo ExplosionPlayerExplosionID =
-            AccessTools.Field(typeof(Explosion), "playerExplosionID");
-        public static readonly FieldInfo ExplosionOwnerId =
-            AccessTools.Field(typeof(Explosion), "explosionOwnerId");
-
-        // ProjectileLauncher fields and methods
-        public static readonly MethodInfo ProjectileLauncherShotClientRpc =
-            AccessTools.Method(typeof(ProjectileLauncher), "ShotClientRpc");
-        public static readonly MethodInfo ProjectileLauncherImpact =
-            AccessTools.Method(typeof(ProjectileLauncher), "Impact");
-        public static readonly FieldInfo ProjectileLauncherCollider =
-            AccessTools.Field(typeof(ProjectileLauncher), "_launcherCollider");
-        public static readonly FieldInfo ProjectileLauncherReloadOffset =
-            AccessTools.Field(typeof(ProjectileLauncher), "reloadOffset");
-    }
-
     [HarmonyPatch(typeof(EnemyHealthSystem), "Explode")]
     class EnemyDeathCountPatch
     {
@@ -130,7 +57,7 @@ namespace StatsMod
         {
             try
             {
-                if (!(bool)EnemyReflectionCache.IsHostProperty.GetValue(__instance)) return;
+                if (!(bool)ReflectionCache.IsHostProperty.GetValue(__instance)) return;
 
                 IDamageable component = hit.transform.GetComponent<IDamageable>();
                 if (component != null)
@@ -184,15 +111,15 @@ namespace StatsMod
         {
             try
             {
-                if (!(bool)EnemyReflectionCache.IsHostProperty.GetValue(__instance)) return;
+                if (!(bool)ReflectionCache.IsHostProperty.GetValue(__instance)) return;
 
-                if (EnemyReflectionCache.DeathCubeLaserColliderLayers == null || EnemyReflectionCache.DeathCubeBeamWidth == null)
+                if (ReflectionCache.DeathCubeLaserColliderLayers == null || ReflectionCache.DeathCubeBeamWidth == null)
                 {
                     return;
                 }
 
-                LayerMask laserColliderLayers = (LayerMask)EnemyReflectionCache.DeathCubeLaserColliderLayers.GetValue(__instance);
-                float beamWidth = (float)EnemyReflectionCache.DeathCubeBeamWidth.GetValue(__instance);
+                LayerMask laserColliderLayers = (LayerMask)ReflectionCache.DeathCubeLaserColliderLayers.GetValue(__instance);
+                float beamWidth = (float)ReflectionCache.DeathCubeBeamWidth.GetValue(__instance);
 
                 RaycastHit2D[] hits = Physics2D.CircleCastAll(
                     laser.transform.position + direction * beamWidth,
@@ -227,18 +154,18 @@ namespace StatsMod
         {
             try
             {
-                if (!(bool)EnemyReflectionCache.IsHostProperty.GetValue(__instance)) return;
+                if (!(bool)ReflectionCache.IsHostProperty.GetValue(__instance)) return;
 
-                if (EnemyReflectionCache.DeathRayDamageLayers == null || EnemyReflectionCache.DeathRayBeamWidth == null ||
-                    EnemyReflectionCache.DeathRayBeamLength == null || EnemyReflectionCache.DeathRayPoint == null)
+                if (ReflectionCache.DeathRayDamageLayers == null || ReflectionCache.DeathRayBeamWidth == null ||
+                    ReflectionCache.DeathRayBeamLength == null || ReflectionCache.DeathRayPoint == null)
                 {
                     return;
                 }
 
-                LayerMask damageLayers = (LayerMask)EnemyReflectionCache.DeathRayDamageLayers.GetValue(__instance);
-                float beamWidth = (float)EnemyReflectionCache.DeathRayBeamWidth.GetValue(__instance);
-                float beamLength = (float)EnemyReflectionCache.DeathRayBeamLength.GetValue(__instance);
-                Transform point = (Transform)EnemyReflectionCache.DeathRayPoint.GetValue(__instance);
+                LayerMask damageLayers = (LayerMask)ReflectionCache.DeathRayDamageLayers.GetValue(__instance);
+                float beamWidth = (float)ReflectionCache.DeathRayBeamWidth.GetValue(__instance);
+                float beamLength = (float)ReflectionCache.DeathRayBeamLength.GetValue(__instance);
+                Transform point = (Transform)ReflectionCache.DeathRayPoint.GetValue(__instance);
 
                 RaycastHit2D[] hits = Physics2D.CircleCastAll(
                     point.position + __instance.transform.up * beamWidth / 4f,
@@ -273,26 +200,26 @@ namespace StatsMod
         {
             try
             {
-                if (!(bool)EnemyReflectionCache.IsHostProperty.GetValue(__instance)) return;
+                if (!(bool)ReflectionCache.IsHostProperty.GetValue(__instance)) return;
 
                 if (other.gameObject == __instance.ignore) return;
 
                 IDamageable component = other.gameObject.GetComponent<IDamageable>();
                 if (component == null) return;
 
-                if (EnemyReflectionCache.EnergyBallDamageEnemies == null ||
-                    EnemyReflectionCache.EnergyBallIsEnemy == null ||
-                    EnemyReflectionCache.EnergyBallIsDamageable == null)
+                if (ReflectionCache.EnergyBallDamageEnemies == null ||
+                    ReflectionCache.EnergyBallIsEnemy == null ||
+                    ReflectionCache.EnergyBallIsDamageable == null)
                 {
                     return;
                 }
 
-                bool damageEnemies = (bool)EnemyReflectionCache.EnergyBallDamageEnemies.GetValue(__instance);
+                bool damageEnemies = (bool)ReflectionCache.EnergyBallDamageEnemies.GetValue(__instance);
 
-                bool isEnemy = (bool)EnemyReflectionCache.EnergyBallIsEnemy.Invoke(__instance, new object[] { other.gameObject });
+                bool isEnemy = (bool)ReflectionCache.EnergyBallIsEnemy.Invoke(__instance, new object[] { other.gameObject });
                 if (isEnemy && !damageEnemies) return;
 
-                bool isDamageable = (bool)EnemyReflectionCache.EnergyBallIsDamageable.Invoke(__instance, new object[] { other.gameObject });
+                bool isDamageable = (bool)ReflectionCache.EnergyBallIsDamageable.Invoke(__instance, new object[] { other.gameObject });
                 if (isDamageable)
                 {
                     PlayerInput ownerPlayer = __instance.owner?.GetComponentInParent<PlayerInput>();
@@ -394,7 +321,7 @@ namespace StatsMod
         {
             try
             {
-                if (!(bool)EnemyReflectionCache.IsHostProperty.GetValue(__instance)) return;
+                if (!(bool)ReflectionCache.IsHostProperty.GetValue(__instance)) return;
 
                 RaycastHit2D hit = Physics2D.CircleCast(
                     lineRenderer.transform.position + direction * __instance.beamWidth / 2f,
@@ -485,14 +412,14 @@ namespace StatsMod
                 __instance.mountedDisc.SetActive(false);
                 __instance.targetingLasers.SetActive(false);
 
-                if ((bool)EnemyReflectionCache.IsHostProperty.GetValue(__instance))
+                if ((bool)ReflectionCache.IsHostProperty.GetValue(__instance))
                 {
                     // Call LaunchDiscClientRpc using cached reflection
-                    EnemyReflectionCache.DiscLauncherLaunchDiscClientRpc?.Invoke(__instance, null);
+                    ReflectionCache.DiscLauncherLaunchDiscClientRpc?.Invoke(__instance, null);
                 }
 
                 // Call Impact method using cached reflection
-                EnemyReflectionCache.DiscLauncherImpact?.Invoke(__instance, new object[] { __instance.transform.up * -__instance.recoil, __instance.point.position, false, true });
+                ReflectionCache.DiscLauncherImpact?.Invoke(__instance, new object[] { __instance.transform.up * -__instance.recoil, __instance.point.position, false, true });
 
                 return false; // Skip the original method
             }
@@ -530,15 +457,15 @@ namespace StatsMod
         {
             try
             {
-                if (EnemyReflectionCache.SpiderKnockBackRadius == null || EnemyReflectionCache.SpiderLayers == null || EnemyReflectionCache.SpiderDeathRadius == null)
+                if (ReflectionCache.SpiderKnockBackRadius == null || ReflectionCache.SpiderLayers == null || ReflectionCache.SpiderDeathRadius == null)
                 {
                     Logger.LogWarning("Could not access SpiderHealthSystem fields for afterlife explosion tracking");
                     return;
                 }
 
-                float knockBackRadius = (float)EnemyReflectionCache.SpiderKnockBackRadius.GetValue(__instance);
-                LayerMask layers = (LayerMask)EnemyReflectionCache.SpiderLayers.GetValue(__instance);
-                float deathRadius = (float)EnemyReflectionCache.SpiderDeathRadius.GetValue(__instance);
+                float knockBackRadius = (float)ReflectionCache.SpiderKnockBackRadius.GetValue(__instance);
+                LayerMask layers = (LayerMask)ReflectionCache.SpiderLayers.GetValue(__instance);
+                float deathRadius = (float)ReflectionCache.SpiderDeathRadius.GetValue(__instance);
 
                 Collider2D[] colliders = Physics2D.OverlapCircleAll(__instance.transform.position, knockBackRadius, layers);
                 PlayerInput ownerPlayer = __instance.GetComponentInParent<PlayerInput>();
@@ -575,7 +502,7 @@ namespace StatsMod
         {
             try
             {
-                if (!NetworkManager.Singleton.IsHost) return;
+                if (!(bool)ReflectionCache.IsHostProperty.GetValue(__instance)) return;
 
                 var fields = GetExplosionFields(__instance);
                 if (fields == null) return;
@@ -602,7 +529,7 @@ namespace StatsMod
 
         private static ExplosionFields GetExplosionFields(Explosion instance)
         {
-            if (EnemyReflectionCache.ExplosionKnockBackRadius == null || EnemyReflectionCache.ExplosionLayers == null || EnemyReflectionCache.ExplosionDeathRadius == null || EnemyReflectionCache.ExplosionPlayerDeathRadius == null || EnemyReflectionCache.ExplosionIsBoomSpear == null || EnemyReflectionCache.ExplosionPlayerExplosionID == null || EnemyReflectionCache.ExplosionOwnerId == null)
+            if (ReflectionCache.ExplosionKnockBackRadius == null || ReflectionCache.ExplosionLayers == null || ReflectionCache.ExplosionDeathRadius == null || ReflectionCache.ExplosionPlayerDeathRadius == null || ReflectionCache.ExplosionIsBoomSpear == null || ReflectionCache.ExplosionPlayerExplosionID == null || ReflectionCache.ExplosionOwnerId == null)
             {
                 Logger.LogWarning("Could not access Explosion fields for damage tracking");
                 return null;
@@ -610,13 +537,13 @@ namespace StatsMod
 
             return new ExplosionFields
             {
-                knockBackRadius = (float)EnemyReflectionCache.ExplosionKnockBackRadius.GetValue(instance),
-                layers = (LayerMask)EnemyReflectionCache.ExplosionLayers.GetValue(instance),
-                deathRadius = (float)EnemyReflectionCache.ExplosionDeathRadius.GetValue(instance),
-                playerDeathRadius = (float)EnemyReflectionCache.ExplosionPlayerDeathRadius.GetValue(instance),
-                isBoomSpear = (bool)EnemyReflectionCache.ExplosionIsBoomSpear.GetValue(instance),
-                playerExplosionId = (int)EnemyReflectionCache.ExplosionPlayerExplosionID.GetValue(instance),
-                explosionOwnerId = (ulong)EnemyReflectionCache.ExplosionOwnerId.GetValue(instance)
+                knockBackRadius = (float)ReflectionCache.ExplosionKnockBackRadius.GetValue(instance),
+                layers = (LayerMask)ReflectionCache.ExplosionLayers.GetValue(instance),
+                deathRadius = (float)ReflectionCache.ExplosionDeathRadius.GetValue(instance),
+                playerDeathRadius = (float)ReflectionCache.ExplosionPlayerDeathRadius.GetValue(instance),
+                isBoomSpear = (bool)ReflectionCache.ExplosionIsBoomSpear.GetValue(instance),
+                playerExplosionId = (int)ReflectionCache.ExplosionPlayerExplosionID.GetValue(instance),
+                explosionOwnerId = (ulong)ReflectionCache.ExplosionOwnerId.GetValue(instance)
             };
         }
 
@@ -676,10 +603,10 @@ namespace StatsMod
                     return false; // Skip original
                 }
 
-                if ((bool)EnemyReflectionCache.IsHostProperty.GetValue(__instance))
+                if ((bool)ReflectionCache.IsHostProperty.GetValue(__instance))
                 {
                     // Call ShotClientRpc using cached reflection
-                    EnemyReflectionCache.ProjectileLauncherShotClientRpc?.Invoke(__instance, null);
+                    ReflectionCache.ProjectileLauncherShotClientRpc?.Invoke(__instance, null);
                 }
 
                 GameObject gameObject;
@@ -718,12 +645,12 @@ namespace StatsMod
                 rigidbody.AddTorque(__instance.rotationForce, ForceMode2D.Impulse);
 
                 // Call Impact method using cached reflection
-                EnemyReflectionCache.ProjectileLauncherImpact?.Invoke(__instance, new object[] { -__instance.recoil * __instance.transform.up, __instance.point.position, false, true });
+                ReflectionCache.ProjectileLauncherImpact?.Invoke(__instance, new object[] { -__instance.recoil * __instance.transform.up, __instance.point.position, false, true });
 
                 // Handle collision ignoring
-                if (EnemyReflectionCache.ProjectileLauncherCollider != null)
+                if (ReflectionCache.ProjectileLauncherCollider != null)
                 {
-                    Collider2D launcherCollider = (Collider2D)EnemyReflectionCache.ProjectileLauncherCollider.GetValue(__instance);
+                    Collider2D launcherCollider = (Collider2D)ReflectionCache.ProjectileLauncherCollider.GetValue(__instance);
                     Physics2D.IgnoreCollision(launcherCollider, gameObject.GetComponent<Collider2D>(), true);
                 }
 
@@ -736,9 +663,9 @@ namespace StatsMod
                 __instance.ammo = ammo - 1f;
 
                 // Set hold offset using cached reflection
-                if (EnemyReflectionCache.ProjectileLauncherReloadOffset != null)
+                if (ReflectionCache.ProjectileLauncherReloadOffset != null)
                 {
-                    __instance.holdOffset = (Vector2)EnemyReflectionCache.ProjectileLauncherReloadOffset.GetValue(__instance);
+                    __instance.holdOffset = (Vector2)ReflectionCache.ProjectileLauncherReloadOffset.GetValue(__instance);
                 }
 
                 return false; // Skip the original method
