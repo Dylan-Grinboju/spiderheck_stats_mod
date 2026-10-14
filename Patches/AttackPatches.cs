@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
@@ -9,8 +10,6 @@ using Logger = Silk.Logger;
 
 namespace StatsMod
 {
-    // Attacks that can knock back as well as damage run inside HitLogic.BeginAttack/EndAttack, and the targets
-    // record the hit when the game applies it (see the receivers below), so no hit geometry is repeated here.
     internal static class AttackReflectionCache
     {
         public static readonly AccessTools.FieldRef<EnemyHealthSystem, float> EnemyImmuneTime =
@@ -20,182 +19,151 @@ namespace StatsMod
             AccessTools.FieldRefAccess<SpiderHealthSystem, float>("_immuneTill");
     }
 
-    // Particle Blade and the other force field weapons. On an enemy's stinger, blade or strut the hit is a knockback
-    [HarmonyPatch(typeof(ForceField), "Damage")]
-    class ForceFieldAttackPatch
-    {
-        static void Prefix(ForceField __instance, out HitLogic.AttackScope __state)
-        {
-            __state = default;
-            try
-            {
-                __state = HitLogic.BeginAttack(HitLogic.WeaponPlayer(__instance.GetComponentInParent<Weapon>()), "Particle Blade");
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"Error tracking ForceField hit: {ex.Message}");
-            }
-        }
-
-        static void Finalizer(HitLogic.AttackScope __state) => HitLogic.EndAttack(__state);
-    }
-
-    [HarmonyPatch(typeof(SawDisc), "TryDamage")]
-    class SawDiscAttackPatch
-    {
-        static void Prefix(SawDisc __instance, out HitLogic.AttackScope __state)
-        {
-            __state = default;
-            try
-            {
-                PlayerInput owner = HitLogic.GetDiscOwner(__instance.gameObject);
-                if (owner == null)
-                {
-                    owner = __instance.GetComponentInParent<PlayerInput>();
-                }
-                __state = HitLogic.BeginAttack(owner, "SawDisc");
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"Error tracking SawDisc hit: {ex.Message}");
-            }
-        }
-
-        static void Finalizer(HitLogic.AttackScope __state) => HitLogic.EndAttack(__state);
-    }
-
-    [HarmonyPatch(typeof(EnergyBall), "OnCollisionEnter2D")]
-    class EnergyBallAttackPatch
-    {
-        static void Prefix(EnergyBall __instance, out HitLogic.AttackScope __state)
-        {
-            __state = default;
-            try
-            {
-                PlayerInput owner = __instance.owner != null ? __instance.owner.GetComponentInParent<PlayerInput>() : null;
-                __state = HitLogic.BeginAttack(owner, "EnergyBall");
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"Error tracking EnergyBall hit: {ex.Message}");
-            }
-        }
-
-        static void Finalizer(HitLogic.AttackScope __state) => HitLogic.EndAttack(__state);
-    }
-
-    [HarmonyPatch(typeof(KhepriStaff), "Zap")]
-    class KhepriStaffAttackPatch
-    {
-        static void Prefix(KhepriStaff __instance, out HitLogic.AttackScope __state)
-        {
-            __state = default;
-            try
-            {
-                __state = HitLogic.BeginAttack(HitLogic.WeaponPlayer(__instance), "KhepriStaff");
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"Error tracking KhepriStaff hit: {ex.Message}");
-            }
-        }
-
-        static void Finalizer(HitLogic.AttackScope __state) => HitLogic.EndAttack(__state);
-    }
-
-    // Kills inside deathRadius, knocks back the rest of knockBackRadius
-    [HarmonyPatch(typeof(Explosion), "KnockBack")]
-    class ExplosionAttackPatch
-    {
-        static void Prefix(Explosion __instance, out HitLogic.AttackScope __state)
-        {
-            __state = default;
-            try
-            {
-                // SpiderSurge's ultimate Pulse runs an explosion without an owner inside the pulse, it keeps the pulse's player
-                PlayerInput owner = HitLogic.GetExplosionOwner(__instance);
-                if (owner == null)
-                {
-                    owner = HitLogic.CurrentAttacker;
-                }
-                if (owner != null)
-                {
-                    __state = HitLogic.BeginAttack(owner, "Explosions");
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"Error tracking Explosion hit: {ex.Message}");
-            }
-        }
-
-        static void Finalizer(HitLogic.AttackScope __state) => HitLogic.EndAttack(__state);
-    }
-
-    [HarmonyPatch(typeof(SpiderHealthSystem), "AfterlifeExplosion")]
-    class AfterlifeExplosionAttackPatch
-    {
-        static void Prefix(SpiderHealthSystem __instance, out HitLogic.AttackScope __state)
-        {
-            __state = default;
-            try
-            {
-                __state = HitLogic.BeginAttack(__instance.GetComponentInParent<PlayerInput>(), "Explosions");
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"Error tracking afterlife explosion hit: {ex.Message}");
-            }
-        }
-
-        static void Finalizer(HitLogic.AttackScope __state) => HitLogic.EndAttack(__state);
-    }
-
-    // The snow explosion only knocks back, and does it in OnEnable, inside this RPC's Instantiate
-    [HarmonyPatch(typeof(Snowballs), "ExplodeClientRpc")]
-    class SnowballAttackPatch
-    {
-        static void Prefix(Snowballs __instance, out HitLogic.AttackScope __state)
-        {
-            __state = default;
-            try
-            {
-                __state = HitLogic.BeginAttack(HitLogic.WeaponPlayer(__instance), "Snowball");
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"Error tracking Snowball hit: {ex.Message}");
-            }
-        }
-
-        static void Finalizer(HitLogic.AttackScope __state) => HitLogic.EndAttack(__state);
-    }
-
-    // SpiderSurge's Pulse ability knocks back everything around its player, the ultimate also kills
+    // Every player attack runs inside HitLogic.BeginAttack/EndAttack, and the targets record the hit when the game
+    // applies it (see the receivers below), so no hit geometry is repeated here and hits on immune targets don't count.
     [HarmonyPatch]
-    class SpiderSurgePulseAttackPatch
+    class AttackScopePatch
     {
-        private static readonly Type PulseType = AccessTools.TypeByName("SpiderSurge.PulseAbility");
-        private static readonly FieldInfo PlayerInputField = PulseType != null ? AccessTools.Field(PulseType, "playerInput") : null;
+        private struct Attack
+        {
+            public string Weapon;
+            public Func<object, PlayerInput> Owner;
+        }
 
-        static bool Prepare() => TargetMethod() != null && PlayerInputField != null;
+        private static readonly Dictionary<(Type, string), Attack> attacks = new Dictionary<(Type, string), Attack>();
 
-        static MethodBase TargetMethod() => PulseType != null ? AccessTools.Method(PulseType, "ApplyPulsePhysics") : null;
+        static AttackScopePatch()
+        {
+            Add<DamageOnParticle>("OnParticleCollision", "Shotgun", particles => HitLogic.WeaponPlayer(particles.ignoreWeapon));
+            Add<RailShot>("ProcessHit", "RailShot", RailShotOwner);
+            Add<DeathCube>("Fire", "DeathCube", HitLogic.WeaponPlayer);
+            Add<DeathRay>("Fire", "DeathRay", HitLogic.WeaponPlayer);
+            Add<LaserCannon>("DamageHit", "Laser Cannon", HitLogic.WeaponPlayer);
+            Add<LaserCube>("Beam", "Laser Cube", HitLogic.WeaponPlayer);
+            // Particle Blade and the other force field weapons. On an enemy's stinger, blade or strut the hit is a knockback
+            Add<ForceField>("Damage", "Particle Blade", field => HitLogic.WeaponPlayer(field.GetComponentInParent<Weapon>()));
+            Add<SawDisc>("TryDamage", "SawDisc", SawDiscOwner);
+            Add<EnergyBall>("OnCollisionEnter2D", "EnergyBall", ball => ball.owner != null ? ball.owner.GetComponentInParent<PlayerInput>() : null);
+            Add<KhepriStaff>("Zap", "KhepriStaff", HitLogic.WeaponPlayer);
+            Add<Explosion>("KnockBack", "Explosions", ExplosionOwner);
+            Add<SpiderHealthSystem>("AfterlifeExplosion", "Explosions", spider => spider.GetComponentInParent<PlayerInput>());
+            // The snow explosion only knocks back, and does it in OnEnable, inside this RPC's Instantiate
+            Add<Snowballs>("ExplodeClientRpc", "Snowball", HitLogic.WeaponPlayer);
+        }
 
-        static void Prefix(object __instance, out HitLogic.AttackScope __state)
+        private static void Add<T>(string method, string weapon, Func<T, PlayerInput> owner)
+        {
+            attacks[(typeof(T), method)] = new Attack { Weapon = weapon, Owner = instance => owner((T)instance) };
+        }
+
+        static IEnumerable<MethodBase> TargetMethods()
+        {
+            foreach ((Type type, string name) in attacks.Keys.ToList())
+            {
+                MethodInfo method = AccessTools.Method(type, name);
+                if (method != null)
+                {
+                    yield return method;
+                }
+                else
+                {
+                    Logger.LogWarning($"{type.Name}.{name} not found, its hits are not tracked");
+                }
+            }
+        }
+
+        static void Prefix(object __instance, MethodBase __originalMethod, out HitLogic.AttackScope __state)
         {
             __state = default;
             try
             {
-                __state = HitLogic.BeginAttack(PlayerInputField.GetValue(__instance) as PlayerInput, "Pulse");
+                Attack attack = attacks[(__originalMethod.DeclaringType, __originalMethod.Name)];
+                __state = HitLogic.BeginAttack(attack.Owner(__instance), attack.Weapon);
             }
             catch (Exception ex)
             {
-                Logger.LogError($"Error tracking Pulse hit: {ex.Message}");
+                Logger.LogError($"Error tracking {__originalMethod.DeclaringType?.Name}.{__originalMethod.Name} hit: {ex.Message}");
             }
         }
 
         static void Finalizer(HitLogic.AttackScope __state) => HitLogic.EndAttack(__state);
+
+        // The shooter's spider is on the ignore list; a shot reflected by a blade ignores only that blade
+        private static PlayerInput RailShotOwner(RailShot shot)
+        {
+            foreach (GameObject ignored in shot.ignore)
+            {
+                if (ignored == null) continue;
+
+                SpiderHealthSystem spider = ignored.GetComponentInParent<SpiderHealthSystem>();
+                if (spider != null) return spider.GetComponentInParent<PlayerInput>();
+
+                Weapon weapon = ignored.GetComponentInParent<Weapon>();
+                if (weapon != null) return HitLogic.WeaponPlayer(weapon);
+            }
+            return null;
+        }
+
+        private static PlayerInput SawDiscOwner(SawDisc disc)
+        {
+            PlayerInput owner = HitLogic.GetDiscOwner(disc.gameObject);
+            return owner != null ? owner : disc.GetComponentInParent<PlayerInput>();
+        }
+
+        // SpiderSurge's ultimate Pulse runs an explosion without an owner inside the pulse, it keeps the pulse's player
+        private static PlayerInput ExplosionOwner(Explosion explosion)
+        {
+            PlayerInput owner = HitLogic.GetExplosionOwner(explosion);
+            return owner != null ? owner : HitLogic.CurrentAttacker;
+        }
+
+        // SpiderSurge's Pulse knocks back everything around its player, the ultimate also kills.
+        // SpiderSurge can load after this mod, so the Pulse is patched once its assembly is loaded.
+        public static void PatchSpiderSurgePulse(Harmony harmony)
+        {
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                if (TryPatchPulse(harmony, assembly)) return;
+            }
+
+            AssemblyLoadEventHandler onLoad = null;
+            onLoad = (sender, args) =>
+            {
+                if (TryPatchPulse(harmony, args.LoadedAssembly))
+                {
+                    AppDomain.CurrentDomain.AssemblyLoad -= onLoad;
+                }
+            };
+            AppDomain.CurrentDomain.AssemblyLoad += onLoad;
+        }
+
+        private static bool TryPatchPulse(Harmony harmony, Assembly assembly)
+        {
+            try
+            {
+                Type pulse = assembly.GetType("SpiderSurge.PulseAbility", false);
+                if (pulse == null) return false;
+
+                MethodInfo method = AccessTools.Method(pulse, "ApplyPulsePhysics");
+                FieldInfo playerInput = AccessTools.Field(pulse, "playerInput");
+                if (method == null || playerInput == null)
+                {
+                    Logger.LogWarning("SpiderSurge's PulseAbility changed, Pulse hits are not tracked");
+                    return true;
+                }
+
+                attacks[(pulse, method.Name)] = new Attack { Weapon = "Pulse", Owner = ability => playerInput.GetValue(ability) as PlayerInput };
+                harmony.Patch(method,
+                    prefix: new HarmonyMethod(typeof(AttackScopePatch), nameof(Prefix)),
+                    finalizer: new HarmonyMethod(typeof(AttackScopePatch), nameof(Finalizer)));
+                Logger.LogInfo("Patched SpiderSurge's Pulse");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error patching SpiderSurge's Pulse: {ex.Message}");
+            }
+            return true;
+        }
     }
 
     // Receivers. Enemy stingers, blades, roller struts and Khepri armor pass their hits on to EnemyHealthSystem,
@@ -235,15 +203,15 @@ namespace StatsMod
         }
     }
 
+    // A weapon's own recoil reaches the holder as an Impact without stun, which leaves the earlier hit in place
     [HarmonyPatch(typeof(SpiderHealthSystem), "Impact")]
     class SpiderImpactReceiverPatch
     {
-        static void Prefix(SpiderHealthSystem __instance)
+        static void Prefix(SpiderHealthSystem __instance, bool stun)
         {
             try
             {
-                if (HitLogic.CurrentAttacker == null) return;
-                HitLogic.OnPlayerHitByAttack(__instance);
+                HitLogic.OnPlayerHit(__instance, replacesEarlierHit: stun);
             }
             catch (Exception ex)
             {
@@ -259,12 +227,51 @@ namespace StatsMod
         {
             try
             {
-                if (HitLogic.CurrentAttacker == null || Time.time < AttackReflectionCache.SpiderImmuneTill(__instance)) return;
-                HitLogic.OnPlayerHitByAttack(__instance);
+                if (Time.time < AttackReflectionCache.SpiderImmuneTill(__instance)) return;
+                HitLogic.OnPlayerHit(__instance, replacesEarlierHit: true);
             }
             catch (Exception ex)
             {
                 Logger.LogError($"Error recording spider damage: {ex.Message}");
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(SpiderHealthSystem), "FixedUpdate")]
+    class SpiderFootingPatch
+    {
+        static void Postfix(SpiderHealthSystem __instance, Stabilizer ____stabilizer)
+        {
+            try
+            {
+                HitLogic.UpdatePlayerFooting(__instance, ____stabilizer);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error tracking spider footing: {ex.Message}");
+            }
+        }
+    }
+
+    // Lava. Also runs for solid lava through OnCollisionStay2D
+    [HarmonyPatch(typeof(DeathZone), "OnTriggerStay2D")]
+    class DeathZoneContactPatch
+    {
+        static void Prefix(Collider2D other, float ____disintegrateDelayMod)
+        {
+            try
+            {
+                if (other.isTrigger || !other.CompareTag("PlayerRigidbody")) return;
+
+                SpiderHealthSystem spider = other.GetComponent<SpiderHealthSystem>();
+                if (spider != null)
+                {
+                    HitLogic.OnPlayerTouchedDeathZone(spider, ____disintegrateDelayMod);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error tracking lava contact: {ex.Message}");
             }
         }
     }

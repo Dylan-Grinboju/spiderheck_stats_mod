@@ -77,6 +77,7 @@ namespace StatsMod
 
             Harmony harmony = new Harmony("com.StatsMod");
             harmony.PatchAll();
+            AttackScopePatch.PatchSpiderSurgePulse(harmony);
 
             Logger.LogInfo("Applied patches:");
             foreach (var method in harmony.GetPatchedMethods())

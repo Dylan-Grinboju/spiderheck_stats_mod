@@ -18,12 +18,19 @@ namespace StatsMod
         private const float DirectPlayerKillCreditWindow = 0.5f;
         private const float ShieldCreditWindow = 0.1f;
         private const float StaleHitAge = 30f;
+        // A spider standing in control this long after a hit wasn't knocked anywhere
+        private const float FootingRegainedTime = 0.5f;
+        // After touching lava, a shield break and its 0.25s of immunity can still delay the death
+        private const float DeathZoneGrace = 0.5f;
 
         private struct HitRecord
         {
             public PlayerInput Player;
             public string Weapon;
             public float Time;
+            public float FootingSince;
+            public bool InDeathZone;
+            public float DeathZoneDeadline;
         }
 
         public struct AttackScope
@@ -68,26 +75,7 @@ namespace StatsMod
             { SerializationEnemyName.ShieldedHornet, "Hornet" },
         };
 
-        public static void RecordHit(GameObject target, PlayerInput player, string weaponName)
-        {
-            if (target == null || player == null) return;
-            if (target.GetComponent<Weapon>() != null) return;
-
-            SpiderHealthSystem spiderHealth = target.GetComponentInParent<SpiderHealthSystem>();
-            if (spiderHealth != null)
-            {
-                RecordPlayerHit(spiderHealth, player, weaponName);
-                return;
-            }
-
-            EnemyHealthSystem enemyHealth = target.GetComponentInParent<EnemyHealthSystem>();
-            if (enemyHealth != null)
-            {
-                RecordEnemyHit(enemyHealth, player, weaponName);
-            }
-        }
-
-        // While a player-caused action runs (an explosion, a blade hit, a pulse), every enemy or spider the game damages
+        // While a player's attack runs (a shot, an explosion, a blade hit, a pulse), every enemy or spider the game damages
         // or knocks back counts as hit by that player, since a knockback can push the target into lava.
         public static AttackScope BeginAttack(PlayerInput player, string weaponName)
         {
@@ -112,10 +100,67 @@ namespace StatsMod
             RecordEnemyHit(enemy, attackPlayer, attackWeapon);
         }
 
-        public static void OnPlayerHitByAttack(SpiderHealthSystem spider)
+        // A hit by another player is recorded. Anything else that damages or stuns the spider (an enemy, a hazard, an
+        // explosion nobody owns, its own attack) replaces that record, so the earlier player isn't credited for the death.
+        public static void OnPlayerHit(SpiderHealthSystem spider, bool replacesEarlierHit)
         {
-            if (attackPlayer == null) return;
-            RecordPlayerHit(spider, attackPlayer, attackWeapon);
+            if (attackPlayer == null)
+            {
+                if (replacesEarlierHit) lastPlayerHits.Remove(spider.GetInstanceID());
+                return;
+            }
+
+            PlayerInput victim = spider.rootObject != null ? spider.rootObject.GetComponentInParent<PlayerInput>() : null;
+            if (victim == null) return;
+
+            if (victim != attackPlayer)
+            {
+                StoreHit(lastPlayerHits, spider.GetInstanceID(), attackPlayer, attackWeapon);
+            }
+            else if (replacesEarlierHit)
+            {
+                lastPlayerHits.Remove(spider.GetInstanceID());
+            }
+        }
+
+        // A hit spider that stands in control for a moment wasn't knocked anywhere, so a later fall into lava is its own
+        public static void UpdatePlayerFooting(SpiderHealthSystem spider, Stabilizer stabilizer)
+        {
+            if (lastPlayerHits.Count == 0) return;
+
+            int id = spider.GetInstanceID();
+            if (!lastPlayerHits.TryGetValue(id, out HitRecord hit) || hit.InDeathZone) return;
+
+            bool inControl = stabilizer != null && stabilizer.grounded && !spider.stunned;
+            if (!inControl)
+            {
+                if (hit.FootingSince >= 0f)
+                {
+                    hit.FootingSince = -1f;
+                    lastPlayerHits[id] = hit;
+                }
+            }
+            else if (hit.FootingSince < 0f)
+            {
+                hit.FootingSince = Time.time;
+                lastPlayerHits[id] = hit;
+            }
+            else if (Time.time - hit.FootingSince >= FootingRegainedTime)
+            {
+                lastPlayerHits.Remove(id);
+            }
+        }
+
+        // A spider pushed into lava counts from when it touches it, since the insulation modifier delays the death
+        public static void OnPlayerTouchedDeathZone(SpiderHealthSystem spider, float disintegrateDelay)
+        {
+            int id = spider.GetInstanceID();
+            if (!lastPlayerHits.TryGetValue(id, out HitRecord hit) || hit.InDeathZone) return;
+            if (Time.time - hit.Time > KillCreditWindow) return;
+
+            hit.InDeathZone = true;
+            hit.DeathZoneDeadline = Time.time + disintegrateDelay + DeathZoneGrace;
+            lastPlayerHits[id] = hit;
         }
 
         // The game stores an explosion's owner as a client id that is 0 both for player 0 and for explosions nobody owns
@@ -221,23 +266,19 @@ namespace StatsMod
 
         public static void OnPlayerDeath(SpiderHealthSystem spider)
         {
+            int id = spider.GetInstanceID();
+            if (!lastPlayerHits.TryGetValue(id, out HitRecord pending)) return;
+
             // Lava and falling out of the map mark the spider as dying before it dies, a damage kill happens on the hit
-            float window = SpiderDying(spider) ? KillCreditWindow : DirectPlayerKillCreditWindow;
-            if (!TryTakeHit(lastPlayerHits, spider.GetInstanceID(), window, out HitRecord hit, out _)) return;
+            float window = !SpiderDying(spider) ? DirectPlayerKillCreditWindow
+                : pending.InDeathZone ? pending.DeathZoneDeadline - pending.Time
+                : KillCreditWindow;
+            if (!TryTakeHit(lastPlayerHits, id, window, out HitRecord hit, out _)) return;
 
             Logger.LogInfo($"Recording friendly kill for {PlayerLabel(hit.Player)}, weapon:{hit.Weapon}, {Time.time - hit.Time:F2}s after the hit");
             PlayerTracker.Instance.IncrementFriendlyKill(hit.Player);
             PlayerTracker.Instance.IncrementWeaponHit(hit.Player, hit.Weapon);
             PlayerTracker.Instance.IncrementEnemyKillByName(hit.Player, "Player");
-        }
-
-        private static void RecordPlayerHit(SpiderHealthSystem spider, PlayerInput player, string weaponName)
-        {
-            PlayerInput victim = spider.rootObject != null ? spider.rootObject.GetComponentInParent<PlayerInput>() : null;
-            if (victim != null && victim != player)
-            {
-                StoreHit(lastPlayerHits, spider.GetInstanceID(), player, weaponName);
-            }
         }
 
         private static void RecordEnemyHit(EnemyHealthSystem enemy, PlayerInput player, string weaponName)
@@ -260,7 +301,7 @@ namespace StatsMod
                 lastPruneTime = now;
             }
 
-            hits[targetId] = new HitRecord { Player = player, Weapon = weaponName, Time = now };
+            hits[targetId] = new HitRecord { Player = player, Weapon = weaponName, Time = now, FootingSince = -1f };
         }
 
         private static void PruneStaleHits(Dictionary<int, HitRecord> hits, float now)

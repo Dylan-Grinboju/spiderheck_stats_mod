@@ -92,26 +92,15 @@ namespace StatsMod
     }
 
     // Lava and falling out of the map call Disintegrate every tick, also on immune, shielded and already dying spiders.
-    // The RPC is what kills, and only once, so a lava death is counted when it turns a living spider dead.
-    // On the host the RPC runs again nested inside itself, hence the set.
-    [HarmonyPatch(typeof(SpiderHealthSystem), "DisintegrateClientRpc")]
+    // This coroutine starts once per spider, when the disintegration kills it; a dead or astral spider only dissolves.
+    [HarmonyPatch(typeof(SpiderHealthSystem), "DisintegrateSpiderAndDestroy")]
     public class SpiderHealthSystemDisintegratePatch
     {
-        private static readonly HashSet<int> countedSpiders = new HashSet<int>();
-
-        static void Prefix(SpiderHealthSystem __instance, out bool __state)
-        {
-            __state = __instance.dead;
-        }
-
-        static void Postfix(SpiderHealthSystem __instance, bool __state)
+        static void Prefix(SpiderHealthSystem __instance)
         {
             try
             {
-                if (__state || !__instance.dead || __instance.rootObject == null)
-                    return;
-
-                if (!countedSpiders.Add(__instance.GetInstanceID()))
+                if (__instance.dead || __instance.astralDead || __instance.rootObject == null)
                     return;
 
                 PlayerInput playerInput = __instance.rootObject.GetComponentInParent<PlayerInput>();
@@ -123,7 +112,7 @@ namespace StatsMod
             }
             catch (Exception ex)
             {
-                Logger.LogError($"Error in SpiderHealthSystem.DisintegrateClientRpc patch: {ex.Message}");
+                Logger.LogError($"Error in SpiderHealthSystem.DisintegrateSpiderAndDestroy patch: {ex.Message}");
             }
         }
     }
