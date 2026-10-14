@@ -16,6 +16,12 @@ namespace StatsMod
 
         public static readonly FieldInfo SecondaryColorField =
             typeof(SpiderCustomizer).GetField("_secondaryColor", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        public static readonly AccessTools.FieldRef<SpiderHealthSystem, float> SpiderImmuneTill =
+            AccessTools.FieldRefAccess<SpiderHealthSystem, float>("_immuneTill");
+
+        public static readonly AccessTools.FieldRef<SpiderHealthSystem, bool> SpiderDying =
+            AccessTools.FieldRefAccess<SpiderHealthSystem, bool>("_dying");
     }
 
     [HarmonyPatch(typeof(PlayerInput), "OnEnable")]

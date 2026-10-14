@@ -398,6 +398,10 @@ namespace StatsMod
             if (player != null && activePlayers.TryGetValue(player, out PlayerData data))
             {
                 data.Kills++;
+
+                // A kill credited after the killer died (the target reached lava or blew up later) starts no streak
+                if (!data.CurrentAliveStartTime.HasValue) return;
+
                 data.KillStreak++;
                 if (data.KillStreak > data.MaxKillStreak)
                 {
@@ -605,7 +609,6 @@ namespace StatsMod
                 }
             }
 
-            Logger.LogError($"Could not find PlayerController with playerID.Value: {playerId}");
             return null;
         }
 

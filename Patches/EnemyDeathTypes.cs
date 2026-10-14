@@ -18,22 +18,14 @@ namespace StatsMod
         // EnemyHealthSystem fields
         public static readonly AccessTools.FieldRef<EnemyHealthSystem, bool> EnemyExploding =
             AccessTools.FieldRefAccess<EnemyHealthSystem, bool>("_exploding");
+        public static readonly AccessTools.FieldRef<EnemyHealthSystem, float> EnemyImmuneTime =
+            AccessTools.FieldRefAccess<EnemyHealthSystem, float>("_immuneTime");
 
         // DiscLauncher methods
         public static readonly MethodInfo DiscLauncherLaunchDiscClientRpc =
             AccessTools.Method(typeof(DiscLauncher), "LaunchDiscClientRpc");
         public static readonly MethodInfo DiscLauncherImpact =
             AccessTools.Method(typeof(DiscLauncher), "Impact");
-
-        // ProjectileLauncher fields and methods
-        public static readonly MethodInfo ProjectileLauncherShotClientRpc =
-            AccessTools.Method(typeof(ProjectileLauncher), "ShotClientRpc");
-        public static readonly MethodInfo ProjectileLauncherImpact =
-            AccessTools.Method(typeof(ProjectileLauncher), "Impact");
-        public static readonly FieldInfo ProjectileLauncherCollider =
-            AccessTools.Field(typeof(ProjectileLauncher), "_launcherCollider");
-        public static readonly FieldInfo ProjectileLauncherReloadOffset =
-            AccessTools.Field(typeof(ProjectileLauncher), "reloadOffset");
     }
 
     // Every enemy death ends here: direct damage, lava (Disintegrate), roller struts, stuck in walls.
@@ -144,103 +136,6 @@ namespace StatsMod
             }
         }
     }
-
-    // ParticleBladeLauncher - Track particle blade projectiles and their owners
-    [HarmonyPatch(typeof(ProjectileLauncher), "Shoot")]
-    class ProjectileLauncherShootPatch
-    {
-        static bool Prefix(ProjectileLauncher __instance)
-        {
-            try
-            {
-                // Check if this launcher fires ParticleBlade projectiles
-                ParticleBlade particleBladeComponent = __instance.projectile.GetComponent<ParticleBlade>();
-                if (particleBladeComponent == null)
-                {
-                    return true; // Not a ParticleBlade launcher, let original method run
-                }
-
-                // Replicate the entire Shoot method with our owner tracking addition
-                if (Physics2D.Raycast(__instance.point.transform.position, __instance.transform.up, 0.01f, GameController.instance.worldLayers).collider)
-                {
-                    return false; // Skip original
-                }
-
-                if ((bool)EnemyReflectionCache.IsHostProperty.GetValue(__instance))
-                {
-                    // Call ShotClientRpc using cached reflection
-                    EnemyReflectionCache.ProjectileLauncherShotClientRpc?.Invoke(__instance, null);
-                }
-
-                GameObject gameObject;
-                if (CustomMapEditor.ParkourActive())
-                {
-                    gameObject = Object.Instantiate(__instance.projectile, __instance.point.position, __instance.transform.rotation, CustomMapEditor.instance.objParent);
-                }
-                else
-                {
-                    gameObject = Object.Instantiate(__instance.projectile, __instance.point.position, __instance.transform.rotation);
-                }
-
-                BasicProjectile basicProjectileComponent = gameObject.GetComponent<BasicProjectile>();
-                if (basicProjectileComponent != null)
-                {
-                    HitLogic.SetProjectileOwner(basicProjectileComponent, __instance.GetOwnerClientId(), __instance);
-                }
-                else
-                {
-                    Weapon weaponComponent = gameObject.GetComponent<Weapon>();
-                    if (weaponComponent)
-                    {
-                        weaponComponent.ownerWeaponClientId = __instance.GetOwnerClientId();
-
-                        // **THIS IS MY ADDITION** - Set the owner property for ParticleBlade tracking
-                        weaponComponent.owner = __instance.owner;
-                    }
-                }
-
-                gameObject.GetComponent<NetworkObject>().Spawn(true);
-                PickupEffects componentInChildren = gameObject.GetComponentInChildren<PickupEffects>();
-                componentInChildren?.StopFloat();
-
-                Rigidbody2D rigidbody = gameObject.GetComponent<Rigidbody2D>();
-                rigidbody.AddForce(__instance.transform.up * __instance.shotForce, ForceMode2D.Impulse);
-                rigidbody.AddTorque(__instance.rotationForce, ForceMode2D.Impulse);
-
-                // Call Impact method using cached reflection
-                EnemyReflectionCache.ProjectileLauncherImpact?.Invoke(__instance, new object[] { -__instance.recoil * __instance.transform.up, __instance.point.position, false, true });
-
-                // Handle collision ignoring
-                if (EnemyReflectionCache.ProjectileLauncherCollider != null)
-                {
-                    Collider2D launcherCollider = (Collider2D)EnemyReflectionCache.ProjectileLauncherCollider.GetValue(__instance);
-                    Physics2D.IgnoreCollision(launcherCollider, gameObject.GetComponent<Collider2D>(), true);
-                }
-
-                if (__instance.equipped)
-                {
-                    Physics2D.IgnoreCollision(__instance.owner?.healthSystem?.GetComponent<Collider2D>(), gameObject.GetComponent<Collider2D>(), true);
-                }
-
-                float ammo = __instance.ammo;
-                __instance.ammo = ammo - 1f;
-
-                // Set hold offset using cached reflection
-                if (EnemyReflectionCache.ProjectileLauncherReloadOffset != null)
-                {
-                    __instance.holdOffset = (Vector2)EnemyReflectionCache.ProjectileLauncherReloadOffset.GetValue(__instance);
-                }
-
-                return false; // Skip the original method
-            }
-            catch (System.Exception ex)
-            {
-                Logger.LogError($"Error in ProjectileLauncher Shoot patch: {ex.Message}");
-                return true; // Execute original method on error
-            }
-        }
-    }
-
 
     // Patch Weapon.Equip to set the correct ownerWeaponClientId after the original method runs
     [HarmonyPatch(typeof(Weapon), "Equip")]

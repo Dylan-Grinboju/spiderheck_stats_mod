@@ -13,14 +13,11 @@ namespace StatsMod
     // with health left) can't count early, and deaths the game decides later (struts, fuses, lava) still count.
     public static class HitLogic
     {
-        // The ExplodingRoller blows up 2s after losing its struts, and a knocked back target takes a moment to reach lava
         private const float KillCreditWindow = 2.5f;
         private const float DirectPlayerKillCreditWindow = 0.5f;
         private const float ShieldCreditWindow = 0.1f;
         private const float StaleHitAge = 30f;
-        // A spider standing in control this long after a hit wasn't knocked anywhere
         private const float FootingRegainedTime = 0.5f;
-        // After touching lava, a shield break and its 0.25s of immunity can still delay the death
         private const float DeathZoneGrace = 0.5f;
 
         private struct HitRecord
@@ -36,6 +33,7 @@ namespace StatsMod
         public struct AttackScope
         {
             internal bool Active;
+            internal bool InAttack;
             internal PlayerInput Player;
             internal string Weapon;
         }
@@ -44,13 +42,12 @@ namespace StatsMod
         private static readonly Dictionary<int, HitRecord> lastPlayerHits = new Dictionary<int, HitRecord>();
         private static readonly Dictionary<int, HitRecord> explosionOwners = new Dictionary<int, HitRecord>();
         private static readonly Dictionary<int, HitRecord> projectileOwners = new Dictionary<int, HitRecord>();
+        private static readonly Dictionary<int, HitRecord> rollerFuses = new Dictionary<int, HitRecord>();
         private static float lastPruneTime = 0f;
 
+        private static bool inAttack;
         private static PlayerInput attackPlayer;
         private static string attackWeapon;
-
-        private static readonly AccessTools.FieldRef<SpiderHealthSystem, bool> SpiderDying =
-            AccessTools.FieldRefAccess<SpiderHealthSystem, bool>("_dying");
 
         private static Dictionary<int, PlayerInput> discOwnerTracker = new Dictionary<int, PlayerInput>();
         private static readonly object discOwnerLock = new object();
@@ -75,11 +72,13 @@ namespace StatsMod
             { SerializationEnemyName.ShieldedHornet, "Hornet" },
         };
 
-        // While a player's attack runs (a shot, an explosion, a blade hit, a pulse), every enemy or spider the game damages
-        // or knocks back counts as hit by that player, since a knockback can push the target into lava.
+        // While an attack runs (a shot, an explosion, a blade hit, a pulse), every enemy or spider the game damages
+        // or knocks back counts as hit by its player, since a knockback can push the target into lava.
+        // Explosions nobody owns and weapons no player holds run as attacks without a player.
         public static AttackScope BeginAttack(PlayerInput player, string weaponName)
         {
-            AttackScope previous = new AttackScope { Active = true, Player = attackPlayer, Weapon = attackWeapon };
+            AttackScope previous = new AttackScope { Active = true, InAttack = inAttack, Player = attackPlayer, Weapon = attackWeapon };
+            inAttack = true;
             attackPlayer = player;
             attackWeapon = weaponName;
             return previous;
@@ -88,16 +87,61 @@ namespace StatsMod
         public static void EndAttack(AttackScope previous)
         {
             if (!previous.Active) return;
+            inAttack = previous.InAttack;
             attackPlayer = previous.Player;
             attackWeapon = previous.Weapon;
         }
 
         public static PlayerInput CurrentAttacker => attackPlayer;
 
-        public static void OnEnemyHitByAttack(EnemyHealthSystem enemy)
+        // An attack without a player, or damage from anything else (a friendly wasp, a hazard), takes the kill away
+        // from the last player who hit the enemy. Bumps from enemies, pulls and portals outside an attack don't.
+        public static void OnEnemyHit(EnemyHealthSystem enemy, bool damage)
         {
-            if (attackPlayer == null) return;
-            RecordEnemyHit(enemy, attackPlayer, attackWeapon);
+            if (enemy.serializationEnemyName == SerializationEnemyName.FriendlyWasp) return;
+
+            if (attackPlayer != null)
+            {
+                StoreHit(lastEnemyHits, enemy.GetInstanceID(), attackPlayer, attackWeapon);
+            }
+            else if (inAttack || damage)
+            {
+                lastEnemyHits.Remove(enemy.GetInstanceID());
+            }
+        }
+
+        // When the fuse runs out, the kill goes to whoever broke the roller's last strut, or to nobody when a spider
+        // lit it by coming close. Knocking it around during the fuse doesn't take the kill; killing it before does.
+        public static void OnRollerFuseLit(EnemyHealthSystem roller, bool lostStruts)
+        {
+            int id = roller.GetInstanceID();
+            if (rollerFuses.ContainsKey(id)) return;
+
+            rollerFuses[id] = lostStruts && lastEnemyHits.TryGetValue(id, out HitRecord hit) && Time.time - hit.Time <= KillCreditWindow
+                ? hit
+                : new HitRecord { Time = Time.time, FootingSince = -1f };
+        }
+
+        public static void OnRollerFuseEnded(EnemyHealthSystem roller)
+        {
+            int id = roller.GetInstanceID();
+            rollerFuses.TryGetValue(id, out HitRecord fuse);
+            rollerFuses.Remove(id);
+
+            if (lastEnemyHits.TryGetValue(id, out HitRecord last) && last.Player != fuse.Player)
+            {
+                Logger.LogInfo($"{roller.name}'s fuse ran out, the hit by {PlayerLabel(last.Player)} {Time.time - last.Time:F2}s earlier doesn't count");
+            }
+
+            if (fuse.Player != null)
+            {
+                fuse.Time = Time.time;
+                lastEnemyHits[id] = fuse;
+            }
+            else
+            {
+                lastEnemyHits.Remove(id);
+            }
         }
 
         // A hit by another player is recorded. Anything else that damages or stuns the spider (an enemy, a hazard, an
@@ -151,7 +195,6 @@ namespace StatsMod
             }
         }
 
-        // A spider pushed into lava counts from when it touches it, since the insulation modifier delays the death
         public static void OnPlayerTouchedDeathZone(SpiderHealthSystem spider, float disintegrateDelay)
         {
             int id = spider.GetInstanceID();
@@ -216,8 +259,9 @@ namespace StatsMod
                 if (holder != null) return holder;
             }
 
-            // Thrown weapons keep the playerID WeaponEquipPatch gave them, weapons only AI spiders held have none
-            return weapon.ownerWeaponClientId != ulong.MaxValue ? FindPlayerInputByPlayerId(weapon.ownerWeaponClientId) : null;
+            // Thrown weapons keep the playerID WeaponEquipPatch gave them, and launched blades get their launcher's.
+            // Weapons only AI spiders held have none
+            return weapon.ownerWeaponClientId != ulong.MaxValue ? PlayerTracker.FindPlayerInputByPlayerId(weapon.ownerWeaponClientId) : null;
         }
 
         public static void OnEnemyDeath(EnemyHealthSystem enemy)
@@ -225,6 +269,7 @@ namespace StatsMod
             if (enemy.serializationEnemyName == SerializationEnemyName.FriendlyWasp) return;
 
             EnemiesTracker.Instance.IncrementEnemiesKilled();
+            rollerFuses.Remove(enemy.GetInstanceID());
 
             if (!TryTakeHit(lastEnemyHits, enemy.GetInstanceID(), KillCreditWindow, out HitRecord hit, out string reason))
             {
@@ -270,7 +315,7 @@ namespace StatsMod
             if (!lastPlayerHits.TryGetValue(id, out HitRecord pending)) return;
 
             // Lava and falling out of the map mark the spider as dying before it dies, a damage kill happens on the hit
-            float window = !SpiderDying(spider) ? DirectPlayerKillCreditWindow
+            float window = !ReflectionCache.SpiderDying(spider) ? DirectPlayerKillCreditWindow
                 : pending.InDeathZone ? pending.DeathZoneDeadline - pending.Time
                 : KillCreditWindow;
             if (!TryTakeHit(lastPlayerHits, id, window, out HitRecord hit, out _)) return;
@@ -279,14 +324,6 @@ namespace StatsMod
             PlayerTracker.Instance.IncrementFriendlyKill(hit.Player);
             PlayerTracker.Instance.IncrementWeaponHit(hit.Player, hit.Weapon);
             PlayerTracker.Instance.IncrementEnemyKillByName(hit.Player, "Player");
-        }
-
-        private static void RecordEnemyHit(EnemyHealthSystem enemy, PlayerInput player, string weaponName)
-        {
-            if (enemy.serializationEnemyName != SerializationEnemyName.FriendlyWasp)
-            {
-                StoreHit(lastEnemyHits, enemy.GetInstanceID(), player, weaponName);
-            }
         }
 
         private static void StoreHit(Dictionary<int, HitRecord> hits, int targetId, PlayerInput player, string weaponName)
@@ -298,6 +335,7 @@ namespace StatsMod
                 PruneStaleHits(lastPlayerHits, now);
                 PruneStaleHits(explosionOwners, now);
                 PruneStaleHits(projectileOwners, now);
+                PruneStaleHits(rollerFuses, now);
                 lastPruneTime = now;
             }
 
@@ -331,7 +369,7 @@ namespace StatsMod
         {
             if (!hits.TryGetValue(targetId, out hit))
             {
-                reason = "no player hit it";
+                reason = "no player hit it last";
                 return false;
             }
 
@@ -393,11 +431,6 @@ namespace StatsMod
             {
                 discOwnerTracker.Remove(discId);
             }
-        }
-
-        public static PlayerInput FindPlayerInputByPlayerId(ulong playerId)
-        {
-            return PlayerTracker.FindPlayerInputByPlayerId(playerId);
         }
     }
 }

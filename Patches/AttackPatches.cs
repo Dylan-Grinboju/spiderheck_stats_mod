@@ -10,13 +10,22 @@ using Logger = Silk.Logger;
 
 namespace StatsMod
 {
-    internal static class AttackReflectionCache
+    internal static class PatchTargets
     {
-        public static readonly AccessTools.FieldRef<EnemyHealthSystem, float> EnemyImmuneTime =
-            AccessTools.FieldRefAccess<EnemyHealthSystem, float>("_immuneTime");
+        public static MethodInfo Find(Type type, string name)
+        {
+            MethodInfo method = AccessTools.Method(type, name);
+            if (method == null)
+            {
+                Logger.LogWarning($"{type.Name}.{name} not found, it is not tracked");
+            }
+            return method;
+        }
 
-        public static readonly AccessTools.FieldRef<SpiderHealthSystem, float> SpiderImmuneTill =
-            AccessTools.FieldRefAccess<SpiderHealthSystem, float>("_immuneTill");
+        public static IEnumerable<MethodBase> FindAll(params (Type type, string name)[] targets)
+        {
+            return targets.Select(target => Find(target.type, target.name)).Where(method => method != null).ToList();
+        }
     }
 
     // Every player attack runs inside HitLogic.BeginAttack/EndAttack, and the targets record the hit when the game
@@ -30,7 +39,7 @@ namespace StatsMod
             public Func<object, PlayerInput> Owner;
         }
 
-        private static readonly Dictionary<(Type, string), Attack> attacks = new Dictionary<(Type, string), Attack>();
+        private static readonly Dictionary<MethodBase, Attack> attacks = new Dictionary<MethodBase, Attack>();
 
         static AttackScopePatch()
         {
@@ -40,44 +49,32 @@ namespace StatsMod
             Add<DeathRay>("Fire", "DeathRay", HitLogic.WeaponPlayer);
             Add<LaserCannon>("DamageHit", "Laser Cannon", HitLogic.WeaponPlayer);
             Add<LaserCube>("Beam", "Laser Cube", HitLogic.WeaponPlayer);
-            // Particle Blade and the other force field weapons. On an enemy's stinger, blade or strut the hit is a knockback
             Add<ForceField>("Damage", "Particle Blade", field => HitLogic.WeaponPlayer(field.GetComponentInParent<Weapon>()));
             Add<SawDisc>("TryDamage", "SawDisc", SawDiscOwner);
             Add<EnergyBall>("OnCollisionEnter2D", "EnergyBall", ball => ball.owner != null ? ball.owner.GetComponentInParent<PlayerInput>() : null);
             Add<KhepriStaff>("Zap", "KhepriStaff", HitLogic.WeaponPlayer);
             Add<Explosion>("KnockBack", "Explosions", ExplosionOwner);
             Add<SpiderHealthSystem>("AfterlifeExplosion", "Explosions", spider => spider.GetComponentInParent<PlayerInput>());
-            // The snow explosion only knocks back, and does it in OnEnable, inside this RPC's Instantiate
             Add<Snowballs>("ExplodeClientRpc", "Snowball", HitLogic.WeaponPlayer);
         }
 
         private static void Add<T>(string method, string weapon, Func<T, PlayerInput> owner)
         {
-            attacks[(typeof(T), method)] = new Attack { Weapon = weapon, Owner = instance => owner((T)instance) };
-        }
-
-        static IEnumerable<MethodBase> TargetMethods()
-        {
-            foreach ((Type type, string name) in attacks.Keys.ToList())
+            MethodInfo target = PatchTargets.Find(typeof(T), method);
+            if (target != null)
             {
-                MethodInfo method = AccessTools.Method(type, name);
-                if (method != null)
-                {
-                    yield return method;
-                }
-                else
-                {
-                    Logger.LogWarning($"{type.Name}.{name} not found, its hits are not tracked");
-                }
+                attacks[target] = new Attack { Weapon = weapon, Owner = instance => owner((T)instance) };
             }
         }
+
+        static IEnumerable<MethodBase> TargetMethods() => attacks.Keys.ToList();
 
         static void Prefix(object __instance, MethodBase __originalMethod, out HitLogic.AttackScope __state)
         {
             __state = default;
             try
             {
-                Attack attack = attacks[(__originalMethod.DeclaringType, __originalMethod.Name)];
+                Attack attack = attacks[__originalMethod];
                 __state = HitLogic.BeginAttack(attack.Owner(__instance), attack.Weapon);
             }
             catch (Exception ex)
@@ -88,7 +85,6 @@ namespace StatsMod
 
         static void Finalizer(HitLogic.AttackScope __state) => HitLogic.EndAttack(__state);
 
-        // The shooter's spider is on the ignore list; a shot reflected by a blade ignores only that blade
         private static PlayerInput RailShotOwner(RailShot shot)
         {
             foreach (GameObject ignored in shot.ignore)
@@ -117,42 +113,24 @@ namespace StatsMod
             return owner != null ? owner : HitLogic.CurrentAttacker;
         }
 
-        // SpiderSurge's Pulse knocks back everything around its player, the ultimate also kills.
-        // SpiderSurge can load after this mod, so the Pulse is patched once its assembly is loaded.
         public static void PatchSpiderSurgePulse(Harmony harmony)
-        {
-            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                if (TryPatchPulse(harmony, assembly)) return;
-            }
-
-            AssemblyLoadEventHandler onLoad = null;
-            onLoad = (sender, args) =>
-            {
-                if (TryPatchPulse(harmony, args.LoadedAssembly))
-                {
-                    AppDomain.CurrentDomain.AssemblyLoad -= onLoad;
-                }
-            };
-            AppDomain.CurrentDomain.AssemblyLoad += onLoad;
-        }
-
-        private static bool TryPatchPulse(Harmony harmony, Assembly assembly)
         {
             try
             {
-                Type pulse = assembly.GetType("SpiderSurge.PulseAbility", false);
-                if (pulse == null) return false;
+                Type pulse = AppDomain.CurrentDomain.GetAssemblies()
+                    .Select(assembly => assembly.GetType("SpiderSurge.PulseAbility", false))
+                    .FirstOrDefault(type => type != null);
+                if (pulse == null) return;
 
                 MethodInfo method = AccessTools.Method(pulse, "ApplyPulsePhysics");
                 FieldInfo playerInput = AccessTools.Field(pulse, "playerInput");
                 if (method == null || playerInput == null)
                 {
                     Logger.LogWarning("SpiderSurge's PulseAbility changed, Pulse hits are not tracked");
-                    return true;
+                    return;
                 }
 
-                attacks[(pulse, method.Name)] = new Attack { Weapon = "Pulse", Owner = ability => playerInput.GetValue(ability) as PlayerInput };
+                attacks[method] = new Attack { Weapon = "Pulse", Owner = ability => playerInput.GetValue(ability) as PlayerInput };
                 harmony.Patch(method,
                     prefix: new HarmonyMethod(typeof(AttackScopePatch), nameof(Prefix)),
                     finalizer: new HarmonyMethod(typeof(AttackScopePatch), nameof(Finalizer)));
@@ -162,7 +140,6 @@ namespace StatsMod
             {
                 Logger.LogError($"Error patching SpiderSurge's Pulse: {ex.Message}");
             }
-            return true;
         }
     }
 
@@ -175,8 +152,8 @@ namespace StatsMod
         {
             try
             {
-                if (HitLogic.CurrentAttacker == null || Time.time < AttackReflectionCache.EnemyImmuneTime(__instance)) return;
-                HitLogic.OnEnemyHitByAttack(__instance);
+                if (__instance.IsDead() || Time.time < EnemyReflectionCache.EnemyImmuneTime(__instance)) return;
+                HitLogic.OnEnemyHit(__instance, damage: false);
             }
             catch (Exception ex)
             {
@@ -192,9 +169,9 @@ namespace StatsMod
         {
             try
             {
-                if (HitLogic.CurrentAttacker == null || __instance.ignoreDirectDamage ||
-                    Time.time < AttackReflectionCache.EnemyImmuneTime(__instance)) return;
-                HitLogic.OnEnemyHitByAttack(__instance);
+                if (__instance.IsDead() || __instance.ignoreDirectDamage ||
+                    Time.time < EnemyReflectionCache.EnemyImmuneTime(__instance)) return;
+                HitLogic.OnEnemyHit(__instance, damage: true);
             }
             catch (Exception ex)
             {
@@ -203,7 +180,6 @@ namespace StatsMod
         }
     }
 
-    // A weapon's own recoil reaches the holder as an Impact without stun, which leaves the earlier hit in place
     [HarmonyPatch(typeof(SpiderHealthSystem), "Impact")]
     class SpiderImpactReceiverPatch
     {
@@ -227,7 +203,7 @@ namespace StatsMod
         {
             try
             {
-                if (Time.time < AttackReflectionCache.SpiderImmuneTill(__instance)) return;
+                if (Time.time < ReflectionCache.SpiderImmuneTill(__instance)) return;
                 HitLogic.OnPlayerHit(__instance, replacesEarlierHit: true);
             }
             catch (Exception ex)
@@ -253,7 +229,6 @@ namespace StatsMod
         }
     }
 
-    // Lava. Also runs for solid lava through OnCollisionStay2D
     [HarmonyPatch(typeof(DeathZone), "OnTriggerStay2D")]
     class DeathZoneContactPatch
     {
@@ -276,17 +251,61 @@ namespace StatsMod
         }
     }
 
-    // The only places that give an explosion an owner. The store goes through HitLogic.SetExplosionOwner instead
+    // Losing its struts (RollerBrain.SelfDestruct) or a spider coming close lights the ExplodingRoller's fuse
+    [HarmonyPatch(typeof(ExplodingRoller), "TriggerExplosive")]
+    class ExplodingRollerFuseLitPatch
+    {
+        static void Prefix(ExplodingRoller __instance, bool ____triggered)
+        {
+            try
+            {
+                if (____triggered || __instance.healthSystem == null) return;
+                HitLogic.OnRollerFuseLit(__instance.healthSystem, LostStruts(__instance));
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error tracking roller fuse: {ex.Message}");
+            }
+        }
+
+        private static bool LostStruts(RollerBrain roller)
+        {
+            int active = 0;
+            foreach (Transform strut in roller.struts.transform)
+            {
+                if (strut.gameObject.activeSelf) active++;
+            }
+            return active < roller.minStrutCount;
+        }
+    }
+
+    // The fuse running out ends here without the roller dying first; dying any other way runs this after EnemyHealthSystem.Explode
+    [HarmonyPatch(typeof(ExplodingRoller), "Explode")]
+    class ExplodingRollerFuseEndPatch
+    {
+        static void Prefix(ExplodingRoller __instance, bool ____exploded)
+        {
+            try
+            {
+                EnemyHealthSystem health = __instance.healthSystem;
+                if (____exploded || health == null || EnemyReflectionCache.EnemyExploding(health)) return;
+                HitLogic.OnRollerFuseEnded(health);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error tracking roller fuse: {ex.Message}");
+            }
+        }
+    }
+
     [HarmonyPatch]
     class ExplosionOwnerPatch
     {
-        static IEnumerable<MethodBase> TargetMethods()
-        {
-            yield return AccessTools.Method(typeof(Grenade), "ExplodeClientRpc");
-            yield return AccessTools.Method(typeof(Mine), "ExplodeClientRpc");
-            yield return AccessTools.Method(typeof(BoomSpear), "ExplodeClientRpc");
-            yield return AccessTools.Method(typeof(BasicProjectile), "DestroyProjectileClientRpc");
-        }
+        static IEnumerable<MethodBase> TargetMethods() => PatchTargets.FindAll(
+            (typeof(Grenade), "ExplodeClientRpc"),
+            (typeof(Mine), "ExplodeClientRpc"),
+            (typeof(BoomSpear), "ExplodeClientRpc"),
+            (typeof(BasicProjectile), "DestroyProjectileClientRpc"));
 
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, MethodBase original) =>
             OwnerStoreRewriter.Rewrite(instructions, original,
@@ -294,15 +313,12 @@ namespace StatsMod
                 AccessTools.Method(typeof(HitLogic), nameof(HitLogic.SetExplosionOwner)));
     }
 
-    // The only places that give a rocket or other projectile an owner, so its explosion can inherit it
     [HarmonyPatch]
     class ProjectileOwnerPatch
     {
-        static IEnumerable<MethodBase> TargetMethods()
-        {
-            yield return AccessTools.Method(typeof(ProjectileLauncher), "Shoot");
-            yield return AccessTools.Method(typeof(BurstProjectileLauncher), "LaunchProjectile");
-        }
+        static IEnumerable<MethodBase> TargetMethods() => PatchTargets.FindAll(
+            (typeof(ProjectileLauncher), "Shoot"),
+            (typeof(BurstProjectileLauncher), "LaunchProjectile"));
 
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, MethodBase original) =>
             OwnerStoreRewriter.Rewrite(instructions, original,
