@@ -111,7 +111,9 @@ namespace StatsMod
                     { "Laser Cannon", 0 },
                     { "Laser Cube", 0 },
                     { "SawDisc", 0 },
-                    { "Explosions", 0 }
+                    { "Explosions", 0 },
+                    { "Snowball", 0 },
+                    { "Pulse", 0 }
                 };
                 EnemyKills = new Dictionary<string, int>
                 {

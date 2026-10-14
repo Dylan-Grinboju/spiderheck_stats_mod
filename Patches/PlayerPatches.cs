@@ -16,12 +16,6 @@ namespace StatsMod
 
         public static readonly FieldInfo SecondaryColorField =
             typeof(SpiderCustomizer).GetField("_secondaryColor", BindingFlags.NonPublic | BindingFlags.Instance);
-
-        public static readonly FieldInfo EnemyImmuneTimeField =
-            AccessTools.Field(typeof(EnemyHealthSystem), "_immuneTime");
-       
-        public static readonly FieldInfo SpiderImmuneTimeField =
-            AccessTools.Field(typeof(SpiderHealthSystem), "_immuneTime");
     }
 
     [HarmonyPatch(typeof(PlayerInput), "OnEnable")]
@@ -72,6 +66,7 @@ namespace StatsMod
             try
             {
                 PlayerTracker.Instance.RecordPlayerDeath(__instance);
+                HitLogic.OnPlayerDeath(__instance);
             }
             catch (Exception ex)
             {
@@ -96,37 +91,39 @@ namespace StatsMod
         }
     }
 
-    [HarmonyPatch(typeof(SpiderHealthSystem), "Disintegrate")]
+    // Lava and falling out of the map call Disintegrate every tick, also on immune, shielded and already dying spiders.
+    // The RPC is what kills, and only once, so a lava death is counted when it turns a living spider dead.
+    // On the host the RPC runs again nested inside itself, hence the set.
+    [HarmonyPatch(typeof(SpiderHealthSystem), "DisintegrateClientRpc")]
     public class SpiderHealthSystemDisintegratePatch
     {
-        static void Prefix(SpiderHealthSystem __instance)
+        private static readonly HashSet<int> countedSpiders = new HashSet<int>();
+
+        static void Prefix(SpiderHealthSystem __instance, out bool __state)
+        {
+            __state = __instance.dead;
+        }
+
+        static void Postfix(SpiderHealthSystem __instance, bool __state)
         {
             try
             {
-                if (__instance == null || __instance.rootObject == null)
+                if (__state || !__instance.dead || __instance.rootObject == null)
                     return;
 
-                if (ReflectionCache.SpiderImmuneTimeField != null)
-                {
-                    float immuneTill = (float)ReflectionCache.SpiderImmuneTimeField.GetValue(__instance);
-                    if (Time.time < immuneTill)
-                        return;
-                }
-
-                if (__instance.HasShield())
+                if (!countedSpiders.Add(__instance.GetInstanceID()))
                     return;
 
                 PlayerInput playerInput = __instance.rootObject.GetComponentInParent<PlayerInput>();
                 if (playerInput != null)
                 {
-                    if (__instance.astralDead)
-                        return;
+                    Logger.LogInfo($"Lava death for Player {playerInput.playerIndex + 1} at {__instance.transform.position}");
                     PlayerTracker.Instance.IncrementLavaDeaths(playerInput);
                 }
             }
             catch (Exception ex)
             {
-                Logger.LogError($"Error in SpiderHealthSystem.Disintegrate patch: {ex.Message}");
+                Logger.LogError($"Error in SpiderHealthSystem.DisintegrateClientRpc patch: {ex.Message}");
             }
         }
     }
@@ -186,6 +183,7 @@ namespace StatsMod
                         PlayerTracker.Instance.IncrementShieldsLost(victimPlayerInput);
                     }
                 }
+                HitLogic.OnPlayerShieldBroken(__instance);
             }
             catch (Exception ex)
             {

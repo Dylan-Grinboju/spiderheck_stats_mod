@@ -1,3 +1,5 @@
+using HarmonyLib;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Logger = Silk.Logger;
@@ -6,180 +8,313 @@ using System.Collections.Generic;
 
 namespace StatsMod
 {
+    // Weapon patches only record which player last hit a target. Kills, friendly kills and shield breaks are
+    // credited when the game actually applies them, so hits that don't kill (immunity, shields, roller struts
+    // with health left) can't count early, and deaths the game decides later (struts, fuses, lava) still count.
     public static class HitLogic
     {
-        private static readonly float cleanupInterval = 10f;
-        private static HashSet<int> recentlyKilledEnemies = new HashSet<int>();
-        private static float lastEnemiesCleanupTime = 0f;
-        private static readonly object recentlyKilledLock = new object();
-        private static HashSet<int> recentlyKilledPlayers = new HashSet<int>();
-        private static float lastPlayersCleanupTime = 0f;
-        private static readonly object recentlyKilledPlayersLock = new object();
+        // The ExplodingRoller blows up 2s after losing its struts, and a knocked back target takes a moment to reach lava
+        private const float KillCreditWindow = 2.5f;
+        private const float DirectPlayerKillCreditWindow = 0.5f;
+        private const float ShieldCreditWindow = 0.1f;
+        private const float StaleHitAge = 30f;
 
-        private static Dictionary<int, int> rollerBrainHealthTracker = new Dictionary<int, int>();
-        private static readonly object rollerBrainLock = new object();
+        private struct HitRecord
+        {
+            public PlayerInput Player;
+            public string Weapon;
+            public float Time;
+        }
+
+        public struct AttackScope
+        {
+            internal bool Active;
+            internal PlayerInput Player;
+            internal string Weapon;
+        }
+
+        private static readonly Dictionary<int, HitRecord> lastEnemyHits = new Dictionary<int, HitRecord>();
+        private static readonly Dictionary<int, HitRecord> lastPlayerHits = new Dictionary<int, HitRecord>();
+        private static readonly Dictionary<int, HitRecord> explosionOwners = new Dictionary<int, HitRecord>();
+        private static readonly Dictionary<int, HitRecord> projectileOwners = new Dictionary<int, HitRecord>();
+        private static float lastPruneTime = 0f;
+
+        private static PlayerInput attackPlayer;
+        private static string attackWeapon;
+
+        private static readonly AccessTools.FieldRef<SpiderHealthSystem, bool> SpiderDying =
+            AccessTools.FieldRefAccess<SpiderHealthSystem, bool>("_dying");
 
         private static Dictionary<int, PlayerInput> discOwnerTracker = new Dictionary<int, PlayerInput>();
         private static readonly object discOwnerLock = new object();
 
-        private static readonly HashSet<string> namesOfTargetsThatCanDie = new HashSet<string>
+        private static readonly Dictionary<SerializationEnemyName, string> enemyDisplayNames = new Dictionary<SerializationEnemyName, string>
         {
-            "Wasp(Clone)",
-            "Wasp Shielded(Clone)",
-            "PowerWasp Variant(Clone)",
-            "PowerWasp Variant Shield(Clone)",
-            "Strut1",
-            "Strut2",
-            "Strut3",
-            "Roller(Clone)",
-            "Whisp(Clone)",
-            "PowerWhisp Variant(Clone)",
-            "MeleeWhisp(Clone)",
-            "PowerMeleeWhisp Variant(Clone)",
-            "Khepri(Clone)",
-            "PowerKhepri Variant(Clone)",
-            "Hornet_Shaman Variant(Clone)",
-            "Shielded Hornet_Shaman Variant(Clone)",
-            "Hornet Variant(Clone)",
-            "Shielded Hornet Variant(Clone)",
-            "Player(Clone)",
-            // "Wasp Friendly(Clone)", don't count either as friendly or enemy
+            { SerializationEnemyName.Wasp, "Wasp" },
+            { SerializationEnemyName.ShieldedWasp, "Wasp" },
+            { SerializationEnemyName.PowerWasp, "Power Wasp" },
+            { SerializationEnemyName.PowerWaspShield, "Power Wasp" },
+            { SerializationEnemyName.Roller, "Roller" },
+            { SerializationEnemyName.PowerRoller, "Roller" },
+            { SerializationEnemyName.ExplodingRoller, "Roller" },
+            { SerializationEnemyName.Whisp, "Whisp" },
+            { SerializationEnemyName.PowerWhisp, "Power Whisp" },
+            { SerializationEnemyName.MeleeWhisp, "Melee Whisp" },
+            { SerializationEnemyName.PowerMeleeWhisp, "Power Melee Whisp" },
+            { SerializationEnemyName.Khepri, "Khepri" },
+            { SerializationEnemyName.PowerKhepri, "Power Khepri" },
+            { SerializationEnemyName.HornetShaman, "Hornet Shaman" },
+            { SerializationEnemyName.HornetVariant, "Hornet" },
+            { SerializationEnemyName.ShieldedHornet, "Hornet" },
         };
 
-        // Maps game enemy names to display names for tracking
-        private static readonly Dictionary<string, string> enemyDisplayNames = new Dictionary<string, string>
+        public static void RecordHit(GameObject target, PlayerInput player, string weaponName)
         {
-            { "Wasp(Clone)", "Wasp" },
-            { "Wasp Shielded(Clone)", "Wasp" },
-            { "PowerWasp Variant(Clone)", "Power Wasp" },
-            { "PowerWasp Variant Shield(Clone)", "Power Wasp" },
-            { "Strut1", "Roller" },
-            { "Strut2", "Roller" },
-            { "Strut3", "Roller" },
-            { "Roller(Clone)", "Roller" },
-            { "PowerRoller Variant(Clone)", "Roller" },
-            { "Whisp(Clone)", "Whisp" },
-            { "PowerWhisp Variant(Clone)", "Power Whisp" },
-            { "MeleeWhisp(Clone)", "Melee Whisp" },
-            { "PowerMeleeWhisp Variant(Clone)", "Power Melee Whisp" },
-            { "Khepri(Clone)", "Khepri" },
-            { "PowerKhepri Variant(Clone)", "Power Khepri" },
-            { "Hornet_Shaman Variant(Clone)", "Hornet Shaman" },
-            { "Shielded Hornet_Shaman Variant(Clone)", "Hornet Shaman" },
-            { "Hornet Variant(Clone)", "Hornet" },
-            { "Shielded Hornet Variant(Clone)", "Hornet" },
-            { "Player(Clone)", "Player" },
-        };
+            if (target == null || player == null) return;
+            if (target.GetComponent<Weapon>() != null) return;
 
-        private static bool IsFirstTimeDeath(GameObject target, int instanceId, HashSet<int> recentlyKilledSet, ref float lastCleanupTime, object lockObject, string entityType)
-        {
-            lock (lockObject)
+            SpiderHealthSystem spiderHealth = target.GetComponentInParent<SpiderHealthSystem>();
+            if (spiderHealth != null)
             {
-                float currentTime = Time.time;
-                if (currentTime - lastCleanupTime > cleanupInterval)
-                {
-                    recentlyKilledSet.Clear();
-                }
-                lastCleanupTime = currentTime;
+                RecordPlayerHit(spiderHealth, player, weaponName);
+                return;
+            }
 
-                if (recentlyKilledSet.Contains(instanceId))
-                {
-                    return false;
-                }
-
-                recentlyKilledSet.Add(instanceId);
-                Logger.LogInfo($"Recording death for {entityType} {instanceId}, name:{target.name} at time {Time.time}");
-                return true;
+            EnemyHealthSystem enemyHealth = target.GetComponentInParent<EnemyHealthSystem>();
+            if (enemyHealth != null)
+            {
+                RecordEnemyHit(enemyHealth, player, weaponName);
             }
         }
 
-        public static void TryRecordKill(GameObject target, PlayerInput player, string weaponName)
+        // While a player-caused action runs (an explosion, a blade hit, a pulse), every enemy or spider the game damages
+        // or knocks back counts as hit by that player, since a knockback can push the target into lava.
+        public static AttackScope BeginAttack(PlayerInput player, string weaponName)
         {
-            if (target == null) return;
+            AttackScope previous = new AttackScope { Active = true, Player = attackPlayer, Weapon = attackWeapon };
+            attackPlayer = player;
+            attackWeapon = weaponName;
+            return previous;
+        }
 
-            EnemyBrain enemyBrain = target.GetComponentOrParent<EnemyBrain>();
+        public static void EndAttack(AttackScope previous)
+        {
+            if (!previous.Active) return;
+            attackPlayer = previous.Player;
+            attackWeapon = previous.Weapon;
+        }
 
-            if (enemyBrain != null)
+        public static PlayerInput CurrentAttacker => attackPlayer;
+
+        public static void OnEnemyHitByAttack(EnemyHealthSystem enemy)
+        {
+            if (attackPlayer == null) return;
+            RecordEnemyHit(enemy, attackPlayer, attackWeapon);
+        }
+
+        public static void OnPlayerHitByAttack(SpiderHealthSystem spider)
+        {
+            if (attackPlayer == null) return;
+            RecordPlayerHit(spider, attackPlayer, attackWeapon);
+        }
+
+        // The game stores an explosion's owner as a client id that is 0 both for player 0 and for explosions nobody owns
+        // (enemy explosions, weapons no player held), so the real owner is kept here, set where the game sets its own.
+        public static void SetExplosionOwner(Explosion explosion, ulong ownerId, NetworkBehaviour source)
+        {
+            explosion.explosionOwnerId = ownerId;
+            try
             {
-                RollerBrain rollerBrain = enemyBrain.GetComponentInParent<RollerBrain>();
-                if (rollerBrain != null && !WillRollerStrutKillCauseRollerBrainDeath(rollerBrain))
+                PlayerInput player = source is BasicProjectile projectile
+                    ? GetOwner(projectileOwners, projectile.GetInstanceID())
+                    : WeaponPlayer(source as Weapon);
+                if (player != null)
                 {
-                    return;
+                    StoreHit(explosionOwners, explosion.GetInstanceID(), player, null);
                 }
-
-                int enemyId = enemyBrain.gameObject.GetInstanceID();
-
-                if (IsFirstTimeDeath(target, enemyId, recentlyKilledEnemies, ref lastEnemiesCleanupTime, recentlyKilledLock, "enemy"))
-                {
-                    Logger.LogInfo($"Recording kill for player {player.name}, target:{target.name}");
-                    PlayerTracker.Instance.IncrementPlayerKill(player);
-                    PlayerTracker.Instance.IncrementWeaponHit(player, weaponName);
-
-                    // Track kill by enemy type
-                    string targetName = enemyBrain.gameObject.name;
-                    if (enemyDisplayNames.TryGetValue(targetName, out string displayName))
-                    {
-                        PlayerTracker.Instance.IncrementEnemyKillByName(player, displayName);
-                    }
-                }
-                return;
             }
-
-            SpiderHealthSystem spiderHealth = target.GetComponentOrParent<SpiderHealthSystem>();
-
-            if (spiderHealth == null)
+            catch (System.Exception ex)
             {
-                Logger.LogError($"Could not find SpiderHealthSystem or EnemyBrain for target {target.name}");
-                return;
-            }
-
-            //Don't count self kills
-            if (spiderHealth.transform.root == player.transform.root)
-                return;
-            int playerId = spiderHealth.gameObject.GetInstanceID();
-            if (IsFirstTimeDeath(target, playerId, recentlyKilledPlayers, ref lastPlayersCleanupTime, recentlyKilledPlayersLock, "player"))
-            {
-                Logger.LogInfo($"Recording friendly kill for player {playerId}, name:{target.name}");
-                PlayerTracker.Instance.IncrementFriendlyKill(player);
-                PlayerTracker.Instance.IncrementWeaponHit(player, weaponName);
-                PlayerTracker.Instance.IncrementEnemyKillByName(player, "Player");
+                Logger.LogError($"Error recording explosion owner: {ex.Message}");
             }
         }
 
-        public static bool WillRollerStrutKillCauseRollerBrainDeath(RollerBrain rollerBrain)
+        public static void SetProjectileOwner(BasicProjectile projectile, ulong ownerId, NetworkBehaviour launcher)
         {
-            int rollerBrainId = rollerBrain.gameObject.GetInstanceID();
-
-            lock (rollerBrainLock)
+            projectile.projectileOwnerId = ownerId;
+            try
             {
-                if (!rollerBrainHealthTracker.ContainsKey(rollerBrainId))
+                PlayerInput player = WeaponPlayer(launcher as Weapon);
+                if (player != null)
                 {
-                    int currentAliveStrutCount = 0;
-                    if (rollerBrain.struts != null)
-                    {
-                        for (int i = 0; i < rollerBrain.struts.transform.childCount; i++)
-                        {
-                            if (rollerBrain.struts.transform.GetChild(i).gameObject.activeSelf)
-                            {
-                                currentAliveStrutCount++;
-                            }
-                        }
-                    }
-                    rollerBrainHealthTracker[rollerBrainId] = currentAliveStrutCount - 1;
+                    StoreHit(projectileOwners, projectile.GetInstanceID(), player, null);
                 }
-                else
-                {
-                    rollerBrainHealthTracker[rollerBrainId]--;
-                }
-
-                bool willCauseMainDeath = rollerBrainHealthTracker[rollerBrainId] < rollerBrain.minStrutCount;
-                if (willCauseMainDeath)
-                {
-                    rollerBrainHealthTracker.Remove(rollerBrainId);
-                }
-
-                return willCauseMainDeath;
             }
+            catch (System.Exception ex)
+            {
+                Logger.LogError($"Error recording projectile owner: {ex.Message}");
+            }
+        }
+
+        public static PlayerInput GetExplosionOwner(Explosion explosion)
+        {
+            return GetOwner(explosionOwners, explosion.GetInstanceID());
+        }
+
+        public static PlayerInput WeaponPlayer(Weapon weapon)
+        {
+            if (weapon == null) return null;
+
+            if (weapon.owner != null && weapon.owner.healthSystem != null)
+            {
+                PlayerInput holder = weapon.owner.healthSystem.GetComponentInParent<PlayerInput>();
+                if (holder != null) return holder;
+            }
+
+            // Thrown weapons keep the playerID WeaponEquipPatch gave them, weapons only AI spiders held have none
+            return weapon.ownerWeaponClientId != ulong.MaxValue ? FindPlayerInputByPlayerId(weapon.ownerWeaponClientId) : null;
+        }
+
+        public static void OnEnemyDeath(EnemyHealthSystem enemy)
+        {
+            if (enemy.serializationEnemyName == SerializationEnemyName.FriendlyWasp) return;
+
+            EnemiesTracker.Instance.IncrementEnemiesKilled();
+
+            if (!TryTakeHit(lastEnemyHits, enemy.GetInstanceID(), KillCreditWindow, out HitRecord hit, out string reason))
+            {
+                Logger.LogInfo($"Enemy {enemy.name} died with no kill credited ({reason}) at time {Time.time}");
+                return;
+            }
+
+            Logger.LogInfo($"Recording kill for {PlayerLabel(hit.Player)}, target:{enemy.name}, weapon:{hit.Weapon}, {Time.time - hit.Time:F2}s after the hit");
+            PlayerTracker.Instance.IncrementPlayerKill(hit.Player);
+            PlayerTracker.Instance.IncrementWeaponHit(hit.Player, hit.Weapon);
+
+            if (enemyDisplayNames.TryGetValue(enemy.serializationEnemyName, out string displayName))
+            {
+                PlayerTracker.Instance.IncrementEnemyKillByName(hit.Player, displayName);
+            }
+            else
+            {
+                Logger.LogWarning($"No kill category for enemy {enemy.name} ({enemy.serializationEnemyName})");
+            }
+        }
+
+        public static void OnEnemyShieldDestroyed(EnemyHealthSystem enemy)
+        {
+            if (!TryGetRecentHit(lastEnemyHits, enemy.GetInstanceID(), ShieldCreditWindow, out HitRecord hit)) return;
+
+            Logger.LogDebug($"Recording shield hit on enemy {enemy.name} by {PlayerLabel(hit.Player)}");
+            PlayerTracker.Instance.IncrementEnemyShieldsTakenDown(hit.Player);
+            PlayerTracker.Instance.IncrementWeaponHit(hit.Player, hit.Weapon);
+        }
+
+        public static void OnPlayerShieldBroken(SpiderHealthSystem spider)
+        {
+            if (!TryGetRecentHit(lastPlayerHits, spider.GetInstanceID(), ShieldCreditWindow, out HitRecord hit)) return;
+
+            Logger.LogDebug($"Recording friendly shield hit by {PlayerLabel(hit.Player)}");
+            PlayerTracker.Instance.IncrementFriendlyShieldsHit(hit.Player);
+            PlayerTracker.Instance.IncrementWeaponHit(hit.Player, hit.Weapon);
+        }
+
+        public static void OnPlayerDeath(SpiderHealthSystem spider)
+        {
+            // Lava and falling out of the map mark the spider as dying before it dies, a damage kill happens on the hit
+            float window = SpiderDying(spider) ? KillCreditWindow : DirectPlayerKillCreditWindow;
+            if (!TryTakeHit(lastPlayerHits, spider.GetInstanceID(), window, out HitRecord hit, out _)) return;
+
+            Logger.LogInfo($"Recording friendly kill for {PlayerLabel(hit.Player)}, weapon:{hit.Weapon}, {Time.time - hit.Time:F2}s after the hit");
+            PlayerTracker.Instance.IncrementFriendlyKill(hit.Player);
+            PlayerTracker.Instance.IncrementWeaponHit(hit.Player, hit.Weapon);
+            PlayerTracker.Instance.IncrementEnemyKillByName(hit.Player, "Player");
+        }
+
+        private static void RecordPlayerHit(SpiderHealthSystem spider, PlayerInput player, string weaponName)
+        {
+            PlayerInput victim = spider.rootObject != null ? spider.rootObject.GetComponentInParent<PlayerInput>() : null;
+            if (victim != null && victim != player)
+            {
+                StoreHit(lastPlayerHits, spider.GetInstanceID(), player, weaponName);
+            }
+        }
+
+        private static void RecordEnemyHit(EnemyHealthSystem enemy, PlayerInput player, string weaponName)
+        {
+            if (enemy.serializationEnemyName != SerializationEnemyName.FriendlyWasp)
+            {
+                StoreHit(lastEnemyHits, enemy.GetInstanceID(), player, weaponName);
+            }
+        }
+
+        private static void StoreHit(Dictionary<int, HitRecord> hits, int targetId, PlayerInput player, string weaponName)
+        {
+            float now = Time.time;
+            if (now - lastPruneTime > StaleHitAge)
+            {
+                PruneStaleHits(lastEnemyHits, now);
+                PruneStaleHits(lastPlayerHits, now);
+                PruneStaleHits(explosionOwners, now);
+                PruneStaleHits(projectileOwners, now);
+                lastPruneTime = now;
+            }
+
+            hits[targetId] = new HitRecord { Player = player, Weapon = weaponName, Time = now };
+        }
+
+        private static void PruneStaleHits(Dictionary<int, HitRecord> hits, float now)
+        {
+            List<int> stale = null;
+            foreach (var entry in hits)
+            {
+                if (now - entry.Value.Time > StaleHitAge)
+                {
+                    (stale ??= new List<int>()).Add(entry.Key);
+                }
+            }
+            stale?.ForEach(id => hits.Remove(id));
+        }
+
+        private static PlayerInput GetOwner(Dictionary<int, HitRecord> owners, int id)
+        {
+            return owners.TryGetValue(id, out HitRecord owner) ? owner.Player : null;
+        }
+
+        private static bool TryGetRecentHit(Dictionary<int, HitRecord> hits, int targetId, float window, out HitRecord hit)
+        {
+            return hits.TryGetValue(targetId, out hit) && hit.Player != null && Time.time - hit.Time <= window;
+        }
+
+        private static bool TryTakeHit(Dictionary<int, HitRecord> hits, int targetId, float window, out HitRecord hit, out string reason)
+        {
+            if (!hits.TryGetValue(targetId, out hit))
+            {
+                reason = "no player hit it";
+                return false;
+            }
+
+            hits.Remove(targetId);
+            if (hit.Player == null)
+            {
+                reason = "the player who hit it left";
+                return false;
+            }
+
+            float age = Time.time - hit.Time;
+            if (age > window)
+            {
+                reason = $"last hit by {PlayerLabel(hit.Player)} with {hit.Weapon} was {age:F1}s earlier";
+                return false;
+            }
+
+            reason = null;
+            return true;
+        }
+
+        private static string PlayerLabel(PlayerInput player)
+        {
+            return player != null ? $"Player {player.playerIndex + 1}" : "unknown player";
         }
 
         public static void RegisterDiscOwner(GameObject discProjectile, PlayerInput owner)
@@ -222,108 +357,6 @@ namespace StatsMod
         public static PlayerInput FindPlayerInputByPlayerId(ulong playerId)
         {
             return PlayerTracker.FindPlayerInputByPlayerId(playerId);
-        }
-
-        public static bool IsTargetImmune(GameObject target)
-        {
-            if (target == null) return false;
-
-            EnemyHealthSystem enemyHealthSystem = target.GetComponentOrParent<EnemyHealthSystem>();
-
-            if (enemyHealthSystem != null && ReflectionCache.EnemyImmuneTimeField != null)
-            {
-                float immuneTime = (float)ReflectionCache.EnemyImmuneTimeField.GetValue(enemyHealthSystem);
-                if (Time.time < immuneTime)
-                {
-                    return true;
-                }
-            }
-
-            SpiderHealthSystem spiderHealthSystem = target.GetComponentOrParent<SpiderHealthSystem>();
-
-            if (spiderHealthSystem != null && ReflectionCache.SpiderImmuneTimeField != null)
-            {
-                float immuneTime = (float)ReflectionCache.SpiderImmuneTimeField.GetValue(spiderHealthSystem);
-                if (Time.time < immuneTime)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        public static bool HasActiveShield(GameObject target)
-        {
-            if (target == null) return false;
-
-            EnemyHealthSystem enemyHealthSystem = target.GetComponentOrParent<EnemyHealthSystem>();
-
-            if (enemyHealthSystem != null)
-            {
-                return enemyHealthSystem.shield != null && enemyHealthSystem.shield.activeInHierarchy;
-            }
-
-            SpiderHealthSystem spiderHealthSystem = target.GetComponentOrParent<SpiderHealthSystem>();
-
-            if (spiderHealthSystem != null)
-            {
-                return spiderHealthSystem.HasShield();
-            }
-
-            return false;
-        }
-
-        public static void RecordShieldHit(GameObject target, PlayerInput playerInput, string weaponName)
-        {
-            if (target == null || playerInput == null) return;
-            SpiderHealthSystem spiderHealth = target.GetComponentOrParent<SpiderHealthSystem>();
-
-            if (spiderHealth != null && spiderHealth.rootObject != null)
-            {
-                PlayerInput victimPlayerInput = spiderHealth.rootObject.GetComponentInParent<PlayerInput>();
-                if (victimPlayerInput != null && victimPlayerInput != playerInput)
-                {
-                    Logger.LogDebug($"Recording shield hit on player {victimPlayerInput.name} by player {playerInput.name}");
-                    PlayerTracker.Instance.IncrementFriendlyShieldsHit(playerInput);
-                    PlayerTracker.Instance.IncrementWeaponHit(playerInput, weaponName);
-                }
-            }
-            else
-            {
-                RollerStrut strutComponent = target.GetComponentOrParent<RollerStrut>();
-
-                if (strutComponent == null)
-                {
-                    Logger.LogDebug($"Recording shield hit on enemy {target.name} by player {playerInput.name}");
-                    PlayerTracker.Instance.IncrementEnemyShieldsTakenDown(playerInput);
-                    PlayerTracker.Instance.IncrementWeaponHit(playerInput, weaponName);
-                }
-            }
-        }
-
-        public static void RecordHit(GameObject target, PlayerInput playerInput, string weaponName)
-        {
-            if (target == null || playerInput == null) return;
-            string targetName = target.GetComponentInParent<SpiderHealthSystem>() != null
-                ? target.transform.root.name
-                : target.gameObject.name;
-            if (!namesOfTargetsThatCanDie.Contains(targetName))
-            {
-                return;
-            }
-
-            if (IsTargetImmune(target))
-            {
-                return;
-            }
-
-            if (HasActiveShield(target))
-            {
-                RecordShieldHit(target, playerInput, weaponName);
-                return;
-            }
-            TryRecordKill(target, playerInput, weaponName);
         }
     }
 }
