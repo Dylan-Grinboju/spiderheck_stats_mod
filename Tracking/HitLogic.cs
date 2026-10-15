@@ -8,9 +8,9 @@ using Logger = Silk.Logger;
 
 namespace StatsMod
 {
-    // Weapon patches only record which player last hit a target. Kills, friendly kills and shield breaks are
-    // credited when the game actually applies them, so hits that don't kill (immunity, shields, roller struts
-    // with health left) can't count early, and deaths the game decides later (struts, fuses, lava) still count.
+    // Hits only record which player last hit a target. Kills, friendly kills and shield breaks are credited when
+    // the game actually applies them, so hits that don't kill (immunity, shields, roller struts with health left)
+    // can't count early, and deaths the game decides later (struts, fuses, lava) still count.
     public static class HitLogic
     {
         private const float KillCreditWindow = 2.5f;
@@ -27,8 +27,7 @@ namespace StatsMod
             public string Weapon;
             public float Time;
             public float FootingSince;
-            public bool InDeathZone;
-            public float DeathZoneDeadline;
+            public float? DeathZoneDeadline;
         }
 
         private struct Owner
@@ -41,13 +40,14 @@ namespace StatsMod
         public struct AttackScope
         {
             internal bool Saved;
-            internal bool Active;
             internal object Source;
             internal Func<object, PlayerInput> FindPlayer;
             internal bool PlayerFound;
             internal PlayerInput Player;
             internal string Weapon;
             internal PlayerInput EnclosingPlayer;
+
+            internal bool Active => FindPlayer != null;
         }
 
         private static readonly Dictionary<int, HitRecord> lastEnemyHits = new Dictionary<int, HitRecord>();
@@ -57,8 +57,8 @@ namespace StatsMod
         private static readonly Dictionary<int, Owner> projectileOwners = new Dictionary<int, Owner>();
         private static readonly Dictionary<int, Owner> discOwners = new Dictionary<int, Owner>();
         private static readonly Dictionary<int, Owner> ballReflectors = new Dictionary<int, Owner>();
-        private static readonly Dictionary<int, Owner> explosiveSetOffBy = new Dictionary<int, Owner>();
-        private static readonly Dictionary<int, Owner>[] ownerMaps = { explosionOwners, projectileOwners, discOwners, ballReflectors, explosiveSetOffBy };
+        private static readonly Dictionary<int, Owner> grenadeArmers = new Dictionary<int, Owner>();
+        private static readonly Dictionary<int, Owner>[] ownerMaps = { explosionOwners, projectileOwners, discOwners, ballReflectors, grenadeArmers };
         private static float lastPruneTime = 0f;
 
         private static AttackScope current;
@@ -92,7 +92,7 @@ namespace StatsMod
             PlayerInput enclosing = CurrentAttacker;
             AttackScope previous = current;
             previous.Saved = true;
-            current = new AttackScope { Active = true, Source = source, FindPlayer = findPlayer, Weapon = weaponName, EnclosingPlayer = enclosing };
+            current = new AttackScope { Source = source, FindPlayer = findPlayer, Weapon = weaponName, EnclosingPlayer = enclosing };
             return previous;
         }
 
@@ -108,13 +108,15 @@ namespace StatsMod
                 if (current.Active && !current.PlayerFound)
                 {
                     current.PlayerFound = true;
-                    current.Player = current.FindPlayer?.Invoke(current.Source);
+                    current.Player = current.FindPlayer(current.Source);
                 }
                 return current.Player;
             }
         }
 
         public static PlayerInput EnclosingAttacker => current.EnclosingPlayer;
+
+        public static bool HasPlayerHits => lastPlayerHits.Count > 0;
 
         // An attack without a player, or damage from anything else (a friendly wasp, a hazard), takes the kill away
         // from the last player who hit the enemy. Bumps from enemies, pulls and portals outside an attack don't.
@@ -195,10 +197,10 @@ namespace StatsMod
         // A hit spider that stands in control for a moment wasn't knocked anywhere, so a later fall into lava is its own
         public static void UpdatePlayerFooting(SpiderHealthSystem spider, Stabilizer stabilizer)
         {
-            if (lastPlayerHits.Count == 0) return;
+            if (!HasPlayerHits) return;
 
             int id = spider.GetInstanceID();
-            if (!lastPlayerHits.TryGetValue(id, out HitRecord hit) || hit.InDeathZone) return;
+            if (!lastPlayerHits.TryGetValue(id, out HitRecord hit) || hit.DeathZoneDeadline.HasValue) return;
 
             bool inControl = stabilizer != null && stabilizer.grounded && !spider.stunned;
             if (!inControl)
@@ -233,17 +235,17 @@ namespace StatsMod
         // A target that reaches lava inside the kill window dies a little later, after it dissolves
         private static void MarkInDeathZone(Dictionary<int, HitRecord> hits, int id, float dyingDelay)
         {
-            if (!hits.TryGetValue(id, out HitRecord hit) || hit.InDeathZone) return;
+            if (!hits.TryGetValue(id, out HitRecord hit) || hit.DeathZoneDeadline.HasValue) return;
             if (Time.time - hit.Time > KillCreditWindow) return;
 
-            hit.InDeathZone = true;
             hit.DeathZoneDeadline = Time.time + dyingDelay + DeathZoneGrace;
             hits[id] = hit;
         }
 
         // The game stores an explosion's owner as a client id that is 0 both for player 0 and for explosions nobody owns
         // (enemy explosions, weapons no player held), so the real owner is kept here, set where the game sets its own.
-        // An explosive nobody owns belongs to the player whose attack set it off.
+        // An explosive nobody owns belongs to the player whose attack set it off: on the host the explode ClientRpc
+        // runs inside that attack. A grenade that went off on its timer belongs to the player who armed it.
         public static void SetExplosionOwner(Explosion explosion, ulong ownerId, NetworkBehaviour source)
         {
             explosion.explosionOwnerId = ownerId;
@@ -252,10 +254,8 @@ namespace StatsMod
                 PlayerInput player = source is BasicProjectile projectile
                     ? GetOwner(projectileOwners, projectile.GetInstanceID())
                     : WeaponPlayer(source as Weapon);
-                if (player == null && source != null)
-                {
-                    player = GetOwner(explosiveSetOffBy, source.GetInstanceID());
-                }
+                if (player == null) player = CurrentAttacker;
+                if (player == null) player = GetOwner(grenadeArmers, source.GetInstanceID());
                 if (player != null)
                 {
                     StoreOwner(explosionOwners, explosion.GetInstanceID(), player);
@@ -267,12 +267,12 @@ namespace StatsMod
             }
         }
 
-        public static void OnExplosiveSetOff(NetworkBehaviour explosive)
+        public static void OnGrenadeArmed(Grenade grenade)
         {
             PlayerInput attacker = CurrentAttacker;
             if (attacker != null)
             {
-                StoreOwner(explosiveSetOffBy, explosive.GetInstanceID(), attacker);
+                StoreOwner(grenadeArmers, grenade.GetInstanceID(), attacker);
             }
         }
 
@@ -351,8 +351,7 @@ namespace StatsMod
             int id = enemy.GetInstanceID();
             rollerFuses.Remove(id);
 
-            float window = lastEnemyHits.TryGetValue(id, out HitRecord pending) ? KillWindow(pending) : KillCreditWindow;
-            if (!TryTakeHit(lastEnemyHits, id, window, out HitRecord hit, out string reason))
+            if (!TryTakeHit(lastEnemyHits, id, null, out HitRecord hit, out string reason))
             {
                 Logger.LogInfo($"Enemy {enemy.name} died with no kill credited ({reason}) at time {Time.time}");
                 return;
@@ -392,22 +391,14 @@ namespace StatsMod
 
         public static void OnPlayerDeath(SpiderHealthSystem spider)
         {
-            int id = spider.GetInstanceID();
-            if (!lastPlayerHits.TryGetValue(id, out HitRecord pending)) return;
-
             // Lava and falling out of the map mark the spider as dying before it dies, a damage kill happens on the hit
-            float window = ReflectionCache.SpiderDying(spider) ? KillWindow(pending) : DirectPlayerKillCreditWindow;
-            if (!TryTakeHit(lastPlayerHits, id, window, out HitRecord hit, out _)) return;
+            float? window = ReflectionCache.SpiderDying(spider) ? (float?)null : DirectPlayerKillCreditWindow;
+            if (!TryTakeHit(lastPlayerHits, spider.GetInstanceID(), window, out HitRecord hit, out _)) return;
 
             Logger.LogInfo($"Recording friendly kill for {PlayerLabel(hit.Player)}, weapon:{hit.Weapon}, {Time.time - hit.Time:F2}s after the hit");
             PlayerTracker.Instance.IncrementFriendlyKill(hit.Player);
             PlayerTracker.Instance.IncrementWeaponHit(hit.Player, hit.Weapon);
             PlayerTracker.Instance.IncrementEnemyKillByName(hit.Player, "Player");
-        }
-
-        private static float KillWindow(HitRecord hit)
-        {
-            return hit.InDeathZone ? hit.DeathZoneDeadline - hit.Time : KillCreditWindow;
         }
 
         private static void StoreHit(Dictionary<int, HitRecord> hits, int targetId, PlayerInput player, string weaponName)
@@ -460,7 +451,8 @@ namespace StatsMod
             return hits.TryGetValue(targetId, out hit) && hit.Player != null && Time.time - hit.Time <= window;
         }
 
-        private static bool TryTakeHit(Dictionary<int, HitRecord> hits, int targetId, float window, out HitRecord hit, out string reason)
+        // Without a fixed window, a target that reached lava in time has until its death zone deadline
+        private static bool TryTakeHit(Dictionary<int, HitRecord> hits, int targetId, float? fixedWindow, out HitRecord hit, out string reason)
         {
             if (!hits.TryGetValue(targetId, out hit))
             {
@@ -476,6 +468,7 @@ namespace StatsMod
             }
 
             float age = Time.time - hit.Time;
+            float window = fixedWindow ?? (hit.DeathZoneDeadline - hit.Time) ?? KillCreditWindow;
             if (age > window)
             {
                 reason = $"last hit by {PlayerLabel(hit.Player)} with {hit.Weapon} was {age:F1}s earlier";

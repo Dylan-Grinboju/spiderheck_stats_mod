@@ -4,7 +4,6 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
-using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Logger = Silk.Logger;
@@ -29,8 +28,7 @@ namespace StatsMod
         }
     }
 
-    // Every player attack runs inside HitLogic.BeginAttack/EndAttack, and the targets record the hit when the game
-    // applies it (see the receivers below), so no hit geometry is repeated here and hits on immune targets don't count.
+    // Runs each attack inside HitLogic.BeginAttack/EndAttack; the receivers below record its hits
     [HarmonyPatch]
     class AttackScopePatch
     {
@@ -51,7 +49,7 @@ namespace StatsMod
             Add<LaserCannon>("DamageHit", "Laser Cannon", HitLogic.WeaponPlayer);
             Add<LaserCube>("Beam", "Laser Cube", HitLogic.WeaponPlayer);
             Add<ForceField>("Damage", "Particle Blade", field => HitLogic.WeaponPlayer(field.GetComponentInParent<Weapon>()));
-            Add<SawDisc>("TryDamage", "SawDisc", SawDiscOwner);
+            Add<SawDisc>("TryDamage", "SawDisc", disc => HitLogic.GetDiscOwner(disc.gameObject));
             Add<EnergyBall>("OnCollisionEnter2D", "EnergyBall", EnergyBallOwner);
             Add<KhepriStaff>("Zap", "KhepriStaff", HitLogic.WeaponPlayer);
             Add<Explosion>("KnockBack", "Explosions", ExplosionOwner);
@@ -102,12 +100,6 @@ namespace StatsMod
             return null;
         }
 
-        private static PlayerInput SawDiscOwner(SawDisc disc)
-        {
-            PlayerInput owner = HitLogic.GetDiscOwner(disc.gameObject);
-            return owner != null ? owner : disc.GetComponentInParent<PlayerInput>();
-        }
-
         private static PlayerInput EnergyBallOwner(EnergyBall ball)
         {
             PlayerInput reflector = HitLogic.GetBallReflector(ball);
@@ -153,7 +145,7 @@ namespace StatsMod
     }
 
     // Receivers. Enemy stingers, blades, roller struts and Khepri armor pass their hits on to EnemyHealthSystem,
-    // and equipped weapons pass theirs on to the holder's SpiderHealthSystem. Each counts only when the game applies it.
+    // and equipped weapons pass theirs on to the holder's SpiderHealthSystem.
     [HarmonyPatch(typeof(EnemyHealthSystem), "Impact")]
     class EnemyImpactReceiverPatch
     {
@@ -245,7 +237,7 @@ namespace StatsMod
         {
             try
             {
-                if (other.isTrigger || !other.CompareTag("PlayerRigidbody")) return;
+                if (!HitLogic.HasPlayerHits || other.isTrigger || !other.CompareTag("PlayerRigidbody")) return;
 
                 SpiderHealthSystem spider = other.GetComponent<SpiderHealthSystem>();
                 if (spider != null)
@@ -323,28 +315,6 @@ namespace StatsMod
                 AccessTools.Method(typeof(HitLogic), nameof(HitLogic.SetExplosionOwner)));
     }
 
-    [HarmonyPatch]
-    class ExplosiveSetOffPatch
-    {
-        static IEnumerable<MethodBase> TargetMethods() => PatchTargets.FindAll(
-            (typeof(Grenade), "Explode"),
-            (typeof(Mine), "Explode"),
-            (typeof(BoomSpear), "Explode"),
-            (typeof(BasicProjectile), "DestroyProjectile"));
-
-        static void Prefix(NetworkBehaviour __instance, bool ___isExplode)
-        {
-            try
-            {
-                if (!___isExplode) HitLogic.OnExplosiveSetOff(__instance);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError($"Error recording who set off {__instance.name}: {ex.Message}");
-            }
-        }
-    }
-
     // A knockback that misses the blast's center only arms a grenade, which then explodes on its timer
     [HarmonyPatch(typeof(Grenade), "Arm")]
     class GrenadeArmPatch
@@ -353,7 +323,7 @@ namespace StatsMod
         {
             try
             {
-                if (!____armed) HitLogic.OnExplosiveSetOff(__instance);
+                if (!____armed) HitLogic.OnGrenadeArmed(__instance);
             }
             catch (Exception ex)
             {

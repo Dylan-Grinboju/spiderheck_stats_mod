@@ -37,9 +37,9 @@ namespace StatsMod
         {
             try
             {
-                if (!(bool)EnemyReflectionCache.IsHostProperty.GetValue(__instance) ||
+                if (EnemyReflectionCache.EnemyExploding(__instance) ||
                     __instance.ignoreIndirectDamage ||
-                    EnemyReflectionCache.EnemyExploding(__instance))
+                    !(bool)EnemyReflectionCache.IsHostProperty.GetValue(__instance))
                 {
                     return;
                 }

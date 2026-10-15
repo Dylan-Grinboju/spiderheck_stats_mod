@@ -22,8 +22,6 @@ namespace StatsMod
 
         private static readonly Type[] GameFixes = { typeof(OffScreenIndicatorFollowTargetPatch), typeof(WhispCooldownStartPatch) };
 
-        private static Harmony trackingHarmony;
-
         // Get version from assembly at runtime
         private static string _version;
         public static string Version
@@ -88,7 +86,6 @@ namespace StatsMod
             Logger.LogInfo("Pause handler initialized");
 
             PatchClasses(harmony, AccessTools.GetTypesFromAssembly(Assembly.GetExecutingAssembly()).Except(GameFixes));
-            trackingHarmony = harmony;
 
             Logger.LogInfo("Applied patches:");
             foreach (var method in harmony.GetPatchedMethods())
@@ -102,9 +99,9 @@ namespace StatsMod
         // Silk adds each mod as a component once every mod is loaded, so SpiderSurge is there by now
         private void Start()
         {
-            if (trackingHarmony != null)
+            if (ModConfig.TrackingEnabled)
             {
-                AttackScopePatch.PatchSpiderSurgePulse(trackingHarmony);
+                AttackScopePatch.PatchSpiderSurgePulse(new Harmony(HarmonyId));
             }
         }
 
@@ -243,7 +240,6 @@ namespace StatsMod
             Logger.LogInfo("Unloading Stats Mod...");
 
             Harmony.UnpatchID(HarmonyId);
-            trackingHarmony = null;
             Logger.LogInfo("Harmony patches removed.");
 
             Instance = null;
