@@ -133,6 +133,8 @@ namespace StatsMod
                 DeathsPerMap = new Dictionary<string, int>();
             }
 
+            public bool IsAlive => CurrentAliveStartTime.HasValue || WasAliveWhenPaused;
+
             public TimeSpan GetCurrentAliveTime()
             {
                 if (CurrentAliveStartTime.HasValue)
@@ -167,6 +169,7 @@ namespace StatsMod
                     TotalAliveTime += Time.unscaledTime - CurrentAliveStartTime.Value;
                     CurrentAliveStartTime = null;
                 }
+                WasAliveWhenPaused = false;
             }
 
             public void StopWebSwingTimer()
@@ -381,7 +384,7 @@ namespace StatsMod
 
         public bool IsOnlyOnePlayerAlive()
         {
-            int aliveCount = activePlayers.Count(p => p.Value.CurrentAliveStartTime.HasValue);
+            int aliveCount = activePlayers.Count(p => p.Value.IsAlive);
             return aliveCount == 1;
         }
 
@@ -390,7 +393,7 @@ namespace StatsMod
             if (!IsOnlyOnePlayerAlive())
                 return null;
 
-            return activePlayers.FirstOrDefault(p => p.Value.CurrentAliveStartTime.HasValue).Key;
+            return activePlayers.FirstOrDefault(p => p.Value.IsAlive).Key;
         }
 
         public void IncrementPlayerKill(PlayerInput player)
@@ -400,7 +403,7 @@ namespace StatsMod
                 data.Kills++;
 
                 // A kill credited after the killer died (the target reached lava or blew up later) starts no streak
-                if (!data.CurrentAliveStartTime.HasValue) return;
+                if (!data.IsAlive) return;
 
                 data.KillStreak++;
                 if (data.KillStreak > data.MaxKillStreak)

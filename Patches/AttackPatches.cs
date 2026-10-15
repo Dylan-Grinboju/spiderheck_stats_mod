@@ -200,11 +200,12 @@ namespace StatsMod
     [HarmonyPatch(typeof(SpiderHealthSystem), "Damage")]
     class SpiderDamageReceiverPatch
     {
-        static void Prefix(SpiderHealthSystem __instance, bool stun)
+        static void Prefix(SpiderHealthSystem __instance, bool stun, bool __runOriginal)
         {
             try
             {
-                if (Time.time < ReflectionCache.SpiderImmuneTill(__instance)) return;
+                // SpiderTeams cancels friendly fire
+                if (!__runOriginal || Time.time < ReflectionCache.SpiderImmuneTill(__instance)) return;
                 HitLogic.OnPlayerHit(__instance, damage: true, stun);
             }
             catch (Exception ex)
@@ -315,15 +316,35 @@ namespace StatsMod
                 AccessTools.Method(typeof(HitLogic), nameof(HitLogic.SetExplosionOwner)));
     }
 
-    // A knockback that misses the blast's center only arms a grenade, which then explodes on its timer
-    [HarmonyPatch(typeof(Grenade), "Arm")]
-    class GrenadeArmPatch
+    // A grenade or mine dropped without being armed belongs to nobody. Firing it in hand arms it, and so does a hit
+    [HarmonyPatch]
+    class ExplosiveFiredPatch
     {
-        static void Prefix(Grenade __instance, bool ____armed)
+        static IEnumerable<MethodBase> TargetMethods() => PatchTargets.FindAll((typeof(Grenade), "Use"), (typeof(Mine), "Use"));
+
+        static void Prefix(Weapon __instance, bool fire, bool ____armed)
         {
             try
             {
-                if (!____armed) HitLogic.OnGrenadeArmed(__instance);
+                if (fire && !____armed) HitLogic.OnExplosiveArmed(__instance, byHolder: true);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error recording who armed {__instance.name}: {ex.Message}");
+            }
+        }
+    }
+
+    [HarmonyPatch]
+    class ExplosiveHitPatch
+    {
+        static IEnumerable<MethodBase> TargetMethods() => PatchTargets.FindAll((typeof(Grenade), "Arm"), (typeof(Mine), "Impact"));
+
+        static void Prefix(Weapon __instance, bool ____armed)
+        {
+            try
+            {
+                if (!____armed) HitLogic.OnExplosiveArmed(__instance, byHolder: false);
             }
             catch (Exception ex)
             {

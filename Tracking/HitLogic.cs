@@ -57,8 +57,8 @@ namespace StatsMod
         private static readonly Dictionary<int, Owner> projectileOwners = new Dictionary<int, Owner>();
         private static readonly Dictionary<int, Owner> discOwners = new Dictionary<int, Owner>();
         private static readonly Dictionary<int, Owner> ballReflectors = new Dictionary<int, Owner>();
-        private static readonly Dictionary<int, Owner> grenadeArmers = new Dictionary<int, Owner>();
-        private static readonly Dictionary<int, Owner>[] ownerMaps = { explosionOwners, projectileOwners, discOwners, ballReflectors, grenadeArmers };
+        private static readonly Dictionary<int, Owner> explosiveArmers = new Dictionary<int, Owner>();
+        private static readonly Dictionary<int, Owner>[] ownerMaps = { explosionOwners, projectileOwners, discOwners, ballReflectors, explosiveArmers };
         private static float lastPruneTime = 0f;
 
         private static AttackScope current;
@@ -244,18 +244,18 @@ namespace StatsMod
 
         // The game stores an explosion's owner as a client id that is 0 both for player 0 and for explosions nobody owns
         // (enemy explosions, weapons no player held), so the real owner is kept here, set where the game sets its own.
-        // An explosive nobody owns belongs to the player whose attack set it off: on the host the explode ClientRpc
-        // runs inside that attack. A grenade that went off on its timer belongs to the player who armed it.
+        // A grenade or mine belongs to the player who armed it, a BoomSpear to its last holder. Anything else belongs to
+        // the player whose attack set it off: on the host the explode ClientRpc runs inside that attack.
         public static void SetExplosionOwner(Explosion explosion, ulong ownerId, NetworkBehaviour source)
         {
             explosion.explosionOwnerId = ownerId;
             try
             {
-                PlayerInput player = source is BasicProjectile projectile
-                    ? GetOwner(projectileOwners, projectile.GetInstanceID())
-                    : WeaponPlayer(source as Weapon);
+                PlayerInput player;
+                if (source is BasicProjectile projectile) player = GetOwner(projectileOwners, projectile.GetInstanceID());
+                else if (source is BoomSpear spear) player = WeaponPlayer(spear);
+                else player = GetOwner(explosiveArmers, source.GetInstanceID());
                 if (player == null) player = CurrentAttacker;
-                if (player == null) player = GetOwner(grenadeArmers, source.GetInstanceID());
                 if (player != null)
                 {
                     StoreOwner(explosionOwners, explosion.GetInstanceID(), player);
@@ -267,12 +267,12 @@ namespace StatsMod
             }
         }
 
-        public static void OnGrenadeArmed(Grenade grenade)
+        public static void OnExplosiveArmed(Weapon explosive, bool byHolder)
         {
-            PlayerInput attacker = CurrentAttacker;
-            if (attacker != null)
+            PlayerInput player = byHolder ? Holder(explosive) : CurrentAttacker;
+            if (player != null)
             {
-                StoreOwner(grenadeArmers, grenade.GetInstanceID(), attacker);
+                StoreOwner(explosiveArmers, explosive.GetInstanceID(), player);
             }
         }
 
@@ -332,15 +332,21 @@ namespace StatsMod
         {
             if (weapon == null) return null;
 
-            if (weapon.owner != null && weapon.owner.healthSystem != null)
-            {
-                PlayerInput holder = weapon.owner.healthSystem.GetComponentInParent<PlayerInput>();
-                if (holder != null) return holder;
-            }
+            PlayerInput holder = Holder(weapon);
+            if (holder != null) return holder;
 
             // Thrown weapons keep the playerID WeaponEquipPatch gave them, and launched blades get their launcher's.
             // Weapons only AI spiders held have none
             return weapon.ownerWeaponClientId != ulong.MaxValue ? PlayerTracker.FindPlayerInputByPlayerId(weapon.ownerWeaponClientId) : null;
+        }
+
+        // The game keeps a weapon's owner after it is dropped or thrown
+        private static PlayerInput Holder(Weapon weapon)
+        {
+            WeaponManager owner = weapon.owner;
+            return weapon.equipped && owner != null && owner.healthSystem != null
+                ? owner.healthSystem.GetComponentInParent<PlayerInput>()
+                : null;
         }
 
         public static void OnEnemyDeath(EnemyHealthSystem enemy)
