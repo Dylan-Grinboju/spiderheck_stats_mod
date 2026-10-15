@@ -2,18 +2,25 @@
 using Logger = Silk.Logger;
 using HarmonyLib;
 using UnityEngine;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Reflection;
+using OffScreenIndicatorFix;
+using WhispCooldownFix;
 
 namespace StatsMod
 {
     // SilkMod Attribute with the format: name, authors, mod version, silk version, and identifier
-    [SilkMod("Stats Mod", new string[] { "Dylan" }, "2.2.1", "0.7.0", "Stats_Mod", 1)]
+    [SilkMod("Stats Mod", new string[] { "Dylan" }, "2.4.0", "0.7.0", "Stats_Mod", 1)]
     public class StatsMod : SilkMod
     {
         public static StatsMod Instance { get; private set; }
         public const string ModId = "Stats_Mod";
+        private const string HarmonyId = "com.StatsMod";
+
+        private static readonly Type[] GameFixes = { typeof(OffScreenIndicatorFollowTargetPatch), typeof(WhispCooldownStartPatch) };
 
         // Get version from assembly at runtime
         private static string _version;
@@ -60,9 +67,12 @@ namespace StatsMod
                 Logger.LogInfo("Update checking is disabled in configuration.");
             }
 
+            Harmony harmony = new Harmony(HarmonyId);
+            PatchClasses(harmony, GameFixes);
+
             if (!ModConfig.TrackingEnabled)
             {
-                Logger.LogInfo("Stats Mod tracking is disabled in configuration. Mod components will not be initialized.");
+                Logger.LogInfo("Stats Mod tracking is disabled in configuration. Only the game fixes are applied.");
                 return;
             }
 
@@ -75,8 +85,7 @@ namespace StatsMod
             DontDestroyOnLoad(pauseHandlerObj);
             Logger.LogInfo("Pause handler initialized");
 
-            Harmony harmony = new Harmony("com.StatsMod");
-            harmony.PatchAll();
+            PatchClasses(harmony, AccessTools.GetTypesFromAssembly(Assembly.GetExecutingAssembly()).Except(GameFixes));
 
             Logger.LogInfo("Applied patches:");
             foreach (var method in harmony.GetPatchedMethods())
@@ -85,6 +94,31 @@ namespace StatsMod
             }
 
             Logger.LogInfo("Harmony patches applied.");
+        }
+
+        // Silk adds each mod as a component once every mod is loaded, so SpiderSurge is there by now
+        private void Start()
+        {
+            if (ModConfig.TrackingEnabled)
+            {
+                AttackScopePatch.PatchSpiderSurgePulse(new Harmony(HarmonyId));
+            }
+        }
+
+        // One class at a time, so a class a game update broke doesn't stop the others
+        private static void PatchClasses(Harmony harmony, IEnumerable<Type> types)
+        {
+            foreach (Type type in types)
+            {
+                try
+                {
+                    harmony.CreateClassProcessor(type).Patch();
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError($"Failed to apply {type.Name}: {ex.Message}");
+                }
+            }
         }
 
         private void SetupConfiguration()
@@ -205,16 +239,8 @@ namespace StatsMod
         {
             Logger.LogInfo("Unloading Stats Mod...");
 
-            // Only unpatch if tracking was enabled and patches were applied
-            if (ModConfig.TrackingEnabled)
-            {
-                Harmony.UnpatchID("com.StatsMod");
-                Logger.LogInfo("Harmony patches removed.");
-            }
-            else
-            {
-                Logger.LogInfo("No patches to remove - tracking was disabled.");
-            }
+            Harmony.UnpatchID(HarmonyId);
+            Logger.LogInfo("Harmony patches removed.");
 
             Instance = null;
         }

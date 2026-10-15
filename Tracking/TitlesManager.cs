@@ -389,13 +389,13 @@ public class TitlesManager
         leaders.MostLavaDeaths = lavaDeathsRanked[0];
         leaders.LeastLavaDeaths = lavaDeathsRanked[lavaDeathsRanked.Count - 1];
 
-        var gunsRanked = players.OrderByDescending(p => p.Value.WeaponHits["Shotgun"] + p.Value.WeaponHits["RailShot"] + p.Value.WeaponHits["DeathRay"] + p.Value.WeaponHits["EnergyBall"] + p.Value.WeaponHits["Laser Cannon"] + p.Value.WeaponHits["SawDisc"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+        var gunsRanked = players.OrderByDescending(p => WeaponKills(p.Value, GunWeapons)).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
         leaders.MostGunsKills = gunsRanked[0];
 
-        var explosionsRanked = players.OrderByDescending(p => p.Value.WeaponHits["Explosions"] + p.Value.WeaponHits["Laser Cube"] + p.Value.WeaponHits["DeathCube"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+        var explosionsRanked = players.OrderByDescending(p => WeaponKills(p.Value, ExplosiveWeapons)).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
         leaders.MostExplosionsKills = explosionsRanked[0];
 
-        var bladeRanked = players.OrderByDescending(p => p.Value.WeaponHits["Particle Blade"] + p.Value.WeaponHits["KhepriStaff"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+        var bladeRanked = players.OrderByDescending(p => WeaponKills(p.Value, BladeWeapons)).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
         leaders.MostBladeKills = bladeRanked[0];
 
         var hornetsRanked = players.OrderByDescending(p => p.Value.EnemyKills["Hornet"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
@@ -411,6 +411,15 @@ public class TitlesManager
         leaders.MostAstralReturns = astralReturnsRanked[0];
 
         return leaders;
+    }
+
+    private static readonly string[] GunWeapons = { "Shotgun", "RailShot", "DeathRay", "EnergyBall", "Laser Cannon", "SawDisc" };
+    private static readonly string[] ExplosiveWeapons = { "Explosions", "Laser Cube", "DeathCube", "Snowball", "Pulse" };
+    private static readonly string[] BladeWeapons = { "Particle Blade", "KhepriStaff" };
+
+    private static int WeaponKills(PlayerTracker.PlayerData data, string[] weapons)
+    {
+        return weapons.Sum(weapon => data.WeaponHits[weapon]);
     }
 
     public void ClearTitles()
@@ -620,13 +629,13 @@ public class TitlesManager
         Add(Req.MostLavaDeaths, leaders.MostLavaDeaths, leaders.MostLavaDeaths.Value.LavaDeaths > 0, $"Most Lava Deaths ({leaders.MostLavaDeaths.Value.LavaDeaths})");
         Add(Req.LeastLavaDeaths, leaders.LeastLavaDeaths, true, $"Least Lava Deaths ({leaders.LeastLavaDeaths.Value.LavaDeaths})");
 
-        long gunsVal = leaders.MostGunsKills.Value.WeaponHits["Shotgun"] + leaders.MostGunsKills.Value.WeaponHits["RailShot"] + leaders.MostGunsKills.Value.WeaponHits["DeathRay"] + leaders.MostGunsKills.Value.WeaponHits["EnergyBall"] + leaders.MostGunsKills.Value.WeaponHits["Laser Cannon"] + leaders.MostGunsKills.Value.WeaponHits["SawDisc"];
+        long gunsVal = WeaponKills(leaders.MostGunsKills.Value, GunWeapons);
         Add(Req.MostGunsKills, leaders.MostGunsKills, gunsVal > 0, $"Most Gun Kills ({gunsVal})");
 
-        long expVal = leaders.MostExplosionsKills.Value.WeaponHits["Explosions"] + leaders.MostExplosionsKills.Value.WeaponHits["Laser Cube"] + leaders.MostExplosionsKills.Value.WeaponHits["DeathCube"];
+        long expVal = WeaponKills(leaders.MostExplosionsKills.Value, ExplosiveWeapons);
         Add(Req.MostExplosionsKills, leaders.MostExplosionsKills, expVal > 0, $"Most Explosive Kills ({expVal})");
 
-        long bladeVal = leaders.MostBladeKills.Value.WeaponHits["Particle Blade"] + leaders.MostBladeKills.Value.WeaponHits["KhepriStaff"];
+        long bladeVal = WeaponKills(leaders.MostBladeKills.Value, BladeWeapons);
         Add(Req.MostBladeKills, leaders.MostBladeKills, bladeVal > 0, $"Most Blade Kills ({bladeVal})");
 
         Add(Req.MostHornetKills, leaders.MostHornetKills, leaders.MostHornetKills.Value.EnemyKills["Hornet"] > 0, $"Most Hornets Killed ({leaders.MostHornetKills.Value.EnemyKills["Hornet"]})");
