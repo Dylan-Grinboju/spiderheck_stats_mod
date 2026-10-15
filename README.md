@@ -1,5 +1,10 @@
 # SpiderStats
 
+> [!IMPORTANT]
+> **SpiderStats is now part of [SpiderSurge](https://github.com/Dylan-Grinboju/SpiderSurge).** Version 2.5.0 is the last release of this mod; new features and fixes come in SpiderSurge, where Stats is on by default.
+>
+> To switch, download `SpiderSurge.dll` from its [releases page](https://github.com/Dylan-Grinboju/SpiderSurge/releases/latest), put it in your `Silk/Mods` folder, and delete `StatsMod.dll`. Your Stats settings move over on the first launch.
+
 A statistics tracking mod for Spiderheck that monitors player performance and game events.
 
 
@@ -14,7 +19,7 @@ A statistics tracking mod for Spiderheck that monitors player performance and ga
   - Press **D-pad** on a controller to cycle the UIs
 - **Log File**: All the stats are saved to a local txt file when the game ends 
 - **Configurable**: Using the Yaml file, various aspects of the mod can be changed
-- **Updater**: The mod will automatically check for updates when the game starts
+- **Updater**: Up to 2.4.0, the mod checks for updates when the game starts. From 2.5.0 on, it points you to SpiderSurge instead
 - **Versus Mode Support**: The mod will track stats in versus mode, but as this was developed with the survival mode in mind, some features (such as the titles) may not work as intended
 
 
@@ -64,7 +69,7 @@ After every change to the file, you need to relaunch the game for it to take eff
 
 ### Updater:
 
-`checkForUpdates`: If true, the mod will automatically check for updates when the game starts.
+`checkForUpdates`: If true, the mod will automatically check for updates when the game starts. From 2.5.0 on, it shows the message about moving to SpiderSurge instead; set it to false to hide that message.
 
 ### Titles:
 
