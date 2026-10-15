@@ -53,6 +53,23 @@ namespace StatsMod
         }
     }
 
+    [HarmonyPatch(typeof(EnemyHealthSystem), "Disintegrate")]
+    class EnemyDisintegratePatch
+    {
+        static void Prefix(EnemyHealthSystem __instance)
+        {
+            try
+            {
+                if (__instance.IsDead() || __instance.ignoreIndirectDamage) return;
+                HitLogic.OnEnemyDisintegrating(__instance);
+            }
+            catch (System.Exception ex)
+            {
+                Logger.LogError($"Error tracking enemy lava contact: {ex.Message}");
+            }
+        }
+    }
+
     [HarmonyPatch(typeof(EnemyHealthSystem), "DestroyShield")]
     class EnemyShieldDestroyedPatch
     {
@@ -115,24 +132,6 @@ namespace StatsMod
             {
                 Logger.LogError($"Error in DiscLauncher LaunchDisc patch: {ex.Message}");
                 return true; // Execute original method on error
-            }
-        }
-    }
-
-    // SawDisc - Clean up disc owner tracking when disc is destroyed
-    [HarmonyPatch(typeof(SawDisc), "OnDesintegrateClientRpc")]
-    class SawDiscCleanupPatch
-    {
-        static void Prefix(SawDisc __instance)
-        {
-            try
-            {
-                // Clean up the disc owner tracking when the disc is about to be destroyed
-                HitLogic.CleanupDiscOwner(__instance.gameObject);
-            }
-            catch (System.Exception ex)
-            {
-                Logger.LogError($"Error cleaning up SawDisc owner tracking: {ex.Message}");
             }
         }
     }

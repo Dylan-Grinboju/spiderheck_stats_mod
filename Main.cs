@@ -20,7 +20,6 @@ namespace StatsMod
         public const string ModId = "Stats_Mod";
         private const string HarmonyId = "com.StatsMod";
 
-        // Bugs in the game itself, fixed even with tracking off
         private static readonly Type[] GameFixes = { typeof(OffScreenIndicatorFollowTargetPatch), typeof(WhispCooldownStartPatch) };
 
         private static Harmony trackingHarmony;

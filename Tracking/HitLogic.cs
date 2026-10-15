@@ -1,9 +1,9 @@
-using HarmonyLib;
+using System;
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Logger = Silk.Logger;
-using System.Collections.Generic;
 
 
 namespace StatsMod
@@ -19,6 +19,7 @@ namespace StatsMod
         private const float StaleHitAge = 30f;
         private const float FootingRegainedTime = 0.5f;
         private const float DeathZoneGrace = 0.5f;
+        private const float EnemyDissolveTime = 0.2f;
 
         private struct HitRecord
         {
@@ -30,27 +31,37 @@ namespace StatsMod
             public float DeathZoneDeadline;
         }
 
+        private struct Owner
+        {
+            public PlayerInput Player;
+            public float Time;
+        }
+
+        // The attack running now. In an attack patch's __state, the attack it interrupted
         public struct AttackScope
         {
+            internal bool Saved;
             internal bool Active;
-            internal bool InAttack;
+            internal object Source;
+            internal Func<object, PlayerInput> FindPlayer;
+            internal bool PlayerFound;
             internal PlayerInput Player;
             internal string Weapon;
+            internal PlayerInput EnclosingPlayer;
         }
 
         private static readonly Dictionary<int, HitRecord> lastEnemyHits = new Dictionary<int, HitRecord>();
         private static readonly Dictionary<int, HitRecord> lastPlayerHits = new Dictionary<int, HitRecord>();
-        private static readonly Dictionary<int, HitRecord> explosionOwners = new Dictionary<int, HitRecord>();
-        private static readonly Dictionary<int, HitRecord> projectileOwners = new Dictionary<int, HitRecord>();
         private static readonly Dictionary<int, HitRecord> rollerFuses = new Dictionary<int, HitRecord>();
+        private static readonly Dictionary<int, Owner> explosionOwners = new Dictionary<int, Owner>();
+        private static readonly Dictionary<int, Owner> projectileOwners = new Dictionary<int, Owner>();
+        private static readonly Dictionary<int, Owner> discOwners = new Dictionary<int, Owner>();
+        private static readonly Dictionary<int, Owner> ballReflectors = new Dictionary<int, Owner>();
+        private static readonly Dictionary<int, Owner> explosiveSetOffBy = new Dictionary<int, Owner>();
+        private static readonly Dictionary<int, Owner>[] ownerMaps = { explosionOwners, projectileOwners, discOwners, ballReflectors, explosiveSetOffBy };
         private static float lastPruneTime = 0f;
 
-        private static bool inAttack;
-        private static PlayerInput attackPlayer;
-        private static string attackWeapon;
-
-        private static Dictionary<int, PlayerInput> discOwnerTracker = new Dictionary<int, PlayerInput>();
-        private static readonly object discOwnerLock = new object();
+        private static AttackScope current;
 
         private static readonly Dictionary<SerializationEnemyName, string> enemyDisplayNames = new Dictionary<SerializationEnemyName, string>
         {
@@ -74,25 +85,36 @@ namespace StatsMod
 
         // While an attack runs (a shot, an explosion, a blade hit, a pulse), every enemy or spider the game damages
         // or knocks back counts as hit by its player, since a knockback can push the target into lava.
-        // Explosions nobody owns and weapons no player holds run as attacks without a player.
-        public static AttackScope BeginAttack(PlayerInput player, string weaponName)
+        // Explosions nobody owns, weapons no player holds and enemy saws run as attacks without a player.
+        // The player is looked up only once the attack hits something.
+        public static AttackScope BeginAttack(object source, Func<object, PlayerInput> findPlayer, string weaponName)
         {
-            AttackScope previous = new AttackScope { Active = true, InAttack = inAttack, Player = attackPlayer, Weapon = attackWeapon };
-            inAttack = true;
-            attackPlayer = player;
-            attackWeapon = weaponName;
+            PlayerInput enclosing = CurrentAttacker;
+            AttackScope previous = current;
+            previous.Saved = true;
+            current = new AttackScope { Active = true, Source = source, FindPlayer = findPlayer, Weapon = weaponName, EnclosingPlayer = enclosing };
             return previous;
         }
 
         public static void EndAttack(AttackScope previous)
         {
-            if (!previous.Active) return;
-            inAttack = previous.InAttack;
-            attackPlayer = previous.Player;
-            attackWeapon = previous.Weapon;
+            if (previous.Saved) current = previous;
         }
 
-        public static PlayerInput CurrentAttacker => attackPlayer;
+        public static PlayerInput CurrentAttacker
+        {
+            get
+            {
+                if (current.Active && !current.PlayerFound)
+                {
+                    current.PlayerFound = true;
+                    current.Player = current.FindPlayer?.Invoke(current.Source);
+                }
+                return current.Player;
+            }
+        }
+
+        public static PlayerInput EnclosingAttacker => current.EnclosingPlayer;
 
         // An attack without a player, or damage from anything else (a friendly wasp, a hazard), takes the kill away
         // from the last player who hit the enemy. Bumps from enemies, pulls and portals outside an attack don't.
@@ -100,11 +122,12 @@ namespace StatsMod
         {
             if (enemy.serializationEnemyName == SerializationEnemyName.FriendlyWasp) return;
 
-            if (attackPlayer != null)
+            PlayerInput attacker = CurrentAttacker;
+            if (attacker != null)
             {
-                StoreHit(lastEnemyHits, enemy.GetInstanceID(), attackPlayer, attackWeapon);
+                StoreHit(lastEnemyHits, enemy.GetInstanceID(), attacker, current.Weapon);
             }
-            else if (inAttack || damage)
+            else if (current.Active || damage)
             {
                 lastEnemyHits.Remove(enemy.GetInstanceID());
             }
@@ -119,7 +142,7 @@ namespace StatsMod
 
             rollerFuses[id] = lostStruts && lastEnemyHits.TryGetValue(id, out HitRecord hit) && Time.time - hit.Time <= KillCreditWindow
                 ? hit
-                : new HitRecord { Time = Time.time, FootingSince = -1f };
+                : new HitRecord { Time = Time.time };
         }
 
         public static void OnRollerFuseEnded(EnemyHealthSystem roller)
@@ -144,26 +167,28 @@ namespace StatsMod
             }
         }
 
-        // A hit by another player is recorded. Anything else that damages or stuns the spider (an enemy, a hazard, an
-        // explosion nobody owns, its own attack) replaces that record, so the earlier player isn't credited for the death.
-        public static void OnPlayerHit(SpiderHealthSystem spider, bool replacesEarlierHit)
+        // A hit by another player is recorded. Damage from anything else (an enemy, a hazard, an explosion nobody owns,
+        // its own attack) replaces that record, and so does a stun from an attack. Bumps outside an attack don't.
+        public static void OnPlayerHit(SpiderHealthSystem spider, bool damage, bool stun)
         {
-            if (attackPlayer == null)
+            int id = spider.GetInstanceID();
+            PlayerInput attacker = CurrentAttacker;
+            if (attacker == null)
             {
-                if (replacesEarlierHit) lastPlayerHits.Remove(spider.GetInstanceID());
+                if (damage || (current.Active && stun)) lastPlayerHits.Remove(id);
                 return;
             }
 
             PlayerInput victim = spider.rootObject != null ? spider.rootObject.GetComponentInParent<PlayerInput>() : null;
             if (victim == null) return;
 
-            if (victim != attackPlayer)
+            if (victim != attacker)
             {
-                StoreHit(lastPlayerHits, spider.GetInstanceID(), attackPlayer, attackWeapon);
+                StoreHit(lastPlayerHits, id, attacker, current.Weapon);
             }
-            else if (replacesEarlierHit)
+            else if (damage || stun)
             {
-                lastPlayerHits.Remove(spider.GetInstanceID());
+                lastPlayerHits.Remove(id);
             }
         }
 
@@ -197,17 +222,28 @@ namespace StatsMod
 
         public static void OnPlayerTouchedDeathZone(SpiderHealthSystem spider, float disintegrateDelay)
         {
-            int id = spider.GetInstanceID();
-            if (!lastPlayerHits.TryGetValue(id, out HitRecord hit) || hit.InDeathZone) return;
+            MarkInDeathZone(lastPlayerHits, spider.GetInstanceID(), disintegrateDelay);
+        }
+
+        public static void OnEnemyDisintegrating(EnemyHealthSystem enemy)
+        {
+            MarkInDeathZone(lastEnemyHits, enemy.GetInstanceID(), EnemyDissolveTime);
+        }
+
+        // A target that reaches lava inside the kill window dies a little later, after it dissolves
+        private static void MarkInDeathZone(Dictionary<int, HitRecord> hits, int id, float dyingDelay)
+        {
+            if (!hits.TryGetValue(id, out HitRecord hit) || hit.InDeathZone) return;
             if (Time.time - hit.Time > KillCreditWindow) return;
 
             hit.InDeathZone = true;
-            hit.DeathZoneDeadline = Time.time + disintegrateDelay + DeathZoneGrace;
-            lastPlayerHits[id] = hit;
+            hit.DeathZoneDeadline = Time.time + dyingDelay + DeathZoneGrace;
+            hits[id] = hit;
         }
 
         // The game stores an explosion's owner as a client id that is 0 both for player 0 and for explosions nobody owns
         // (enemy explosions, weapons no player held), so the real owner is kept here, set where the game sets its own.
+        // An explosive nobody owns belongs to the player whose attack set it off.
         public static void SetExplosionOwner(Explosion explosion, ulong ownerId, NetworkBehaviour source)
         {
             explosion.explosionOwnerId = ownerId;
@@ -216,14 +252,27 @@ namespace StatsMod
                 PlayerInput player = source is BasicProjectile projectile
                     ? GetOwner(projectileOwners, projectile.GetInstanceID())
                     : WeaponPlayer(source as Weapon);
+                if (player == null && source != null)
+                {
+                    player = GetOwner(explosiveSetOffBy, source.GetInstanceID());
+                }
                 if (player != null)
                 {
-                    StoreHit(explosionOwners, explosion.GetInstanceID(), player, null);
+                    StoreOwner(explosionOwners, explosion.GetInstanceID(), player);
                 }
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 Logger.LogError($"Error recording explosion owner: {ex.Message}");
+            }
+        }
+
+        public static void OnExplosiveSetOff(NetworkBehaviour explosive)
+        {
+            PlayerInput attacker = CurrentAttacker;
+            if (attacker != null)
+            {
+                StoreOwner(explosiveSetOffBy, explosive.GetInstanceID(), attacker);
             }
         }
 
@@ -235,10 +284,10 @@ namespace StatsMod
                 PlayerInput player = WeaponPlayer(launcher as Weapon);
                 if (player != null)
                 {
-                    StoreHit(projectileOwners, projectile.GetInstanceID(), player, null);
+                    StoreOwner(projectileOwners, projectile.GetInstanceID(), player);
                 }
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 Logger.LogError($"Error recording projectile owner: {ex.Message}");
             }
@@ -247,6 +296,36 @@ namespace StatsMod
         public static PlayerInput GetExplosionOwner(Explosion explosion)
         {
             return GetOwner(explosionOwners, explosion.GetInstanceID());
+        }
+
+        public static void RegisterDiscOwner(GameObject disc, PlayerInput owner)
+        {
+            if (disc != null && owner != null)
+            {
+                StoreOwner(discOwners, disc.GetInstanceID(), owner);
+            }
+        }
+
+        public static PlayerInput GetDiscOwner(GameObject disc)
+        {
+            return disc != null ? GetOwner(discOwners, disc.GetInstanceID()) : null;
+        }
+
+        public static void OnBallReflected(EnergyBall ball, PlayerInput reflector)
+        {
+            if (reflector != null)
+            {
+                StoreOwner(ballReflectors, ball.GetInstanceID(), reflector);
+            }
+            else
+            {
+                ballReflectors.Remove(ball.GetInstanceID());
+            }
+        }
+
+        public static PlayerInput GetBallReflector(EnergyBall ball)
+        {
+            return GetOwner(ballReflectors, ball.GetInstanceID());
         }
 
         public static PlayerInput WeaponPlayer(Weapon weapon)
@@ -266,12 +345,14 @@ namespace StatsMod
 
         public static void OnEnemyDeath(EnemyHealthSystem enemy)
         {
+            EnemiesTracker.Instance.IncrementEnemiesKilled();
             if (enemy.serializationEnemyName == SerializationEnemyName.FriendlyWasp) return;
 
-            EnemiesTracker.Instance.IncrementEnemiesKilled();
-            rollerFuses.Remove(enemy.GetInstanceID());
+            int id = enemy.GetInstanceID();
+            rollerFuses.Remove(id);
 
-            if (!TryTakeHit(lastEnemyHits, enemy.GetInstanceID(), KillCreditWindow, out HitRecord hit, out string reason))
+            float window = lastEnemyHits.TryGetValue(id, out HitRecord pending) ? KillWindow(pending) : KillCreditWindow;
+            if (!TryTakeHit(lastEnemyHits, id, window, out HitRecord hit, out string reason))
             {
                 Logger.LogInfo($"Enemy {enemy.name} died with no kill credited ({reason}) at time {Time.time}");
                 return;
@@ -315,9 +396,7 @@ namespace StatsMod
             if (!lastPlayerHits.TryGetValue(id, out HitRecord pending)) return;
 
             // Lava and falling out of the map mark the spider as dying before it dies, a damage kill happens on the hit
-            float window = !ReflectionCache.SpiderDying(spider) ? DirectPlayerKillCreditWindow
-                : pending.InDeathZone ? pending.DeathZoneDeadline - pending.Time
-                : KillCreditWindow;
+            float window = ReflectionCache.SpiderDying(spider) ? KillWindow(pending) : DirectPlayerKillCreditWindow;
             if (!TryTakeHit(lastPlayerHits, id, window, out HitRecord hit, out _)) return;
 
             Logger.LogInfo($"Recording friendly kill for {PlayerLabel(hit.Player)}, weapon:{hit.Weapon}, {Time.time - hit.Time:F2}s after the hit");
@@ -326,38 +405,54 @@ namespace StatsMod
             PlayerTracker.Instance.IncrementEnemyKillByName(hit.Player, "Player");
         }
 
-        private static void StoreHit(Dictionary<int, HitRecord> hits, int targetId, PlayerInput player, string weaponName)
+        private static float KillWindow(HitRecord hit)
         {
-            float now = Time.time;
-            if (now - lastPruneTime > StaleHitAge)
-            {
-                PruneStaleHits(lastEnemyHits, now);
-                PruneStaleHits(lastPlayerHits, now);
-                PruneStaleHits(explosionOwners, now);
-                PruneStaleHits(projectileOwners, now);
-                PruneStaleHits(rollerFuses, now);
-                lastPruneTime = now;
-            }
-
-            hits[targetId] = new HitRecord { Player = player, Weapon = weaponName, Time = now, FootingSince = -1f };
+            return hit.InDeathZone ? hit.DeathZoneDeadline - hit.Time : KillCreditWindow;
         }
 
-        private static void PruneStaleHits(Dictionary<int, HitRecord> hits, float now)
+        private static void StoreHit(Dictionary<int, HitRecord> hits, int targetId, PlayerInput player, string weaponName)
+        {
+            PruneIfDue();
+            hits[targetId] = new HitRecord { Player = player, Weapon = weaponName, Time = Time.time, FootingSince = -1f };
+        }
+
+        private static void StoreOwner(Dictionary<int, Owner> owners, int id, PlayerInput player)
+        {
+            PruneIfDue();
+            owners[id] = new Owner { Player = player, Time = Time.time };
+        }
+
+        private static PlayerInput GetOwner(Dictionary<int, Owner> owners, int id)
+        {
+            return owners.TryGetValue(id, out Owner owner) ? owner.Player : null;
+        }
+
+        private static void PruneIfDue()
+        {
+            float now = Time.time;
+            if (now - lastPruneTime <= StaleHitAge) return;
+
+            PruneStale(lastEnemyHits, hit => hit.Time, now);
+            PruneStale(lastPlayerHits, hit => hit.Time, now);
+            PruneStale(rollerFuses, hit => hit.Time, now);
+            foreach (Dictionary<int, Owner> owners in ownerMaps)
+            {
+                PruneStale(owners, owner => owner.Time, now);
+            }
+            lastPruneTime = now;
+        }
+
+        private static void PruneStale<T>(Dictionary<int, T> entries, Func<T, float> time, float now)
         {
             List<int> stale = null;
-            foreach (var entry in hits)
+            foreach (var entry in entries)
             {
-                if (now - entry.Value.Time > StaleHitAge)
+                if (now - time(entry.Value) > StaleHitAge)
                 {
                     (stale ??= new List<int>()).Add(entry.Key);
                 }
             }
-            stale?.ForEach(id => hits.Remove(id));
-        }
-
-        private static PlayerInput GetOwner(Dictionary<int, HitRecord> owners, int id)
-        {
-            return owners.TryGetValue(id, out HitRecord owner) ? owner.Player : null;
+            stale?.ForEach(id => entries.Remove(id));
         }
 
         private static bool TryGetRecentHit(Dictionary<int, HitRecord> hits, int targetId, float window, out HitRecord hit)
@@ -394,43 +489,6 @@ namespace StatsMod
         private static string PlayerLabel(PlayerInput player)
         {
             return player != null ? $"Player {player.playerIndex + 1}" : "unknown player";
-        }
-
-        public static void RegisterDiscOwner(GameObject discProjectile, PlayerInput owner)
-        {
-            if (discProjectile == null || owner == null) return;
-
-            int discId = discProjectile.GetInstanceID();
-            lock (discOwnerLock)
-            {
-                discOwnerTracker[discId] = owner;
-            }
-        }
-
-        public static PlayerInput GetDiscOwner(GameObject discProjectile)
-        {
-            if (discProjectile == null) return null;
-
-            int discId = discProjectile.GetInstanceID();
-            lock (discOwnerLock)
-            {
-                if (discOwnerTracker.TryGetValue(discId, out PlayerInput owner))
-                {
-                    return owner;
-                }
-            }
-            return null;
-        }
-
-        public static void CleanupDiscOwner(GameObject discProjectile)
-        {
-            if (discProjectile == null) return;
-
-            int discId = discProjectile.GetInstanceID();
-            lock (discOwnerLock)
-            {
-                discOwnerTracker.Remove(discId);
-            }
         }
     }
 }

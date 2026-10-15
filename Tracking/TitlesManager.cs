@@ -392,7 +392,7 @@ public class TitlesManager
         var gunsRanked = players.OrderByDescending(p => p.Value.WeaponHits["Shotgun"] + p.Value.WeaponHits["RailShot"] + p.Value.WeaponHits["DeathRay"] + p.Value.WeaponHits["EnergyBall"] + p.Value.WeaponHits["Laser Cannon"] + p.Value.WeaponHits["SawDisc"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
         leaders.MostGunsKills = gunsRanked[0];
 
-        var explosionsRanked = players.OrderByDescending(p => p.Value.WeaponHits["Explosions"] + p.Value.WeaponHits["Laser Cube"] + p.Value.WeaponHits["DeathCube"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
+        var explosionsRanked = players.OrderByDescending(p => ExplosiveKills(p.Value)).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
         leaders.MostExplosionsKills = explosionsRanked[0];
 
         var bladeRanked = players.OrderByDescending(p => p.Value.WeaponHits["Particle Blade"] + p.Value.WeaponHits["KhepriStaff"]).ThenByDescending(p => p.Value.TotalAliveTime).ToList();
@@ -411,6 +411,11 @@ public class TitlesManager
         leaders.MostAstralReturns = astralReturnsRanked[0];
 
         return leaders;
+    }
+
+    private static int ExplosiveKills(PlayerTracker.PlayerData data)
+    {
+        return data.WeaponHits["Explosions"] + data.WeaponHits["Laser Cube"] + data.WeaponHits["DeathCube"] + data.WeaponHits["Snowball"] + data.WeaponHits["Pulse"];
     }
 
     public void ClearTitles()
@@ -623,7 +628,7 @@ public class TitlesManager
         long gunsVal = leaders.MostGunsKills.Value.WeaponHits["Shotgun"] + leaders.MostGunsKills.Value.WeaponHits["RailShot"] + leaders.MostGunsKills.Value.WeaponHits["DeathRay"] + leaders.MostGunsKills.Value.WeaponHits["EnergyBall"] + leaders.MostGunsKills.Value.WeaponHits["Laser Cannon"] + leaders.MostGunsKills.Value.WeaponHits["SawDisc"];
         Add(Req.MostGunsKills, leaders.MostGunsKills, gunsVal > 0, $"Most Gun Kills ({gunsVal})");
 
-        long expVal = leaders.MostExplosionsKills.Value.WeaponHits["Explosions"] + leaders.MostExplosionsKills.Value.WeaponHits["Laser Cube"] + leaders.MostExplosionsKills.Value.WeaponHits["DeathCube"];
+        long expVal = ExplosiveKills(leaders.MostExplosionsKills.Value);
         Add(Req.MostExplosionsKills, leaders.MostExplosionsKills, expVal > 0, $"Most Explosive Kills ({expVal})");
 
         long bladeVal = leaders.MostBladeKills.Value.WeaponHits["Particle Blade"] + leaders.MostBladeKills.Value.WeaponHits["KhepriStaff"];

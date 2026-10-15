@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Logger = Silk.Logger;
@@ -51,11 +52,12 @@ namespace StatsMod
             Add<LaserCube>("Beam", "Laser Cube", HitLogic.WeaponPlayer);
             Add<ForceField>("Damage", "Particle Blade", field => HitLogic.WeaponPlayer(field.GetComponentInParent<Weapon>()));
             Add<SawDisc>("TryDamage", "SawDisc", SawDiscOwner);
-            Add<EnergyBall>("OnCollisionEnter2D", "EnergyBall", ball => ball.owner != null ? ball.owner.GetComponentInParent<PlayerInput>() : null);
+            Add<EnergyBall>("OnCollisionEnter2D", "EnergyBall", EnergyBallOwner);
             Add<KhepriStaff>("Zap", "KhepriStaff", HitLogic.WeaponPlayer);
             Add<Explosion>("KnockBack", "Explosions", ExplosionOwner);
             Add<SpiderHealthSystem>("AfterlifeExplosion", "Explosions", spider => spider.GetComponentInParent<PlayerInput>());
             Add<Snowballs>("ExplodeClientRpc", "Snowball", HitLogic.WeaponPlayer);
+            Add<WhispBrain>("ProcessCollision", null, whisp => null);
         }
 
         private static void Add<T>(string method, string weapon, Func<T, PlayerInput> owner)
@@ -75,7 +77,7 @@ namespace StatsMod
             try
             {
                 Attack attack = attacks[__originalMethod];
-                __state = HitLogic.BeginAttack(attack.Owner(__instance), attack.Weapon);
+                __state = HitLogic.BeginAttack(__instance, attack.Owner, attack.Weapon);
             }
             catch (Exception ex)
             {
@@ -106,11 +108,18 @@ namespace StatsMod
             return owner != null ? owner : disc.GetComponentInParent<PlayerInput>();
         }
 
+        private static PlayerInput EnergyBallOwner(EnergyBall ball)
+        {
+            PlayerInput reflector = HitLogic.GetBallReflector(ball);
+            if (reflector != null) return reflector;
+            return ball.owner != null ? ball.owner.GetComponentInParent<PlayerInput>() : null;
+        }
+
         // SpiderSurge's ultimate Pulse runs an explosion without an owner inside the pulse, it keeps the pulse's player
         private static PlayerInput ExplosionOwner(Explosion explosion)
         {
             PlayerInput owner = HitLogic.GetExplosionOwner(explosion);
-            return owner != null ? owner : HitLogic.CurrentAttacker;
+            return owner != null ? owner : HitLogic.EnclosingAttacker;
         }
 
         public static void PatchSpiderSurgePulse(Harmony harmony)
@@ -187,7 +196,7 @@ namespace StatsMod
         {
             try
             {
-                HitLogic.OnPlayerHit(__instance, replacesEarlierHit: stun);
+                HitLogic.OnPlayerHit(__instance, damage: false, stun);
             }
             catch (Exception ex)
             {
@@ -199,12 +208,12 @@ namespace StatsMod
     [HarmonyPatch(typeof(SpiderHealthSystem), "Damage")]
     class SpiderDamageReceiverPatch
     {
-        static void Prefix(SpiderHealthSystem __instance)
+        static void Prefix(SpiderHealthSystem __instance, bool stun)
         {
             try
             {
                 if (Time.time < ReflectionCache.SpiderImmuneTill(__instance)) return;
-                HitLogic.OnPlayerHit(__instance, replacesEarlierHit: true);
+                HitLogic.OnPlayerHit(__instance, damage: true, stun);
             }
             catch (Exception ex)
             {
@@ -279,7 +288,8 @@ namespace StatsMod
         }
     }
 
-    // The fuse running out ends here without the roller dying first; dying any other way runs this after EnemyHealthSystem.Explode
+    // The fuse running out ends here without the roller dying first. A roller already dissolving in lava, or dying
+    // any other way (which runs this after EnemyHealthSystem.Explode), keeps the kill it has
     [HarmonyPatch(typeof(ExplodingRoller), "Explode")]
     class ExplodingRollerFuseEndPatch
     {
@@ -288,7 +298,7 @@ namespace StatsMod
             try
             {
                 EnemyHealthSystem health = __instance.healthSystem;
-                if (____exploded || health == null || EnemyReflectionCache.EnemyExploding(health)) return;
+                if (____exploded || health == null || health.IsDead() || EnemyReflectionCache.EnemyExploding(health)) return;
                 HitLogic.OnRollerFuseEnded(health);
             }
             catch (Exception ex)
@@ -311,6 +321,66 @@ namespace StatsMod
             OwnerStoreRewriter.Rewrite(instructions, original,
                 AccessTools.Field(typeof(Explosion), nameof(Explosion.explosionOwnerId)),
                 AccessTools.Method(typeof(HitLogic), nameof(HitLogic.SetExplosionOwner)));
+    }
+
+    [HarmonyPatch]
+    class ExplosiveSetOffPatch
+    {
+        static IEnumerable<MethodBase> TargetMethods() => PatchTargets.FindAll(
+            (typeof(Grenade), "Explode"),
+            (typeof(Mine), "Explode"),
+            (typeof(BoomSpear), "Explode"),
+            (typeof(BasicProjectile), "DestroyProjectile"));
+
+        static void Prefix(NetworkBehaviour __instance, bool ___isExplode)
+        {
+            try
+            {
+                if (!___isExplode) HitLogic.OnExplosiveSetOff(__instance);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error recording who set off {__instance.name}: {ex.Message}");
+            }
+        }
+    }
+
+    // A knockback that misses the blast's center only arms a grenade, which then explodes on its timer
+    [HarmonyPatch(typeof(Grenade), "Arm")]
+    class GrenadeArmPatch
+    {
+        static void Prefix(Grenade __instance, bool ____armed)
+        {
+            try
+            {
+                if (!____armed) HitLogic.OnExplosiveSetOff(__instance);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error recording who armed {__instance.name}: {ex.Message}");
+            }
+        }
+    }
+
+    // A held Particle Blade that reflects an energy ball makes the ball its own owner, its hits then belong to the blade's player
+    [HarmonyPatch(typeof(EnergyBall), "Overload")]
+    class EnergyBallReflectPatch
+    {
+        static void Prefix(EnergyBall __instance, GameObject go)
+        {
+            try
+            {
+                ParticleBlade blade = go.GetComponent<ParticleBlade>();
+                if (blade != null && blade.owner != null)
+                {
+                    HitLogic.OnBallReflected(__instance, HitLogic.WeaponPlayer(blade));
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Error recording energy ball reflection: {ex.Message}");
+            }
+        }
     }
 
     [HarmonyPatch]
