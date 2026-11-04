@@ -5,7 +5,6 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Reflection;
 using OffScreenIndicatorFix;
 using WhispCooldownFix;
@@ -13,7 +12,7 @@ using WhispCooldownFix;
 namespace StatsMod
 {
     // SilkMod Attribute with the format: name, authors, mod version, silk version, and identifier
-    [SilkMod("Stats Mod", new string[] { "Dylan" }, "2.4.0", "0.7.0", "Stats_Mod", 1)]
+    [SilkMod("Stats Mod", new string[] { "Dylan" }, "2.5.0", "0.7.0", "Stats_Mod", 1)]
     public class StatsMod : SilkMod
     {
         public static StatsMod Instance { get; private set; }
@@ -45,27 +44,6 @@ namespace StatsMod
 
             // Initialize configuration with default values first
             SetupConfiguration();
-
-            if (ModConfig.CheckForUpdates)
-            {
-                // Check for updates asynchronously
-                try
-                {
-                    _ = Task.Run(async () =>
-                    {
-                        await Task.Delay(15000);
-                        await ModUpdater.CheckForUpdatesAsync();
-                    });
-                }
-                catch (System.Exception ex)
-                {
-                    Logger.LogError($"Update check failed: {ex.Message}");
-                }
-            }
-            else
-            {
-                Logger.LogInfo("Update checking is disabled in configuration.");
-            }
 
             Harmony harmony = new Harmony(HarmonyId);
             PatchClasses(harmony, GameFixes);
@@ -102,6 +80,15 @@ namespace StatsMod
             if (ModConfig.TrackingEnabled)
             {
                 AttackScopePatch.PatchSpiderSurgePulse(new Harmony(HarmonyId));
+            }
+
+            if (ModConfig.CheckForUpdates)
+            {
+                StartCoroutine(ModUpdater.ShowMovedNotice());
+            }
+            else
+            {
+                Logger.LogInfo("Update checking is disabled in configuration.");
             }
         }
 
